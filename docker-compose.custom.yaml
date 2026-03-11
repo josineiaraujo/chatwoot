@@ -2,6 +2,7 @@ version: '3'
 
 services:
   rails:
+    env_file: .env.production
     build:
       context: .
       dockerfile: ./docker/Dockerfile
@@ -10,9 +11,10 @@ services:
         EXECJS_RUNTIME: 'Disabled'
         RAILS_ENV: 'production'
         RAILS_SERVE_STATIC_FILES: 'true'
-    image: josineiaraujo/chatwoot-custom:latest
+    image: ${CHATWOOT_IMAGE_NAME:-josineiaraujo/chatwoot-custom}:${CHATWOOT_IMAGE_TAG:-custom-develop}
 
   sidekiq:
+    env_file: .env.production
     build:
       context: .
       dockerfile: ./docker/Dockerfile
@@ -21,4 +23,4 @@ services:
         EXECJS_RUNTIME: 'Disabled'
         RAILS_ENV: 'production'
         RAILS_SERVE_STATIC_FILES: 'true'
-    image: josineiaraujo/chatwoot-custom:latest
+    image: ${CHATWOOT_IMAGE_NAME:-josineiaraujo/chatwoot-custom}:${CHATWOOT_IMAGE_TAG:-custom-develop}
