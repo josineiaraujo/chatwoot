@@ -161,7 +161,14 @@ git rebase develop
 Practical rules to reduce future conflicts:
 
 - Keep customizations in small, focused commits
-- Prefer custom Docker files such as `Dockerfile.custom` or override files such as `docker-compose.override.yml` instead of heavily editing upstream Docker files
+- Prefer using the upstream Docker files whenever possible instead of creating a parallel production flow
 - Keep local-only environment values outside versioned files whenever possible
 - Avoid unnecessary edits to core files that change frequently upstream
-- For production image builds, prefer an additional compose file such as `docker-compose.custom.yaml` so upstream Docker files can be updated with minimal merge friction
+- Build and publish your own production image from `custom/develop` using the upstream `docker/Dockerfile`
+
+Example image build and publish flow:
+
+```bash
+docker build -f docker/Dockerfile -t josineiaraujo/chatwoot-custom:custom-develop .
+docker push josineiaraujo/chatwoot-custom:custom-develop
+```
