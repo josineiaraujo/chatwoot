@@ -111,3 +111,57 @@ Practical checklist for any change impacting core logic or public APIs
 ## Branding / White-labeling note
 
 - For user-facing strings that currently contain "Chatwoot" but should adapt to branded/self-hosted installs, prefer applying `replaceInstallationName` from `shared/composables/useBranding` in the UI layer (for example tooltip and suggestion labels) instead of adding hardcoded brand-specific copy.
+
+## Fork and Update Workflow
+
+- This repository should keep two remotes:
+- `origin` = your repository `https://github.com/josineiaraujo/chatwoot.git`
+- `upstream` = original Chatwoot repository `https://github.com/chatwoot/chatwoot.git`
+- Keep local `develop` as a clean mirror of `upstream/develop`
+- Do not commit custom changes directly to `develop`
+- Create and maintain your changes in `custom/develop`
+- Build and publish your Docker image from `custom/develop`
+
+Recommended initial setup:
+
+```bash
+git remote rename origin fork
+git remote add upstream https://github.com/chatwoot/chatwoot.git
+git remote add origin https://github.com/josineiaraujo/chatwoot.git
+git fetch --all --prune
+git checkout develop
+git branch --set-upstream-to=upstream/develop develop
+git checkout -b custom/develop
+git push -u origin custom/develop
+```
+
+Daily workflow:
+
+- Never modify `develop`
+- Make all product, branding, and Docker changes in `custom/develop`
+- Push your work to `origin/custom/develop`
+- Generate your Docker image from `custom/develop`
+
+To receive updates from the original project:
+
+```bash
+git fetch upstream
+git checkout develop
+git reset --hard upstream/develop
+git checkout custom/develop
+git merge develop
+```
+
+If you prefer a linear history and are comfortable resolving conflicts, you may replace the final `git merge develop` with:
+
+```bash
+git rebase develop
+```
+
+Practical rules to reduce future conflicts:
+
+- Keep customizations in small, focused commits
+- Prefer custom Docker files such as `Dockerfile.custom` or override files such as `docker-compose.override.yml` instead of heavily editing upstream Docker files
+- Keep local-only environment values outside versioned files whenever possible
+- Avoid unnecessary edits to core files that change frequently upstream
+- For production image builds, prefer an additional compose file such as `docker-compose.custom.yaml` so upstream Docker files can be updated with minimal merge friction
