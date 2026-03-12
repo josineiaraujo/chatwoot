@@ -185,7 +185,11 @@
       "DISABLE_SIGN_TOOLTIP": "Desativar assinatura",
       "MSG_INPUT": "Shift + enter para nova linha. Digite '/' para selecionar uma Resposta Pronta.",
       "PRIVATE_MSG_INPUT": "A mensagem será visível apenas para agentes",
+      "MESSAGING_RESTRICTED": "Você não pode responder a esta conversa",
+      "MESSAGING_RESTRICTED_WHATSAPP": "Você só pode responder usando um modelo de mensagem devido à restrição da janela de 24 horas",
+      "MESSAGING_RESTRICTED_API": "Você só pode responder usando um modelo de mensagem devido à restrição da janela de mensagens",
       "MESSAGE_SIGNATURE_NOT_CONFIGURED": "A assinatura da mensagem não está configurada. Por favor, configure-a nas configurações do perfil.",
+      "COPILOT_MSG_INPUT": "Dê instruções adicionais ao Copiloto ou faça outra pergunta... Pressione Enter para enviar a continuação",
       "CLICK_HERE": "Clique aqui para atualizar",
       "WHATSAPP_TEMPLATES": "Templates do Whatsapp"
     },
@@ -205,6 +209,7 @@
       "DRAG_DROP": "Arraste e solte aqui para anexar",
       "START_AUDIO_RECORDING": "Iniciar gravação de áudio",
       "STOP_AUDIO_RECORDING": "Parar gravação de áudio",
+      "COPILOT_THINKING": "O Copiloto está pensando",
       "": "",
       "EMAIL_HEAD": {
         "TO": "Para",
@@ -349,25 +354,25 @@
       "PREVIOUS_CONVERSATION": "Conversas anteriores",
       "MACROS": "Macros",
       "LINEAR_ISSUES": "Problemas do Linear vinculados",
-      "SHOPIFY_ORDERS": "Shopify Orders"
+      "SHOPIFY_ORDERS": "Pedidos da Shopify"
     },
     "SHOPIFY": {
-      "ORDER_ID": "Order #{id}",
-      "ERROR": "Error loading orders",
-      "NO_SHOPIFY_ORDERS": "No orders found",
+      "ORDER_ID": "Pedido nº {id}",
+      "ERROR": "Erro ao carregar os pedidos",
+      "NO_SHOPIFY_ORDERS": "Nenhum pedido encontrado",
       "FINANCIAL_STATUS": {
         "PENDING": "Pendentes",
-        "AUTHORIZED": "Authorized",
-        "PARTIALLY_PAID": "Partially Paid",
-        "PAID": "Paid",
-        "PARTIALLY_REFUNDED": "Partially Refunded",
-        "REFUNDED": "Refunded",
-        "VOIDED": "Voided"
+        "AUTHORIZED": "Autorizado",
+        "PARTIALLY_PAID": "Parcialmente pago",
+        "PAID": "Pago",
+        "PARTIALLY_REFUNDED": "Parcialmente reembolsado",
+        "REFUNDED": "Reembolsado",
+        "VOIDED": "Cancelado"
       },
       "FULFILLMENT_STATUS": {
-        "FULFILLED": "Fulfilled",
-        "PARTIALLY_FULFILLED": "Partially Fulfilled",
-        "UNFULFILLED": "Unfulfilled"
+        "FULFILLED": "Atendido",
+        "PARTIALLY_FULFILLED": "Parcialmente atendido",
+        "UNFULFILLED": "Não atendido"
       }
     }
   },
