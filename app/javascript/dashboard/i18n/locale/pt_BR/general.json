@@ -7,6 +7,13 @@
     },
     "CLOSE": "Fechar",
     "BETA": "Beta",
-    "BETA_DESCRIPTION": "Este recurso está em fase BETA e deve sofre alterações assim que Nós melhorarmos ele."
+    "BETA_DESCRIPTION": "Este recurso está em fase beta e pode mudar conforme for aprimorado.",
+    "ACCEPT": "Aceitar",
+    "DISCARD": "Descartar",
+    "PREFERRED": "Preferencial"
+  },
+  "CHOICE_TOGGLE": {
+    "YES": "Sim",
+    "NO": "Não"
   }
 }
