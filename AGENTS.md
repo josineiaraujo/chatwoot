@@ -122,6 +122,14 @@ Practical checklist for any change impacting core logic or public APIs
 - Create and maintain your changes in `custom/develop`
 - Build and publish your Docker image from `custom/develop`
 
+Why this repository uses a separate branch for custom work:
+
+- `develop` should stay as close as possible to the upstream project so updates can be applied cleanly
+- all local customizations, branding, behavior changes, and infrastructure adjustments should live in `custom/develop`
+- this separation reduces merge conflicts, makes debugging easier, and avoids mixing vendor updates with your own business logic
+- when something breaks after an upstream update, it is easier to identify whether the cause came from Chatwoot or from your custom changes
+- production images must be generated from `custom/develop`, never from `develop`
+
 Recommended initial setup:
 
 ```bash
@@ -152,6 +160,26 @@ git checkout custom/develop
 git merge develop
 ```
 
+Recommended update routine:
+
+- fetch from `upstream`
+- fast-forward or hard-reset local `develop` to match `upstream/develop`
+- merge `develop` into `custom/develop`
+- resolve conflicts only in your custom branch
+- test the application
+- push the updated `custom/develop` to your fork
+
+Suggested command sequence:
+
+```bash
+git fetch upstream
+git checkout develop
+git reset --hard upstream/develop
+git checkout custom/develop
+git merge develop
+git push origin custom/develop
+```
+
 If you prefer a linear history and are comfortable resolving conflicts, you may replace the final `git merge develop` with:
 
 ```bash
@@ -165,6 +193,10 @@ Practical rules to reduce future conflicts:
 - Keep local-only environment values outside versioned files whenever possible
 - Avoid unnecessary edits to core files that change frequently upstream
 - Build and publish your own production image from `custom/develop` using the upstream `docker/Dockerfile`
+- Avoid editing files only to change formatting or reorder code unless required
+- Prefer configuration, extension points, and isolated patches over broad invasive rewrites
+- When upstream files must be changed, keep the diff minimal and document why
+- Before merging upstream updates, review local custom commits so conflict resolution stays intentional
 
 Example image build and publish flow:
 
@@ -172,3 +204,41 @@ Example image build and publish flow:
 docker build -f docker/Dockerfile -t josineiaraujo/chatwoot-custom:custom-develop .
 docker push josineiaraujo/chatwoot-custom:custom-develop
 ```
+
+Production image guidance:
+
+- always build the production image from `custom/develop`
+- prefer a tag that identifies the branch, release, or deployment date
+- push the generated image to your own Docker repository
+- deploy production using your published image, not the default upstream image
+
+Example with a release tag:
+
+```bash
+git checkout custom/develop
+docker build -f docker/Dockerfile -t josineiaraujo/chatwoot-custom:2026-03-11 .
+docker push josineiaraujo/chatwoot-custom:2026-03-11
+```
+
+Before building a production image:
+
+- make sure `custom/develop` is updated with the latest `upstream/develop`
+- confirm the application boots locally
+- verify database migrations are valid
+- review environment-specific variables separately from the image build
+- remove any temporary local testing changes before production build or deploy
+
+Temporary local-only testing note:
+
+- any change made in `lib/chatwoot_hub.rb` to simulate, force, or unlock plan behavior is for local testing only
+- such changes must never be included in production images, production deploys, or final release commits
+- before publishing a production image, review `lib/chatwoot_hub.rb` and remove any local testing override
+
+Pre-production review checklist:
+
+- review `lib/chatwoot_hub.rb` and remove any temporary local testing override
+- review `docker-compose.yaml`, `docker-compose.production.yaml`, and `docker/Dockerfile` for local-only edits
+- review `.env` usage and confirm production secrets are not coming from local development files
+- review `db/schema.rb` and commit it only when there is an intentional schema change
+- remove backup files, temporary scripts, downloaded artifacts, and local debugging files before building the final image
+- confirm the production image is being built from `custom/develop`, not from `develop`
