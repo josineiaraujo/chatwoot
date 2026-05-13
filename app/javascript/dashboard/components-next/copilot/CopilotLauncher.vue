@@ -38,6 +38,7 @@ const showCopilotLauncher = computed(() => {
   return (
     isCaptainEnabled &&
     !uiSettings.value.is_copilot_panel_open &&
+    !route.meta.hideCopilotLauncher &&
     !isConversationRoute.value
   );
 });
