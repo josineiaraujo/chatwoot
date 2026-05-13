@@ -305,6 +305,21 @@ Rails.application.routes.draw do
             end
           end
 
+          namespace :ibsoft do
+            namespace :internal_chat do
+              resources :rooms, only: [:index, :show, :create, :update, :destroy] do
+                post :direct, on: :collection
+                get :unread_count, on: :collection
+                resources :messages, only: [:index, :create]
+                resources :attachments, only: [:show] do
+                  get :preview, on: :member
+                end
+                resources :memberships, only: [:create, :destroy]
+                resource :read, only: [:create], controller: :reads
+              end
+            end
+          end
+
           # Assignment V2 Routes
           resources :assignment_policies do
             resources :inboxes, only: [:index, :create, :destroy], module: :assignment_policies

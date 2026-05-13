@@ -1,0 +1,17 @@
+en:
+  ibsoft_internal_chat:
+    direct_room_fallback: Direct chat
+    errors:
+      blank_message: Write a message or attach a file.
+      direct_room_immutable: Direct chats cannot be renamed or have members changed.
+      direct_self: Choose another agent to start a direct chat.
+      file_too_large: File exceeds the %{size} MB attachment limit.
+      file_type_not_supported: File type is not supported.
+      invalid_members: One or more selected agents do not belong to this account.
+      last_room_admin: The room needs at least one administrator.
+      last_room_member: The room needs at least one member.
+      not_room_member: You are not a member of this room.
+      only_creator_can_rename_room: Only the room creator can rename it.
+      room_creator_cannot_be_removed: The room creator cannot be removed.
+      room_name_required: Room name is required.
+      too_many_attachments: You can attach up to %{count} files per message.
