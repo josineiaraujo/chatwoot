@@ -1,0 +1,102 @@
+{
+  "IBSOFT_INTERNAL_CHAT": {
+    "ACTIONS": {
+      "APPLY_CROP": "Apply crop",
+      "ATTACH": "Attach files",
+      "CANCEL": "Cancel",
+      "CANCEL_CROP": "Cancel crop",
+      "CHANGE_COVER": "Change photo",
+      "CHOOSE_COVER": "Choose photo",
+      "CLOSE": "Close",
+      "CREATE_ROOM": "Create room",
+      "DELETE_CHAT": "Delete chat",
+      "DELETE_ROOM": "Delete room",
+      "DOWNLOAD": "Download",
+      "EDIT_ROOM": "Edit room",
+      "NEXT_MEDIA": "Next media",
+      "NEW_DIRECT_CHAT": "New direct chat",
+      "PREVIEW_IMAGE": "Open image",
+      "PREVIEW_VIDEO": "Open video",
+      "PREVIOUS_MEDIA": "Previous media",
+      "REFRESH": "Refresh",
+      "REMOVE_ATTACHMENT": "Remove attachment",
+      "REMOVE_MEMBER": "Remove member",
+      "ROTATE_LEFT": "Rotate left",
+      "ROTATE_RIGHT": "Rotate right",
+      "SAVE": "Save",
+      "SEND": "Send",
+      "SHOW_EMOJI_PICKER": "Show emoji selector",
+      "RECORD_AUDIO": "Record audio",
+      "TOGGLE_COMPOSER_HEIGHT": "Adjust message composer height",
+      "TOGGLE_RECORDED_AUDIO": "Play or pause recorded audio",
+      "ZOOM_IN": "Zoom in",
+      "ZOOM_OUT": "Zoom out"
+    },
+    "DIRECT": {
+      "EMPTY": "No agents found.",
+      "NEW": "New direct chat",
+      "SEARCH_PLACEHOLDER": "Search agent",
+      "TITLE": "Direct chats"
+    },
+    "ERRORS": {
+      "CREATE_ROOM": "Could not create the room.",
+      "DELETE_CHAT": "Could not delete the chat.",
+      "DELETE_ROOM": "Could not delete the room.",
+      "DIRECT_ROOM": "Could not open the direct chat.",
+      "DOWNLOAD_ATTACHMENT": "Could not download the attachment.",
+      "FILE_SIZE_LIMIT": "The file exceeds the {size} MB limit.",
+      "LOAD_MESSAGES": "Could not load previous messages.",
+      "REMOVE_MEMBER": "Could not remove the member.",
+      "SEND_MESSAGE": "Could not send the message.",
+      "UPDATE_ROOM": "Could not update the room."
+    },
+    "FILTERS": {
+      "ALL": "All",
+      "DIRECT": "Direct",
+      "ROOMS": "Rooms"
+    },
+    "HEADER": {
+      "DIRECT": "Direct chat",
+      "MEMBERS": "Members: {count}",
+      "TITLE": "Internal chat"
+    },
+    "MESSAGES": {
+      "EMPTY": "No messages yet.",
+      "LOADING": "Loading messages...",
+      "LOADING_OLDER": "Loading previous messages...",
+      "DRAG_DROP": "Drop files to attach",
+      "MEDIA_UNAVAILABLE": "Could not load media.",
+      "PLACEHOLDER": "Write a message",
+      "READ_ONLY": "You can view this chat, but cannot send messages because you are not a participant.",
+      "YOU": "You"
+    },
+    "ROOMS": {
+      "ALREADY_MEMBER": "Already in room",
+      "ATTACHMENT_PREVIEW": "Attachment",
+      "COVER_IMAGE": "Room photo",
+      "COVER_IMAGE_HELP": "Use a square image to identify the room.",
+      "COVER_ZOOM": "Zoom",
+      "CROP_COVER": "Crop photo",
+      "CURRENT_MEMBERS": "Current members",
+      "ADD_MEMBERS": "Add members",
+      "DELETE_CONFIRM": "Delete this room? The history will be removed for every participant.",
+      "DELETE_CHAT_CONFIRM": "Delete this chat? The history will be removed for every participant.",
+      "EDIT_ROOM": "Edit room",
+      "EMPTY": "Create a room or start a direct chat with another agent.",
+      "EMPTY_LIST": "No chats found.",
+      "LOADING": "Loading rooms...",
+      "MEMBERS": "Agents",
+      "NAME": "Room name",
+      "NAME_PLACEHOLDER": "Room name",
+      "NEW_ROOM": "New room",
+      "NO_AGENTS": "No agents available.",
+      "NO_AVAILABLE_AGENTS": "No agents available to add.",
+      "NO_MESSAGES": "No messages yet",
+      "OWNER": "Creator",
+      "SEARCH_PLACEHOLDER": "Search chats",
+      "SELECT_CHAT": "Select a chat to view messages.",
+      "TITLE": "Rooms"
+    },
+    "SIDEBAR": "Internal chat"
+  }
+}
