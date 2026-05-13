@@ -1,0 +1,17 @@
+pt_BR:
+  ibsoft_internal_chat:
+    direct_room_fallback: Chat direto
+    errors:
+      blank_message: Escreva uma mensagem ou anexe um arquivo.
+      direct_room_immutable: Chats diretos não podem ser renomeados nem ter membros alterados.
+      direct_self: Escolha outro agente para iniciar um chat direto.
+      file_too_large: O arquivo excede o limite de %{size} MB.
+      file_type_not_supported: Este tipo de arquivo não é permitido.
+      invalid_members: Um ou mais agentes selecionados não pertencem a esta conta.
+      last_room_admin: A sala precisa ter pelo menos um administrador.
+      last_room_member: A sala precisa ter pelo menos um membro.
+      not_room_member: Você não participa desta sala.
+      only_creator_can_rename_room: Apenas quem criou a sala pode renomeá-la.
+      room_creator_cannot_be_removed: Quem criou a sala não pode ser removido.
+      room_name_required: O nome da sala é obrigatório.
+      too_many_attachments: É possível anexar até %{count} arquivos por mensagem.

@@ -852,6 +852,66 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "ibsoft_internal_chat_attachments", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "message_id", null: false
+    t.integer "file_type", default: 0, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_ibsoft_internal_chat_attachments_on_account_id"
+    t.index ["message_id"], name: "index_ibsoft_internal_chat_attachments_on_message_id"
+  end
+
+  create_table "ibsoft_internal_chat_memberships", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "room_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "last_read_message_id"
+    t.integer "role", default: 0, null: false
+    t.datetime "last_read_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_ibsoft_internal_chat_memberships_on_account_id"
+    t.index ["last_read_message_id"], name: "index_ibsoft_internal_chat_memberships_on_last_read_message_id"
+    t.index ["room_id", "user_id"], name: "idx_ibsoft_chat_memberships_room_user", unique: true
+    t.index ["room_id"], name: "index_ibsoft_internal_chat_memberships_on_room_id"
+    t.index ["user_id", "room_id"], name: "idx_ibsoft_chat_memberships_user_room"
+    t.index ["user_id"], name: "index_ibsoft_internal_chat_memberships_on_user_id"
+  end
+
+  create_table "ibsoft_internal_chat_messages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "room_id", null: false
+    t.bigint "sender_id", null: false
+    t.integer "message_type", default: 0, null: false
+    t.text "content"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "edited_at"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "idx_ibsoft_chat_messages_account_created"
+    t.index ["account_id"], name: "index_ibsoft_internal_chat_messages_on_account_id"
+    t.index ["room_id", "created_at"], name: "idx_ibsoft_chat_messages_room_created"
+    t.index ["room_id"], name: "index_ibsoft_internal_chat_messages_on_room_id"
+    t.index ["sender_id"], name: "index_ibsoft_internal_chat_messages_on_sender_id"
+  end
+
+  create_table "ibsoft_internal_chat_rooms", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_id", null: false
+    t.integer "room_type", default: 0, null: false
+    t.string "name"
+    t.string "direct_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "direct_key"], name: "index_ibsoft_internal_chat_rooms_on_account_id_and_direct_key", unique: true, where: "(direct_key IS NOT NULL)"
+    t.index ["account_id", "room_type"], name: "index_ibsoft_internal_chat_rooms_on_account_id_and_room_type"
+    t.index ["account_id"], name: "index_ibsoft_internal_chat_rooms_on_account_id"
+    t.index ["created_by_id"], name: "index_ibsoft_internal_chat_rooms_on_created_by_id"
+  end
+
   create_table "inbox_assignment_policies", force: :cascade do |t|
     t.bigint "inbox_id", null: false
     t.bigint "assignment_policy_id", null: false
