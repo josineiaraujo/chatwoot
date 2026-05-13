@@ -4,6 +4,7 @@ import DashboardAudioNotificationHelper from './AudioAlerts/DashboardAudioNotifi
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { emitter } from 'shared/helpers/mitt';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
+import { notifyNewInternalChatMessage } from 'dashboard/ibsoft/internalChat/helpers/audioNotifications';
 
 const { isImpersonating } = useImpersonation();
 
@@ -35,6 +36,12 @@ class ActionCableConnector extends BaseActionCableConnector {
       'account.cache_invalidated': this.onCacheInvalidate,
       'account.enrichment_completed': this.onEnrichmentCompleted,
       'copilot.message.created': this.onCopilotMessageCreated,
+      'ibsoft.internal_chat.message_created':
+        this.onIbsoftInternalChatMessageCreated,
+      'ibsoft.internal_chat.room_updated': this.onIbsoftInternalChatRoomUpdated,
+      'ibsoft.internal_chat.room_deleted': this.onIbsoftInternalChatRoomDeleted,
+      'ibsoft.internal_chat.member_removed':
+        this.onIbsoftInternalChatMemberRemoved,
     };
   }
 
@@ -193,6 +200,43 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   onCopilotMessageCreated = data => {
     this.app.$store.dispatch('copilotMessages/upsert', data);
+  };
+
+  onIbsoftInternalChatMessageCreated = data => {
+    notifyNewInternalChatMessage(data);
+    this.app.$store.dispatch('ibsoftInternalChat/messageCreated', data);
+    window.dispatchEvent(
+      new CustomEvent('ibsoft:internal-chat:message-created', {
+        detail: data,
+      })
+    );
+  };
+
+  onIbsoftInternalChatRoomUpdated = data => {
+    this.app.$store.dispatch('ibsoftInternalChat/roomUpdated', data.room);
+    window.dispatchEvent(
+      new CustomEvent('ibsoft:internal-chat:room-updated', {
+        detail: data,
+      })
+    );
+  };
+
+  onIbsoftInternalChatRoomDeleted = data => {
+    this.app.$store.dispatch('ibsoftInternalChat/removeRoom', data.room_id);
+    window.dispatchEvent(
+      new CustomEvent('ibsoft:internal-chat:room-deleted', {
+        detail: data,
+      })
+    );
+  };
+
+  onIbsoftInternalChatMemberRemoved = data => {
+    this.app.$store.dispatch('ibsoftInternalChat/removeRoom', data.room_id);
+    window.dispatchEvent(
+      new CustomEvent('ibsoft:internal-chat:member-removed', {
+        detail: data,
+      })
+    );
   };
 
   onEnrichmentCompleted = () => {
