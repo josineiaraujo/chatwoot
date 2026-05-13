@@ -194,6 +194,7 @@ onMounted(() => {
   store.dispatch('labels/get');
   store.dispatch('inboxes/get');
   store.dispatch('notifications/unReadCount');
+  store.dispatch('ibsoftInternalChat/fetchUnreadRoomCount');
   store.dispatch('teams/get');
   store.dispatch('attributes/get');
   store.dispatch('customViews/get', 'conversation');
@@ -380,6 +381,16 @@ const menuItems = computed(() => {
           })),
         },
       ],
+    },
+    {
+      name: 'Ibsoft Internal Chat',
+      label: t('IBSOFT_INTERNAL_CHAT.SIDEBAR'),
+      icon: 'i-lucide-messages-square',
+      to: accountScopedRoute('ibsoft_internal_chat'),
+      activeOn: ['ibsoft_internal_chat'],
+      getterKeys: {
+        count: 'ibsoftInternalChat/getUnreadRoomCount',
+      },
     },
     {
       name: 'Captain',
