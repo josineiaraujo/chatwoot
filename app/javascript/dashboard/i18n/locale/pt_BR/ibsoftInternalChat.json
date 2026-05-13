@@ -1,0 +1,102 @@
+{
+  "IBSOFT_INTERNAL_CHAT": {
+    "ACTIONS": {
+      "APPLY_CROP": "Aplicar corte",
+      "ATTACH": "Anexar arquivos",
+      "CANCEL": "Cancelar",
+      "CANCEL_CROP": "Cancelar corte",
+      "CHANGE_COVER": "Alterar foto",
+      "CHOOSE_COVER": "Escolher foto",
+      "CLOSE": "Fechar",
+      "CREATE_ROOM": "Criar sala",
+      "DELETE_CHAT": "Excluir chat",
+      "DELETE_ROOM": "Excluir sala",
+      "DOWNLOAD": "Baixar",
+      "EDIT_ROOM": "Editar sala",
+      "NEXT_MEDIA": "Próxima mídia",
+      "NEW_DIRECT_CHAT": "Novo chat direto",
+      "PREVIEW_IMAGE": "Abrir imagem",
+      "PREVIEW_VIDEO": "Abrir vídeo",
+      "PREVIOUS_MEDIA": "Mídia anterior",
+      "REFRESH": "Atualizar",
+      "REMOVE_ATTACHMENT": "Remover anexo",
+      "REMOVE_MEMBER": "Remover membro",
+      "ROTATE_LEFT": "Girar para a esquerda",
+      "ROTATE_RIGHT": "Girar para a direita",
+      "SAVE": "Salvar",
+      "SEND": "Enviar",
+      "SHOW_EMOJI_PICKER": "Mostrar seletor de emoji",
+      "RECORD_AUDIO": "Gravar áudio",
+      "TOGGLE_COMPOSER_HEIGHT": "Ajustar altura da área de mensagem",
+      "TOGGLE_RECORDED_AUDIO": "Reproduzir ou pausar áudio gravado",
+      "ZOOM_IN": "Ampliar",
+      "ZOOM_OUT": "Reduzir"
+    },
+    "DIRECT": {
+      "EMPTY": "Nenhum agente encontrado.",
+      "NEW": "Novo chat direto",
+      "SEARCH_PLACEHOLDER": "Buscar agente",
+      "TITLE": "Chats diretos"
+    },
+    "ERRORS": {
+      "CREATE_ROOM": "Não foi possível criar a sala.",
+      "DELETE_CHAT": "Não foi possível excluir o chat.",
+      "DELETE_ROOM": "Não foi possível excluir a sala.",
+      "DIRECT_ROOM": "Não foi possível abrir o chat direto.",
+      "DOWNLOAD_ATTACHMENT": "Não foi possível baixar o anexo.",
+      "FILE_SIZE_LIMIT": "O arquivo excede o limite de {size} MB.",
+      "LOAD_MESSAGES": "Não foi possível carregar mensagens anteriores.",
+      "REMOVE_MEMBER": "Não foi possível remover o membro.",
+      "SEND_MESSAGE": "Não foi possível enviar a mensagem.",
+      "UPDATE_ROOM": "Não foi possível atualizar a sala."
+    },
+    "FILTERS": {
+      "ALL": "Todos",
+      "DIRECT": "Diretos",
+      "ROOMS": "Salas"
+    },
+    "HEADER": {
+      "DIRECT": "Chat direto",
+      "MEMBERS": "Membros: {count}",
+      "TITLE": "Chat interno"
+    },
+    "MESSAGES": {
+      "EMPTY": "Nenhuma mensagem ainda.",
+      "LOADING": "Carregando mensagens...",
+      "LOADING_OLDER": "Carregando mensagens anteriores...",
+      "DRAG_DROP": "Solte os arquivos para anexar",
+      "MEDIA_UNAVAILABLE": "Não foi possível carregar a mídia.",
+      "PLACEHOLDER": "Escreva uma mensagem",
+      "READ_ONLY": "Você pode visualizar este chat, mas não pode enviar mensagens porque não é participante.",
+      "YOU": "Você"
+    },
+    "ROOMS": {
+      "ALREADY_MEMBER": "Já participa",
+      "ATTACHMENT_PREVIEW": "Anexo",
+      "COVER_IMAGE": "Foto da sala",
+      "COVER_IMAGE_HELP": "Use uma imagem quadrada para identificar a sala.",
+      "COVER_ZOOM": "Zoom",
+      "CROP_COVER": "Cortar foto",
+      "CURRENT_MEMBERS": "Membros atuais",
+      "ADD_MEMBERS": "Adicionar membros",
+      "DELETE_CONFIRM": "Excluir esta sala? O histórico será apagado para todos os participantes.",
+      "DELETE_CHAT_CONFIRM": "Excluir este chat? O histórico será apagado para todos os participantes.",
+      "EDIT_ROOM": "Editar sala",
+      "EMPTY": "Crie uma sala ou inicie um chat direto com outro agente.",
+      "EMPTY_LIST": "Nenhum chat encontrado.",
+      "LOADING": "Carregando salas...",
+      "MEMBERS": "Agentes",
+      "NAME": "Nome da sala",
+      "NAME_PLACEHOLDER": "Nome da sala",
+      "NEW_ROOM": "Nova sala",
+      "NO_AGENTS": "Nenhum agente disponível.",
+      "NO_AVAILABLE_AGENTS": "Nenhum agente disponível para adicionar.",
+      "NO_MESSAGES": "Nenhuma mensagem ainda",
+      "OWNER": "Criador",
+      "SEARCH_PLACEHOLDER": "Buscar chats",
+      "SELECT_CHAT": "Selecione um chat para visualizar as mensagens.",
+      "TITLE": "Salas"
+    },
+    "SIDEBAR": "Chat interno"
+  }
+}
