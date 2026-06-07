@@ -1,4 +1,4 @@
-name: Publish Ibsoft Chatwoot Docker image
+name: Publish Ibsoft Chatwoot EE Docker image
 
 on:
   push:
@@ -53,14 +53,9 @@ jobs:
           echo "tag=${sanitized_tag}" >> "$GITHUB_OUTPUT"
           echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
-      - name: Strip enterprise code for CE image
-        run: |
-          rm -rf enterprise
-          rm -rf spec/enterprise
-
       - name: Set Chatwoot edition
         run: |
-          echo -en '\nENV CW_EDITION="ce"' >> docker/Dockerfile
+          echo -en '\nENV CW_EDITION="ee"' >> docker/Dockerfile
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
