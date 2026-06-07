@@ -94,6 +94,32 @@ describe('#shortTimestamp', () => {
   });
 });
 
+describe('#ibsoft pt_BR formatting', () => {
+  beforeEach(() => {
+    window.chatwootConfig = { selectedLocale: 'pt_BR' };
+  });
+
+  afterEach(() => {
+    window.chatwootConfig = undefined;
+  });
+
+  it('formats message timestamps with Portuguese month and 24-hour time', () => {
+    const timestamp = Math.floor(Date.UTC(2023, 4, 4, 10, 19) / 1000);
+    expect(messageTimestamp(timestamp, 'LLL d, h:mm a')).toEqual(
+      '4 mai, 10:19'
+    );
+  });
+
+  it('formats compact relative times in Portuguese', () => {
+    expect(shortTimestamp('h\u00e1 cerca de 1 m\u00eas')).toEqual('1 m\u00eas');
+    expect(shortTimestamp('h\u00e1 12 minutos')).toEqual('12 min');
+    expect(shortTimestamp('1mo, 12d')).toEqual('1 m\u00eas, 12 d');
+    expect(shortTimestamp('h\u00e1 cerca de 1 m\u00eas', true)).toEqual(
+      'h\u00e1 1 m\u00eas'
+    );
+  });
+});
+
 describe('#getDayDifferenceFromNow', () => {
   it('returns 0 for timestamps from today', () => {
     // Mock current date: May 5, 2023

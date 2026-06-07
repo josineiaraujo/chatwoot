@@ -5,6 +5,7 @@ import { useAlert } from 'dashboard/composables';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { setIbsoftCurrentLocale } from 'shared/ibsoft/locale/dateTime';
 
 import FormSelect from 'v3/components/Form/Select.vue';
 
@@ -36,6 +37,7 @@ const updateLanguage = async languageCode => {
       // Clear preference to use account default
       await updateUISettings({ locale: null });
       locale.value = currentAccount.value.locale;
+      setIbsoftCurrentLocale(currentAccount.value.locale);
       useAlert(
         t('PROFILE_SETTINGS.FORM.INTERFACE_SECTION.LANGUAGE.UPDATE_SUCCESS')
       );
@@ -52,6 +54,7 @@ const updateLanguage = async languageCode => {
     await updateUISettings({ locale: languageCode });
     // Apply immediately if the user explicitly chose a preference
     locale.value = languageCode;
+    setIbsoftCurrentLocale(languageCode);
 
     useAlert(
       t('PROFILE_SETTINGS.FORM.INTERFACE_SECTION.LANGUAGE.UPDATE_SUCCESS')

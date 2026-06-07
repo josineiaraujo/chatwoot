@@ -1,0 +1,216 @@
+body.dark {
+  --violet-deep: #4c1d95;
+  --violet-primary: #7c3aed;
+  --violet-mid: #8b5cf6;
+  --purple: #a855f7;
+  --lilac: #c084fc;
+  --lilac-light: #d8b4fe;
+  --lilac-ghost: #f3e8ff;
+  --bg-dark: #0f0520;
+  --bg-deep: #050010;
+  --ibsoft-chat-panel-bg: #16082f;
+  --purple-rgb: 168, 85, 247;
+  --violet-primary-rgb: 124, 58, 237;
+  --lilac-rgb: 192, 132, 252;
+  --background-color: 5 0 16;
+  --surface-1: 10 2 24;
+  --surface-2: 15 5 32;
+  --surface-active: 76 29 149;
+  --solid-1: 15 5 32;
+  --solid-2: 21 8 47;
+  --solid-3: 31 13 61;
+  --solid-active: 76 29 149;
+  --card-color: 15 5 32;
+  --button-color: 31 13 61;
+  --label-background: 15 5 32;
+  --background-input-box: 255, 255, 255, 0.04;
+  --border-weak: 49 23 86;
+  --border-strong: 76 29 149;
+  --border-container: 168, 85, 247, 0.14;
+  --alpha-1: 168, 85, 247, 0.1;
+  --alpha-2: 168, 85, 247, 0.16;
+  --alpha-3: 15, 5, 32, 0.88;
+  --black-alpha-1: 0, 0, 0, 0.35;
+  --black-alpha-2: 0, 0, 0, 0.24;
+  --white-alpha: 255, 255, 255, 0.12;
+  --ibsoft-dark-gradient:
+    radial-gradient(
+      1100px 600px at 85% -10%,
+      rgba(var(--purple-rgb), 0.28),
+      transparent 60%
+    ),
+    radial-gradient(
+      800px 700px at -10% 30%,
+      rgba(var(--violet-primary-rgb), 0.22),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      var(--bg-deep) 0%,
+      var(--bg-dark) 40%,
+      #15082f 100%
+    );
+  --ibsoft-chat-active-gradient: linear-gradient(
+    120deg,
+    rgba(var(--violet-primary-rgb), 0.18),
+    rgba(var(--lilac-rgb), 0.06)
+  );
+}
+
+body.dark,
+body.dark #app {
+  background: var(--ibsoft-dark-gradient);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+body.dark #app > .flex,
+body.dark #app main,
+body.dark #app main > .bg-n-background,
+body.dark #app main > .bg-n-surface-1,
+body.dark #app main > .bg-n-surface-2,
+body.dark #app aside.bg-n-background,
+body.dark #app .conversations-list-wrap,
+body.dark #app .conversation-details-wrap,
+body.dark #app .conversation-details-wrap > .flex.bg-n-surface-1,
+body.dark #app main > .bg-n-background > aside,
+body.dark #app main > .bg-n-background > section,
+body.dark #app main > .bg-n-background > section > header,
+body.dark #app main > .bg-n-background > section > footer {
+  background: transparent;
+}
+
+body.dark #app .conversation.active,
+body.dark #app .ibsoft-internal-chat-room--active {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: transparent !important;
+  border-radius: 12px;
+  background: var(--ibsoft-chat-active-gradient) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--lilac-rgb), 0.18);
+}
+
+body.dark #app .conversation.active {
+  margin: 4px 8px;
+  max-width: calc(100% - 16px);
+}
+
+body.dark #app .conversation.active::before,
+body.dark #app .ibsoft-internal-chat-room--active::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  height: auto;
+  pointer-events: none;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--violet-primary), var(--lilac));
+}
+
+body.dark #app[dir='rtl'] .conversation.active::before,
+body.dark #app[dir='rtl'] .ibsoft-internal-chat-room--active::before {
+  border-radius: 3px 0 0 3px;
+}
+
+body.dark #app .conversation.active [role='img'],
+body.dark #app .ibsoft-internal-chat-room--active [role='img'] {
+  border-radius: 9999px;
+}
+
+body.dark #app .conversation.active [role='img']:not(:has(img)),
+body.dark #app .ibsoft-internal-chat-room--active [role='img']:not(:has(img)) {
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--purple), var(--lilac)) !important;
+}
+
+body.dark #app .conversation.active [role='img'] img,
+body.dark #app .ibsoft-internal-chat-room--active [role='img'] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.dark #app .conversation.active [role='img'] > .absolute.rounded-full,
+body.dark
+  #app
+  .ibsoft-internal-chat-room--active
+  [role='img']
+  > .absolute.rounded-full {
+  border-color: var(--ibsoft-chat-panel-bg);
+}
+
+body.dark #app .conversation.active [class~='group/avatar'] > .absolute.rounded-full,
+body.dark
+  #app
+  .ibsoft-internal-chat-room--active
+  [class~='group/avatar']
+  > .absolute.rounded-full {
+  border-color: var(--ibsoft-chat-panel-bg);
+}
+
+body.dark #app .conversation.active .conversation--user,
+body.dark #app .ibsoft-internal-chat-room--active .ibsoft-internal-chat-room__name {
+  color: var(--lilac-ghost) !important;
+  font-weight: 600;
+}
+
+body.dark #app .conversation.active p,
+body.dark #app .conversation.active .message-preview,
+body.dark #app .ibsoft-internal-chat-room--active time,
+body.dark
+  #app
+  .ibsoft-internal-chat-room--active
+  .ibsoft-internal-chat-room__preview {
+  color: #b8a6d9 !important;
+}
+
+#app .ibsoft-sidebar-brand-logo {
+  background: rgba(var(--violet-primary-rgb, 124, 58, 237), 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--lilac-rgb, 192, 132, 252), 0.14);
+}
+
+body.dark #app .ibsoft-sidebar-brand-logo {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--violet-primary-rgb), 0.24),
+    rgba(var(--lilac-rgb), 0.08)
+  );
+  box-shadow: inset 0 0 0 1px rgba(var(--lilac-rgb), 0.18);
+}
+
+#app .ibsoft-conversation-empty-state,
+#app .ibsoft-select-conversation-empty-state {
+  gap: 18px;
+}
+
+#app .ibsoft-conversation-empty-state > img,
+#app .ibsoft-select-conversation-empty-state > img {
+  display: none !important;
+}
+
+#app .ibsoft-conversation-empty-state::before,
+#app .ibsoft-select-conversation-empty-state::before {
+  content: '';
+  width: 210px;
+  height: 64px;
+  background-image: url('dashboard/ibsoft/theme/assets/chathub-logo-color.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+body.dark #app .ibsoft-conversation-empty-state::before,
+body.dark #app .ibsoft-select-conversation-empty-state::before {
+  background-image: url('dashboard/ibsoft/theme/assets/chathub-logo-white.png');
+}
+
+body.dark #app .ibsoft-conversation-empty-state > span,
+body.dark #app .ibsoft-select-conversation-empty-state > span {
+  max-width: 18rem;
+  color: var(--lilac-ghost);
+}

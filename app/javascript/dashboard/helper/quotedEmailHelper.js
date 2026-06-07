@@ -1,5 +1,6 @@
-import { format, parseISO, isValid as isValidDate } from 'date-fns';
+import { parseISO, isValid as isValidDate } from 'date-fns';
 import DOMPurify from 'dompurify';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 /**
  * Extracts plain text from HTML content
@@ -100,11 +101,11 @@ export const getEmailDate = lastEmail => {
  */
 export const formatQuotedEmailDate = date => {
   try {
-    return format(date, "EEE, MMM d, yyyy 'at' p");
+    return ibsoftFormatDate(date, "EEE, MMM d, yyyy 'at' p");
   } catch (error) {
     const fallbackDate = new Date(date);
     if (!Number.isNaN(fallbackDate.getTime())) {
-      return format(fallbackDate, "EEE, MMM d, yyyy 'at' p");
+      return ibsoftFormatDate(fallbackDate, "EEE, MMM d, yyyy 'at' p");
     }
   }
 

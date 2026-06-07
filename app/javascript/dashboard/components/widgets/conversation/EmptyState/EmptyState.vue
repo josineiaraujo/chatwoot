@@ -87,10 +87,12 @@ export default {
       <!-- No conversations available -->
       <EmptyStateMessage
         v-if="!allConversations.length"
+        class="ibsoft-conversation-empty-state"
         :message="$t('CONVERSATION.NO_MESSAGE_1')"
       />
       <EmptyStateMessage
         v-else-if="allConversations.length && !currentChat.id"
+        class="ibsoft-select-conversation-empty-state"
         :message="conversationMissingMessage"
       />
     </div>

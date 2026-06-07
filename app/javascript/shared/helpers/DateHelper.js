@@ -1,12 +1,10 @@
-import fromUnixTime from 'date-fns/fromUnixTime';
-import format from 'date-fns/format';
 import isToday from 'date-fns/isToday';
 import isYesterday from 'date-fns/isYesterday';
 import { endOfDay, getUnixTime, startOfDay } from 'date-fns';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 export const formatUnixDate = (date, dateFormat = 'MMM dd, yyyy') => {
-  const unixDate = fromUnixTime(date);
-  return format(unixDate, dateFormat);
+  return ibsoftFormatDate(date, dateFormat);
 };
 
 export const formatDate = ({ date, todayText, yesterdayText }) => {

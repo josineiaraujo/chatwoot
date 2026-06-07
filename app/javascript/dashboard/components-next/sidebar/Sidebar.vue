@@ -1,5 +1,5 @@
 <script setup>
-import { h, ref, computed, onMounted } from 'vue';
+import { h, ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
@@ -61,6 +61,24 @@ const hasAdvancedAssignment = computed(() => {
   );
 });
 
+const hasConversationUnreadCounts = computed(() => {
+  return isFeatureEnabledonAccount.value(
+    accountId.value,
+    FEATURE_FLAGS.CONVERSATION_UNREAD_COUNTS
+  );
+});
+
+const fetchConversationUnreadCounts = ([currentAccountId, isEnabled]) => {
+  if (!currentAccountId) return;
+
+  if (!isEnabled) {
+    store.dispatch('conversationUnreadCounts/clear');
+    return;
+  }
+
+  store.dispatch('conversationUnreadCounts/get');
+};
+
 const toggleShortcutModalFn = show => {
   if (show) {
     emit('openKeyShortcutModal');
@@ -84,6 +102,7 @@ const {
   saveWidth,
   snapToCollapsed,
   snapToExpanded,
+  MIN_WIDTH,
   COLLAPSED_THRESHOLD,
 } = useSidebarResize();
 
@@ -91,6 +110,8 @@ const {
 const isEffectivelyCollapsed = computed(
   () => !isMobile.value && isCollapsed.value
 );
+
+setSidebarWidth(MIN_WIDTH);
 
 // Resize handle logic
 const isResizing = ref(false);
@@ -130,6 +151,11 @@ const onResizeMove = event => {
   setSidebarWidth(startWidth.value + delta);
 };
 
+const collapseSidebar = () => {
+  expandedItem.value = null;
+  snapToCollapsed();
+};
+
 const onResizeEnd = () => {
   if (!isResizing.value) return;
 
@@ -138,7 +164,7 @@ const onResizeEnd = () => {
 
   // Snap to collapsed state if below threshold
   if (sidebarWidth.value < COLLAPSED_THRESHOLD) {
-    snapToCollapsed();
+    collapseSidebar();
   } else {
     saveWidth();
   }
@@ -146,8 +172,31 @@ const onResizeEnd = () => {
 
 const onResizeHandleDoubleClick = () => {
   if (isCollapsed.value) snapToExpanded();
-  else snapToCollapsed();
+  else collapseSidebar();
 };
+
+const toggleSidebarCollapse = () => {
+  if (isEffectivelyCollapsed.value) {
+    snapToExpanded();
+    return;
+  }
+
+  collapseSidebar();
+};
+
+const sidebarToggleLabel = computed(() =>
+  isEffectivelyCollapsed.value
+    ? t('IBSOFT_THEME.SIDEBAR.EXPAND')
+    : t('IBSOFT_THEME.SIDEBAR.COLLAPSE')
+);
+
+const sidebarToggleIcon = computed(() => {
+  if (isEffectivelyCollapsed.value) {
+    return isRTL.value ? 'i-lucide-chevron-left' : 'i-lucide-chevron-right';
+  }
+
+  return isRTL.value ? 'i-lucide-chevron-right' : 'i-lucide-chevron-left';
+});
 
 // Support both mouse and touch events
 useEventListener(document, 'mousemove', onResizeMove);
@@ -157,6 +206,15 @@ useEventListener(document, 'touchend', onResizeEnd);
 
 const inboxes = useMapGetter('inboxes/getInboxes');
 const labels = useMapGetter('labels/getLabelsOnSidebar');
+const getInboxUnreadCount = useMapGetter(
+  'conversationUnreadCounts/getInboxUnreadCount'
+);
+const getLabelUnreadCount = useMapGetter(
+  'conversationUnreadCounts/getLabelUnreadCount'
+);
+const getTeamUnreadCount = useMapGetter(
+  'conversationUnreadCounts/getTeamUnreadCount'
+);
 const teams = useMapGetter('teams/getMyTeams');
 const contactCustomViews = useMapGetter('customViews/getContactCustomViews');
 const conversationCustomViews = useMapGetter(
@@ -174,8 +232,48 @@ onMounted(() => {
   store.dispatch('customViews/get', 'contact');
 });
 
+watch([accountId, hasConversationUnreadCounts], fetchConversationUnreadCounts, {
+  immediate: true,
+});
+
+const normalizeUnreadCount = count => {
+  const unreadCount = Number(count);
+  return Number.isFinite(unreadCount) && unreadCount > 0 ? unreadCount : 0;
+};
+
+const sortByUnreadCount = (items, labelKey, unreadCountKey) =>
+  items.slice().sort((a, b) => {
+    const unreadCountDiff =
+      normalizeUnreadCount(unreadCountKey(b)) -
+      normalizeUnreadCount(unreadCountKey(a));
+
+    if (unreadCountDiff !== 0) return unreadCountDiff;
+
+    return labelKey(a).localeCompare(labelKey(b));
+  });
+
+const sortedTeams = computed(() =>
+  sortByUnreadCount(
+    teams.value,
+    team => team.name,
+    team => getTeamUnreadCount.value(team.id)
+  )
+);
+
 const sortedInboxes = computed(() =>
-  inboxes.value.slice().sort((a, b) => a.name.localeCompare(b.name))
+  sortByUnreadCount(
+    inboxes.value,
+    inbox => inbox.name,
+    inbox => getInboxUnreadCount.value(inbox.id)
+  )
+);
+
+const sortedLabels = computed(() =>
+  sortByUnreadCount(
+    labels.value,
+    label => label.title,
+    label => getLabelUnreadCount.value(label.id)
+  )
 );
 
 const closeMobileSidebar = () => {
@@ -268,9 +366,10 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.TEAMS'),
           icon: 'i-lucide-users',
           activeOn: ['conversations_through_team'],
-          children: teams.value.map(team => ({
+          children: sortedTeams.value.map(team => ({
             name: `${team.name}-${team.id}`,
             label: team.name,
+            badgeCount: getTeamUnreadCount.value(team.id),
             to: accountScopedRoute('team_conversations', { teamId: team.id }),
           })),
         },
@@ -282,6 +381,7 @@ const menuItems = computed(() => {
           children: sortedInboxes.value.map(inbox => ({
             name: `${inbox.name}-${inbox.id}`,
             label: inbox.name,
+            badgeCount: getInboxUnreadCount.value(inbox.id),
             icon: h(ChannelIcon, { inbox, class: 'size-[16px]' }),
             to: accountScopedRoute('inbox_dashboard', { inbox_id: inbox.id }),
             component: leafProps =>
@@ -289,6 +389,7 @@ const menuItems = computed(() => {
                 label: leafProps.label,
                 active: leafProps.active,
                 inbox,
+                badgeCount: leafProps.badgeCount,
               }),
           })),
         },
@@ -297,9 +398,10 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.LABELS'),
           icon: 'i-lucide-tag',
           activeOn: ['conversations_through_label'],
-          children: labels.value.map(label => ({
+          children: sortedLabels.value.map(label => ({
             name: `${label.title}-${label.id}`,
             label: label.title,
+            badgeCount: getLabelUnreadCount.value(label.id),
             icon: h('span', {
               class: `size-[8px] rounded-sm`,
               style: { backgroundColor: label.color },
@@ -755,13 +857,13 @@ const menuItems = computed(() => {
   >
     <section
       class="grid"
-      :class="isEffectivelyCollapsed ? 'mt-3 mb-6 gap-4' : 'mt-1 mb-4 gap-2'"
+      :class="isEffectivelyCollapsed ? 'mt-3 mb-3 gap-3' : 'mt-3 mb-4 gap-3'"
     >
       <div
-        class="flex gap-2 items-center min-w-0"
+        class="min-w-0"
         :class="{
-          'justify-center px-1': isEffectivelyCollapsed,
-          'px-2': !isEffectivelyCollapsed,
+          'flex flex-col items-center gap-2 px-1': isEffectivelyCollapsed,
+          'grid gap-2 px-2': !isEffectivelyCollapsed,
         }"
       >
         <template v-if="isEffectivelyCollapsed">
@@ -769,14 +871,37 @@ const menuItems = computed(() => {
             is-collapsed
             @show-create-account-modal="emit('showCreateAccountModal')"
           />
+          <Button
+            :icon="sidebarToggleIcon"
+            :title="sidebarToggleLabel"
+            :aria-label="sidebarToggleLabel"
+            color="slate"
+            size="sm"
+            ghost
+            class="!size-8 !text-n-slate-11 dark:hover:!bg-n-slate-9/30"
+            @click="toggleSidebarCollapse"
+          />
         </template>
         <template v-else>
-          <div class="grid flex-shrink-0 place-content-center size-6">
-            <Logo class="size-4" />
+          <div class="flex items-center justify-between gap-2">
+            <div
+              class="ibsoft-sidebar-brand-logo grid flex-shrink-0 place-content-center size-11 rounded-xl"
+            >
+              <Logo class="size-8" />
+            </div>
+            <Button
+              :icon="sidebarToggleIcon"
+              :title="sidebarToggleLabel"
+              :aria-label="sidebarToggleLabel"
+              color="slate"
+              size="sm"
+              ghost
+              class="!size-8 !text-n-slate-11 dark:hover:!bg-n-slate-9/30"
+              @click="toggleSidebarCollapse"
+            />
           </div>
-          <div class="flex-shrink-0 w-px h-3 bg-n-strong" />
           <SidebarAccountSwitcher
-            class="flex-grow -mx-1 min-w-0"
+            class="min-w-0"
             @show-create-account-modal="emit('showCreateAccountModal')"
           />
         </template>
@@ -826,6 +951,11 @@ const menuItems = computed(() => {
         </ComposeConversation>
       </div>
     </section>
+    <div
+      v-if="isEffectivelyCollapsed"
+      aria-hidden="true"
+      class="flex-shrink-0 mx-auto mb-3 h-px w-8 bg-n-weak"
+    />
     <nav
       class="grid overflow-y-scroll flex-grow gap-2 pb-5 no-scrollbar min-w-0"
       :class="isEffectivelyCollapsed ? 'px-1' : 'px-2'"
