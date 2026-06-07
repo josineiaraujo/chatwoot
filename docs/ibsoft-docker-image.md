@@ -9,7 +9,7 @@ ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production
 
 ## Publicacao
 
-Use o workflow `Publish Ibsoft Chatwoot Docker image`.
+Use o workflow `Publish Ibsoft Chatwoot EE Docker image`.
 
 Modos recomendados:
 
@@ -78,9 +78,24 @@ docker compose \
 As variaveis continuam vindo do `.env` do ambiente onde o compose sera
 executado. Nao inclua `.env`, backups ou segredos na imagem.
 
+## Edicao Enterprise
+
+A imagem privada Ibsoft e gerada como Chatwoot EE:
+
+```dockerfile
+ENV CW_EDITION="ee"
+```
+
+Ela mantem a pasta `enterprise` dentro da imagem, seguindo o padrao do workflow
+oficial `publish_ee_docker.yml` do Chatwoot.
+
+Isso permite usar a mesma imagem privada com os recursos Enterprise quando a
+instalacao tiver licenca/plano valido. As customizacoes Ibsoft continuam na
+mesma imagem.
+
 ## Observacoes
 
-- A imagem e gerada como Chatwoot CE, seguindo o padrao oficial do projeto.
+- A imagem e gerada como Chatwoot EE, seguindo o padrao oficial do projeto.
 - A publicacao local `linux/amd64` em Mac Apple Silicon pode falhar por
   emulacao durante o build dos assets. Para producao, prefira o workflow em
   runner `ubuntu-latest`, que gera `linux/amd64` nativamente.
