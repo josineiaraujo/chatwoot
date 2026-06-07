@@ -1,10 +1,10 @@
+import { isSameYear, differenceInDays } from 'date-fns';
 import {
-  format,
-  isSameYear,
-  fromUnixTime,
-  formatDistanceToNow,
-  differenceInDays,
-} from 'date-fns';
+  ibsoftFormatDate,
+  ibsoftFormatDistanceToNow,
+  ibsoftShortTimestamp,
+  ibsoftToDate,
+} from 'shared/ibsoft/locale/dateTime';
 
 /**
  * Formats a Unix timestamp into a human-readable time format.
@@ -13,8 +13,7 @@ import {
  * @returns {string} Formatted time string.
  */
 export const messageStamp = (time, dateFormat = 'h:mm a') => {
-  const unixTime = fromUnixTime(time);
-  return format(unixTime, dateFormat);
+  return ibsoftFormatDate(time, dateFormat);
 };
 
 /**
@@ -24,11 +23,11 @@ export const messageStamp = (time, dateFormat = 'h:mm a') => {
  * @returns {string} Formatted date string.
  */
 export const messageTimestamp = (time, dateFormat = 'MMM d, yyyy') => {
-  const messageTime = fromUnixTime(time);
+  const messageTime = ibsoftToDate(time);
   const now = new Date();
-  const messageDate = format(messageTime, dateFormat);
+  const messageDate = ibsoftFormatDate(time, dateFormat);
   if (!isSameYear(messageTime, now)) {
-    return format(messageTime, 'LLL d y, h:mm a');
+    return ibsoftFormatDate(time, 'LLL d y, h:mm a');
   }
   return messageDate;
 };
@@ -39,8 +38,7 @@ export const messageTimestamp = (time, dateFormat = 'MMM d, yyyy') => {
  * @returns {string} Relative time string.
  */
 export const dynamicTime = time => {
-  const unixTime = fromUnixTime(time);
-  return formatDistanceToNow(unixTime, { addSuffix: true });
+  return ibsoftFormatDistanceToNow(time);
 };
 
 /**
@@ -50,8 +48,7 @@ export const dynamicTime = time => {
  * @returns {string} Formatted date string.
  */
 export const dateFormat = (time, df = 'MMM d, yyyy') => {
-  const unixTime = fromUnixTime(time);
-  return format(unixTime, df);
+  return ibsoftFormatDate(time, df);
 };
 
 /**
@@ -61,37 +58,7 @@ export const dateFormat = (time, df = 'MMM d, yyyy') => {
  * @returns {string} Shortened time description.
  */
 export const shortTimestamp = (time, withAgo = false) => {
-  // This function takes a time string and converts it to a short time string
-  // with the following format: 1m, 1h, 1d, 1mo, 1y
-  // The function also takes an optional boolean parameter withAgo
-  // which will add the word "ago" to the end of the time string
-  const suffix = withAgo ? ' ago' : '';
-  const timeMappings = {
-    'less than a minute ago': 'now',
-    'in less than a minute': 'now',
-    'a minute ago': `1m${suffix}`,
-    'an hour ago': `1h${suffix}`,
-    'a day ago': `1d${suffix}`,
-    'a month ago': `1mo${suffix}`,
-    'a year ago': `1y${suffix}`,
-  };
-  // Check if the time string is one of the specific cases
-  if (timeMappings[time]) {
-    return timeMappings[time];
-  }
-  const convertToShortTime = time
-    .replace(/about|over|almost|/g, '')
-    .replace(' minute ago', `m${suffix}`)
-    .replace(' minutes ago', `m${suffix}`)
-    .replace(' hour ago', `h${suffix}`)
-    .replace(' hours ago', `h${suffix}`)
-    .replace(' day ago', `d${suffix}`)
-    .replace(' days ago', `d${suffix}`)
-    .replace(' month ago', `mo${suffix}`)
-    .replace(' months ago', `mo${suffix}`)
-    .replace(' year ago', `y${suffix}`)
-    .replace(' years ago', `y${suffix}`);
-  return convertToShortTime;
+  return ibsoftShortTimestamp(time, withAgo);
 };
 
 /**

@@ -2,10 +2,10 @@
 import { computed } from 'vue';
 import { useMemoize } from '@vueuse/core';
 
-import format from 'date-fns/format';
 import getDay from 'date-fns/getDay';
 
 import { getQuantileIntervals } from '@chatwoot/utils';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 import { groupHeatmapByDay } from 'helpers/ReportsDataHelper';
 import { useI18n } from 'vue-i18n';
@@ -51,7 +51,7 @@ const quantileRange = computed(() => {
 });
 
 function formatDate(dateString) {
-  return format(new Date(dateString), 'MMM d, yyyy');
+  return ibsoftFormatDate(new Date(dateString), 'MMM d, yyyy');
 }
 
 const DAYS_OF_WEEK = [

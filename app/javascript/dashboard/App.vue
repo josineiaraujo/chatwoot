@@ -20,6 +20,7 @@ import {
 } from './helper/pushHelper';
 import ReconnectService from 'dashboard/helper/ReconnectService';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { setIbsoftCurrentLocale } from 'shared/ibsoft/locale/dateTime';
 
 export default {
   name: 'App',
@@ -101,6 +102,7 @@ export default {
     setLocale(locale) {
       if (locale) {
         this.$root.$i18n.locale = locale;
+        setIbsoftCurrentLocale(locale);
       }
     },
     async initializeAccount() {

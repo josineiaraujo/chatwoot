@@ -8,7 +8,6 @@ import {
   addYears,
   startOfMonth,
   isSameMonth,
-  format,
   startOfWeek,
   endOfWeek,
   addWeeks,
@@ -18,6 +17,7 @@ import {
   isSameDay,
   isWithinInterval,
 } from 'date-fns';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 // Constants for calendar and date ranges
 export const calendarWeeks = [
@@ -82,8 +82,8 @@ export const CALENDAR_PERIODS = {
 };
 
 // Utility functions for date operations
-export const monthName = currentDate => format(currentDate, 'MMMM');
-export const yearName = currentDate => format(currentDate, 'yyyy');
+export const monthName = currentDate => ibsoftFormatDate(currentDate, 'MMMM');
+export const yearName = currentDate => ibsoftFormatDate(currentDate, 'yyyy');
 
 export const getIntlDateFormatForLocale = () => {
   const year = 2222;
