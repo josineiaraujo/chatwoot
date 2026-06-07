@@ -1240,6 +1240,7 @@ if (import.meta.hot) {
             type="button"
             class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-n-alpha-2"
             :class="{
+              'ibsoft-internal-chat-room--active': room.id === selectedRoomId,
               'bg-n-alpha-2': room.id === selectedRoomId,
               'bg-n-alpha-1 dark:bg-n-solid-2':
                 room.id !== selectedRoomId && hasUnreadRoomMessages(room),
@@ -1268,7 +1269,9 @@ if (import.meta.hot) {
             </span>
             <span class="min-w-0 flex-1">
               <span class="flex items-center justify-between gap-2">
-                <span class="truncate text-sm font-medium text-n-slate-12">
+                <span
+                  class="ibsoft-internal-chat-room__name truncate text-sm font-medium text-n-slate-12"
+                >
                   {{ roomDisplayName(room) }}
                 </span>
                 <time
@@ -1286,7 +1289,7 @@ if (import.meta.hot) {
               </span>
               <span class="mt-0.5 flex items-center gap-2">
                 <span
-                  class="min-w-0 flex-1 truncate text-xs"
+                  class="ibsoft-internal-chat-room__preview min-w-0 flex-1 truncate text-xs"
                   :class="
                     hasUnreadRoomMessages(room)
                       ? 'font-medium text-n-slate-12'

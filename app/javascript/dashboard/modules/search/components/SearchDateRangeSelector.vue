@@ -9,11 +9,10 @@ import {
   subYears,
   startOfDay,
   endOfDay,
-  format,
   getUnixTime,
-  fromUnixTime,
 } from 'date-fns';
 import { DATE_RANGE_TYPES } from '../helpers/searchHelper';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
@@ -32,8 +31,10 @@ const customTo = ref('');
 const rangeType = ref(DATE_RANGE_TYPES.BETWEEN);
 
 // Calculate min date (90 days ago) for date inputs
-const minDate = computed(() => format(subDays(new Date(), 90), 'yyyy-MM-dd'));
-const maxDate = computed(() => format(new Date(), 'yyyy-MM-dd'));
+const minDate = computed(() =>
+  ibsoftFormatDate(subDays(new Date(), 90), 'yyyy-MM-dd')
+);
+const maxDate = computed(() => ibsoftFormatDate(new Date(), 'yyyy-MM-dd'));
 
 // Check if both custom date inputs have values
 const hasCustomDates = computed(() => customFrom.value && customTo.value);
@@ -143,7 +144,7 @@ const clearCustomRange = () => {
   customTo.value = '';
 };
 
-const formatDate = timestamp => format(fromUnixTime(timestamp), 'MMM d, yyyy'); // (e.g., "Jan 15, 2024")
+const formatDate = timestamp => ibsoftFormatDate(timestamp, 'MMM d, yyyy');
 
 const selectedLabel = computed(() => {
   const prefix = t('SEARCH.DATE_RANGE.TIME_RANGE');
@@ -172,8 +173,8 @@ const onToggleDropdown = () => {
 
     if (CUSTOM_RANGE_TYPES.includes(type)) {
       try {
-        customFrom.value = from ? format(fromUnixTime(from), 'yyyy-MM-dd') : '';
-        customTo.value = to ? format(fromUnixTime(to), 'yyyy-MM-dd') : '';
+        customFrom.value = from ? ibsoftFormatDate(from, 'yyyy-MM-dd') : '';
+        customTo.value = to ? ibsoftFormatDate(to, 'yyyy-MM-dd') : '';
       } catch {
         customFrom.value = '';
         customTo.value = '';

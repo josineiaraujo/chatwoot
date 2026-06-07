@@ -1,11 +1,12 @@
 <script setup>
 import { computed } from 'vue';
-import { format, getMonth, setMonth, startOfMonth } from 'date-fns';
+import { getMonth, setMonth, startOfMonth } from 'date-fns';
 import {
   yearName,
   CALENDAR_TYPES,
   CALENDAR_PERIODS,
 } from '../helpers/DatePickerHelper';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 import CalendarAction from './CalendarAction.vue';
 
@@ -23,7 +24,7 @@ const { START_CALENDAR } = CALENDAR_TYPES;
 const { MONTH, YEAR } = CALENDAR_PERIODS;
 
 const months = Array.from({ length: 12 }, (_, index) =>
-  format(setMonth(startOfMonth(new Date()), index), 'MMM')
+  ibsoftFormatDate(setMonth(startOfMonth(new Date()), index), 'MMM')
 );
 
 const activeMonthIndex = computed(() => {
