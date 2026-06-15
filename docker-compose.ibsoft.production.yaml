@@ -1,0 +1,9 @@
+services:
+  base:
+    image: ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production
+
+  rails:
+    image: ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production
+
+  sidekiq:
+    image: ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production

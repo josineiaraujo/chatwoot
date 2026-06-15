@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store.js';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useCaptain } from 'dashboard/composables/useCaptain';
-import { format } from 'date-fns';
 import sessionStorage from 'shared/helpers/sessionStorage';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 import BillingMeter from './components/BillingMeter.vue';
 import BillingCard from './components/BillingCard.vue';
@@ -65,7 +65,7 @@ const subscriptionRenewsOn = computed(() => {
   if (!customAttributes.value.subscription_ends_on) return '';
   const endDate = new Date(customAttributes.value.subscription_ends_on);
   // return date as 12 Jan, 2034
-  return format(endDate, 'dd MMM, yyyy');
+  return ibsoftFormatDate(endDate, 'dd MMM, yyyy');
 });
 
 /**

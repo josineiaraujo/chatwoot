@@ -1,0 +1,84 @@
+name: Publish Ibsoft Chatwoot EE Docker image
+
+on:
+  push:
+    branches:
+      - ibsoft/production
+    tags:
+      - ibsoft-image-*
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker tag to publish
+        required: true
+        default: ibsoft-production
+      platforms:
+        description: Target platforms
+        required: true
+        default: linux/amd64
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/chathub-chatwoot
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare image tags
+        id: image
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.image_tag || '' }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            raw_tag="${REF_NAME#ibsoft-image-}"
+          elif [[ "$REF_NAME" == "ibsoft/production" ]]; then
+            raw_tag="ibsoft-production"
+          else
+            raw_tag="${INPUT_TAG:-ibsoft-production}"
+          fi
+
+          sanitized_tag="${raw_tag//\//-}"
+          sanitized_tag="${sanitized_tag// /-}"
+          echo "tag=${sanitized_tag}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Set Chatwoot edition
+        run: |
+          echo -en '\nENV CW_EDITION="ee"' >> docker/Dockerfile
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ inputs.platforms || 'linux/amd64' }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.sha_tag }}
+          cache-from: type=gha,scope=ibsoft-chatwoot-${{ inputs.platforms }}
+          cache-to: type=gha,mode=max,scope=ibsoft-chatwoot-${{ inputs.platforms }}

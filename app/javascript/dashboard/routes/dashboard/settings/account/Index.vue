@@ -6,6 +6,7 @@ import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { setIbsoftCurrentLocale } from 'shared/ibsoft/locale/dateTime';
 import { FEATURE_FLAGS } from '../../../../featureFlags';
 import WithLabel from 'v3/components/Form/WithLabel.vue';
 import NextInput from 'next/input/Input.vue';
@@ -94,8 +95,18 @@ export default {
       return this.getAccount(this.accountId) || {};
     },
   },
+  watch: {
+    'currentAccount.id'(id) {
+      if (id) {
+        this.initializeAccount();
+      }
+    },
+  },
   mounted() {
-    this.initializeAccount();
+    // Account already in the store (navigated in): seed immediately.
+    if (this.currentAccount.id) {
+      this.initializeAccount();
+    }
   },
   methods: {
     async initializeAccount() {
@@ -106,6 +117,7 @@ export default {
         const effectiveLocale = this.uiSettings?.locale || locale;
         if (effectiveLocale) {
           this.$root.$i18n.locale = effectiveLocale;
+          setIbsoftCurrentLocale(effectiveLocale);
         }
         this.name = name;
         this.locale = locale;
@@ -135,6 +147,7 @@ export default {
         const updatedLocale = this.uiSettings?.locale || this.locale;
         if (updatedLocale) {
           this.$root.$i18n.locale = updatedLocale;
+          setIbsoftCurrentLocale(updatedLocale);
         }
         this.getAccount(this.id).locale = this.locale;
         useAlert(this.$t('GENERAL_SETTINGS.UPDATE.SUCCESS'));

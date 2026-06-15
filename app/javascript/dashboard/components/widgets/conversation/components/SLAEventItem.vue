@@ -1,5 +1,5 @@
 <script setup>
-import { format, fromUnixTime } from 'date-fns';
+import { ibsoftFormatDate } from 'shared/ibsoft/locale/dateTime';
 
 defineProps({
   label: {
@@ -12,7 +12,7 @@ defineProps({
   },
 });
 const formatDate = timestamp =>
-  format(fromUnixTime(timestamp), 'MMM dd, yyyy, hh:mm a');
+  ibsoftFormatDate(timestamp, 'MMM dd, yyyy, hh:mm a');
 </script>
 
 <template>

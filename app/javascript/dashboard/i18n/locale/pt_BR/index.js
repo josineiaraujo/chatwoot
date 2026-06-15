@@ -24,12 +24,14 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import ibsoftInternalChat from './ibsoftInternalChat.json';
+import ibsoftTheme from './ibsoftTheme.json';
 import integrationApps from './integrationApps.json';
 import integrations from './integrations.json';
 import labelsMgmt from './labelsMgmt.json';
 import login from './login.json';
 import macros from './macros.json';
 import mfa from './mfa.json';
+import onboarding from './onboarding.json';
 import report from './report.json';
 import resetPassword from './resetPassword.json';
 import search from './search.json';
@@ -70,12 +72,14 @@ export default {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
+  ...ibsoftTheme,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,
   ...login,
   ...macros,
   ...mfa,
+  ...onboarding,
   ...report,
   ...resetPassword,
   ...search,

@@ -100,6 +100,35 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(JSON.parse(response.body, symbolize_names: true)[:id]).to eq(inbox.id)
       end
 
+      it 'returns reauthorization_required for embedded signup whatsapp channel when reauth required' do
+        whatsapp_channel = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', sync_templates: false,
+                                                     validate_provider_config: false)
+        whatsapp_inbox = create(:inbox, channel: whatsapp_channel, account: account)
+        whatsapp_channel.prompt_reauthorization!
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{whatsapp_inbox.id}",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['reauthorization_required']).to be(true)
+      end
+
+      it 'does not flag reauthorization_required for manual whatsapp channel even when reauth required' do
+        whatsapp_channel = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', sync_templates: false,
+                                                     validate_provider_config: false)
+        whatsapp_channel.update!(provider_config: whatsapp_channel.provider_config.merge('source' => 'manual'))
+        whatsapp_inbox = create(:inbox, channel: whatsapp_channel, account: account)
+        whatsapp_channel.prompt_reauthorization!
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{whatsapp_inbox.id}",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['reauthorization_required']).to be(false)
+      end
+
       it 'returns the inbox if assigned inbox is assigned as agent' do
         create(:inbox_member, user: agent, inbox: inbox)
         get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
@@ -1007,6 +1036,19 @@ RSpec.describe 'Inboxes API', type: :request do
              as: :json
 
         expect(response).to have_http_status(:unauthorized)
+      end
+
+      it 'does not allow binding an agent bot from another account' do
+        other_account = create(:account)
+        foreign_bot = create(:agent_bot, account: other_account)
+
+        post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/set_agent_bot",
+             headers: admin.create_new_auth_token,
+             params: { agent_bot: foreign_bot.id },
+             as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(inbox.reload.agent_bot).to be_nil
       end
     end
   end

@@ -23,6 +23,7 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import ibsoftInternalChat from './ibsoftInternalChat.json';
+import ibsoftTheme from './ibsoftTheme.json';
 import integrationApps from './integrationApps.json';
 import integrations from './integrations.json';
 import labelsMgmt from './labelsMgmt.json';
@@ -41,6 +42,7 @@ import whatsappTemplates from './whatsappTemplates.json';
 import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
 import onboarding from './onboarding.json';
+import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
 
 export default {
@@ -69,6 +71,7 @@ export default {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
+  ...ibsoftTheme,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,
@@ -87,5 +90,6 @@ export default {
   ...contentTemplates,
   ...mfa,
   ...onboarding,
+  ...sessionLimit,
   ...yearInReview,
 };
