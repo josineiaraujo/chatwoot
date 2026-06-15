@@ -56,8 +56,9 @@ const emit = defineEmits([
   'update:modelValue',
 ]);
 
-const EmojiInput = defineAsyncComponent(
-  () => import('shared/components/emoji/EmojiInput.vue')
+const EmojiIconPicker = defineAsyncComponent(
+  () =>
+    import('dashboard/components-next/emoji-icon-picker/EmojiIconPicker.vue')
 );
 
 const { t } = useI18n();
@@ -310,11 +311,12 @@ watch(
       @paste="onPaste"
     >
       <div class="reply-box__top">
-        <EmojiInput
+        <EmojiIconPicker
           v-if="showEmojiPicker"
           v-on-clickaway="hideEmojiPicker"
+          mode="emoji"
           class="emoji-dialog"
-          :on-click="addIntoEditor"
+          @select="addIntoEditor($event.value)"
         />
         <AudioRecorder
           v-if="isRecordingAudio"
