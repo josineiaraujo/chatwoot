@@ -36,7 +36,7 @@ const updateMenuItems = computed(() => {
     items.push({
       action: 'update',
       value: 'resolved',
-      label: t('CONVERSATION.HEADER.RESOLVE_ACTION'),
+      label: t('IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICES'),
       icon: 'i-lucide-check',
     });
   }

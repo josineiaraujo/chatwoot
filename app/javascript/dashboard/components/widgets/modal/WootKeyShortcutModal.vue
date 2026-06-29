@@ -16,7 +16,7 @@ const { t } = useI18n();
 const currentLayout = ref(null);
 
 const title = computed(
-  () => item => t(`KEYBOARD_SHORTCUTS.TITLE.${item.label}`)
+  () => item => t(item.titleKey || `KEYBOARD_SHORTCUTS.TITLE.${item.label}`)
 );
 
 // Added this function to check if the keySet needs a shift key

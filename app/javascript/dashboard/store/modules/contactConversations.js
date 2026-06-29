@@ -11,7 +11,14 @@ export const createMessagePayload = (payload, message) => {
 };
 
 export const createConversationPayload = ({ params, contactId, files }) => {
-  const { inboxId, message, sourceId, mailSubject, assigneeId } = params;
+  const {
+    inboxId,
+    message,
+    sourceId,
+    mailSubject,
+    assigneeId,
+    additionalAttributes = {},
+  } = params;
   const payload = new FormData();
 
   if (message) {
@@ -28,13 +35,25 @@ export const createConversationPayload = ({ params, contactId, files }) => {
   if (mailSubject) {
     payload.append('additional_attributes[mail_subject]', mailSubject);
   }
+
+  Object.entries(additionalAttributes).forEach(([key, value]) => {
+    payload.append(`additional_attributes[${key}]`, value);
+  });
+
   payload.append('assignee_id', assigneeId);
 
   return payload;
 };
 
 export const createWhatsAppConversationPayload = ({ params }) => {
-  const { inboxId, message, contactId, sourceId, assigneeId } = params;
+  const {
+    inboxId,
+    message,
+    contactId,
+    sourceId,
+    assigneeId,
+    additionalAttributes,
+  } = params;
 
   const payload = {
     inbox_id: inboxId,
@@ -43,6 +62,10 @@ export const createWhatsAppConversationPayload = ({ params }) => {
     message,
     assignee_id: assigneeId,
   };
+
+  if (additionalAttributes) {
+    payload.additional_attributes = additionalAttributes;
+  }
 
   return payload;
 };

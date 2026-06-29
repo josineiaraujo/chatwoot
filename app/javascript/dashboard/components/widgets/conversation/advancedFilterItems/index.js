@@ -63,6 +63,14 @@ const filterTypes = [
     attributeModel: 'standard',
   },
   {
+    attributeKey: 'ibsoft_protocol',
+    attributeI18nKey: 'CONVERSATION_IDENTIFIER',
+    inputType: 'plain_text',
+    dataType: 'text',
+    filterOperators: OPERATOR_TYPES_1,
+    attributeModel: 'standard',
+  },
+  {
     attributeKey: 'campaign_id',
     attributeI18nKey: 'CAMPAIGN_NAME',
     inputType: 'search_select',
@@ -147,6 +155,10 @@ export const filterAttributeGroups = [
       },
       {
         key: 'display_id',
+        i18nKey: 'CONVERSATION_IDENTIFIER',
+      },
+      {
+        key: 'ibsoft_protocol',
         i18nKey: 'CONVERSATION_IDENTIFIER',
       },
       {

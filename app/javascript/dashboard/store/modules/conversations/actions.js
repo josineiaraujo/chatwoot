@@ -48,13 +48,19 @@ const actions = {
     try {
       const params = state.conversationFilters;
       const {
+        preserveConversationStats = false,
+        pageFilterKey,
+        ...apiParams
+      } = params;
+      const {
         data: { data },
-      } = await ConversationApi.get(params);
+      } = await ConversationApi.get(apiParams);
       buildConversationList(
         { commit, dispatch },
         params,
         data,
-        params.assigneeType
+        pageFilterKey || apiParams.assigneeType,
+        { preserveConversationStats }
       );
     } catch (error) {
       // Handle error

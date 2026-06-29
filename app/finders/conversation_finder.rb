@@ -152,6 +152,16 @@ class ConversationFinder
   def filter_by_query
     return unless params[:q]
 
+    protocol_search = Ibsoft::Conversation::ProtocolSearch.new(
+      scope: @conversations,
+      query: params[:q],
+      account_id: current_account.id
+    )
+    if protocol_search.protocol?
+      @conversations = protocol_search.perform
+      return
+    end
+
     allowed_message_types = [Message.message_types[:incoming], Message.message_types[:outgoing]]
     @conversations = conversations.joins(:messages).where('messages.content ILIKE :search', search: "%#{params[:q]}%")
                                   .where(messages: { message_type: allowed_message_types }).includes(:messages)

@@ -48,6 +48,10 @@
  */
 import { coerceToDate } from '@chatwoot/utils';
 import jsonLogic from 'json-logic-js';
+import {
+  buildConversationProtocol,
+  IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE,
+} from 'dashboard/ibsoft/conversation/protocol';
 
 /**
  * Gets a value from a conversation based on the attribute key
@@ -71,6 +75,12 @@ const getValueFromConversation = (conversation, attributeKey) => {
     case 'display_id':
       // Frontend uses 'id' but backend expects 'display_id'
       return conversation.display_id || conversation.id;
+    case IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE:
+      return buildConversationProtocol({
+        createdAt: conversation.created_at,
+        accountId: conversation.account_id,
+        conversationId: conversation.display_id || conversation.id,
+      });
     case 'assignee_id':
       return conversation.meta?.assignee?.id;
     case 'contact_id':

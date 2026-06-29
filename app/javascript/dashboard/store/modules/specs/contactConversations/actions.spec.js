@@ -234,6 +234,9 @@ describe('createConversationPayload', () => {
         sourceId: '12',
         mailSubject: 'Test Subject',
         assigneeId: '123',
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       },
       contactId: '23',
       files: ['file1.pdf', 'file2.jpg'],
@@ -250,6 +253,9 @@ describe('createConversationPayload', () => {
     expect(payload.get('additional_attributes[mail_subject]')).toBe(
       options.params.mailSubject
     );
+    expect(
+      payload.get('additional_attributes[ibsoft_force_open_on_create]')
+    ).toBe('true');
     expect(payload.get('assignee_id')).toBe(options.params.assigneeId);
     expect(payload.getAll('message[attachments][]')).toEqual(options.files);
   });
@@ -264,6 +270,9 @@ describe('createConversationPayload', () => {
         sourceId: '12',
         mailSubject: 'Test Subject',
         assigneeId: '123',
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       },
       contactId: '23',
     };
@@ -279,6 +288,9 @@ describe('createConversationPayload', () => {
     expect(payload.get('additional_attributes[mail_subject]')).toBe(
       options.params.mailSubject
     );
+    expect(
+      payload.get('additional_attributes[ibsoft_force_open_on_create]')
+    ).toBe('true');
     expect(payload.get('assignee_id')).toBe(options.params.assigneeId);
     expect(payload.getAll('message[attachments][]')).toEqual([]);
   });
@@ -292,6 +304,9 @@ describe('createConversationPayload', () => {
         },
         sourceId: '12',
         assigneeId: '123',
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       },
       contactId: '23',
     };
@@ -299,6 +314,9 @@ describe('createConversationPayload', () => {
     const payload = createConversationPayload(options);
 
     expect(payload.has('additional_attributes[mail_subject]')).toBe(false);
+    expect(
+      payload.get('additional_attributes[ibsoft_force_open_on_create]')
+    ).toBe('true');
   });
 });
 
@@ -312,6 +330,9 @@ describe('createWhatsAppConversationPayload', () => {
         },
         sourceId: '12',
         assigneeId: '123',
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       },
     };
 
@@ -321,5 +342,8 @@ describe('createWhatsAppConversationPayload', () => {
     expect(payload.inbox_id).toBe(options.params.inboxId);
     expect(payload.source_id).toBe(options.params.sourceId);
     expect(payload.assignee_id).toBe(options.params.assigneeId);
+    expect(payload.additional_attributes).toEqual({
+      ibsoft_force_open_on_create: true,
+    });
   });
 });

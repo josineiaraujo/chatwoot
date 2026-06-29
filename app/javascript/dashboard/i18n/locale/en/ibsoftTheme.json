@@ -1,8 +1,43 @@
 {
+  "INBOX": {
+    "LIST": {
+      "TITLE": "Attention"
+    }
+  },
+  "SIDEBAR": {
+    "INBOX": "Attention"
+  },
   "IBSOFT_THEME": {
+    "CONVERSATION_STATUS": {
+      "PENDING_OPERATIONAL": "Automation"
+    },
+    "CONVERSATION_TABS": {
+      "AUTOMATION": "Automations",
+      "MORE_VIEWS": "More views"
+    },
+    "CONVERSATION_PROTOCOL": {
+      "LABEL": "Protocol {protocol}",
+      "COPY_SUCCESS": "Protocol copied to clipboard",
+      "FILTER_LABEL": "Protocol"
+    },
+    "CONVERSATION_ACTIONS": {
+      "CLOSE_SERVICE": "Close service",
+      "CLOSE_SERVICES": "Close services",
+      "CLOSE_SERVICE_SUCCESS": "Service closed",
+      "CLOSE_SERVICES_SUCCESS": "Services closed successfully.",
+      "CLOSE_SERVICES_FAILED": "Failed to close services. Please try again.",
+      "ALL_MISSING_REQUIRED_ATTRIBUTES": "Cannot close service due to missing required attributes.",
+      "PARTIAL_CLOSE_SUCCESS": "Some services need required attributes before closing and were skipped.",
+      "REQUIRED_ATTRIBUTES_TITLE": "Close service",
+      "REQUIRED_ATTRIBUTES_DESCRIPTION": "Fill the required attributes before closing this service.",
+      "CLOSE_AND_NEXT_SHORTCUT": "Close and move to next"
+    },
     "SIDEBAR": {
       "COLLAPSE": "Collapse menu",
       "EXPAND": "Expand menu"
+    },
+    "INBOX": {
+      "EMPTY_STATE_NOTE": "Conversations appear here when there are new messages, mentions, or assignments for you."
     }
   }
 }

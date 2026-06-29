@@ -12,6 +12,13 @@ const CHANNEL_PRIORITY = {
   'Channel::Api': 6,
 };
 
+export const IBSOFT_FORCE_OPEN_ON_CREATE_ATTRIBUTE =
+  'ibsoft_force_open_on_create';
+
+const ibsoftAgentCreatedConversationAttributes = () => ({
+  [IBSOFT_FORCE_OPEN_ON_CREATE_ATTRIBUTE]: true,
+});
+
 export const generateLabelForContactableInboxesList = ({
   name,
   email,
@@ -136,6 +143,7 @@ export const prepareNewMessagePayload = ({
     contactId: Number(selectedContact.id),
     message: { content: message },
     assigneeId: currentUser.id,
+    additionalAttributes: ibsoftAgentCreatedConversationAttributes(),
   };
 
   if (attachedFiles?.length) {
@@ -173,6 +181,7 @@ export const prepareWhatsAppMessagePayload = ({
     contactId: selectedContact.id,
     message: { content: message, template_params: templateParams },
     assigneeId: currentUser.id,
+    additionalAttributes: ibsoftAgentCreatedConversationAttributes(),
   };
 };
 

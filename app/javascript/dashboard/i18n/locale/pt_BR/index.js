@@ -44,8 +44,9 @@ import teamsSettings from './teamsSettings.json';
 import webhooks from './webhooks.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import yearInReview from './yearInReview.json';
+import { mergeLocaleWithOverrides } from 'dashboard/ibsoft/i18n/mergeLocale';
 
-export default {
+const locale = {
   ...advancedFilters,
   ...agentBots,
   ...agentMgmt,
@@ -72,7 +73,6 @@ export default {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
-  ...ibsoftTheme,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,
@@ -93,3 +93,5 @@ export default {
   ...whatsappTemplates,
   ...yearInReview,
 };
+
+export default mergeLocaleWithOverrides(locale, ibsoftTheme);

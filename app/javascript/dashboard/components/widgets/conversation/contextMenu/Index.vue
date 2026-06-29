@@ -11,6 +11,7 @@ import MenuItem from './menuItem.vue';
 import MenuItemWithSubmenu from './menuItemWithSubmenu.vue';
 import wootConstants from 'dashboard/constants/globals';
 import AgentLoadingPlaceholder from './agentLoadingPlaceholder.vue';
+import { visibleManualConversationStatusOptions } from 'dashboard/ibsoft/conversation/statusPresentation';
 
 const MENU = {
   MARK_AS_READ: 'mark-as-read',
@@ -96,10 +97,10 @@ export default {
         label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.MARK_AS_UNREAD'),
         icon: 'mail-unread',
       },
-      statusMenuConfig: [
+      statusMenuConfig: visibleManualConversationStatusOptions([
         {
           key: wootConstants.STATUS_TYPE.RESOLVED,
-          label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.RESOLVED'),
+          label: this.$t('IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE'),
           icon: 'checkmark',
         },
         {
@@ -112,7 +113,7 @@ export default {
           label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.PENDING'),
           icon: 'book-clock',
         },
-      ],
+      ]),
       snoozeOption: {
         key: wootConstants.STATUS_TYPE.SNOOZED,
         label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.SNOOZE.TITLE'),

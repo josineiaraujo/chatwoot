@@ -8,6 +8,8 @@ import {
   buildAttributesFilterTypes,
   CONVERSATION_ATTRIBUTES,
 } from './helper/filterHelper';
+import { getConversationStatusLabel } from 'dashboard/ibsoft/conversation/statusPresentation';
+import { IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE } from 'dashboard/ibsoft/conversation/protocol';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
 
 /**
@@ -93,6 +95,10 @@ export function useConversationFilterContext() {
     }));
   };
 
+  const conversationStatusLabel = id => {
+    return getConversationStatusLabel(t, id);
+  };
+
   /**
    * @type {import('vue').ComputedRef<FilterType[]>}
    */
@@ -117,7 +123,7 @@ export function useConversationFilterContext() {
       options: ['open', 'resolved', 'pending', 'snoozed', 'all'].map(id => {
         return {
           id,
-          name: t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${id}.TEXT`),
+          name: conversationStatusLabel(id),
         };
       }),
       dataType: 'text',
@@ -203,6 +209,16 @@ export function useConversationFilterContext() {
       inputType: 'number',
       dataType: 'number',
       filterOperators: containmentOperators.value,
+      attributeModel: 'standard',
+    },
+    {
+      attributeKey: IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE,
+      value: IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE,
+      attributeName: t('IBSOFT_THEME.CONVERSATION_PROTOCOL.FILTER_LABEL'),
+      label: t('IBSOFT_THEME.CONVERSATION_PROTOCOL.FILTER_LABEL'),
+      inputType: 'plainText',
+      dataType: 'text',
+      filterOperators: [equalityOperators.value[0]],
       attributeModel: 'standard',
     },
     {
