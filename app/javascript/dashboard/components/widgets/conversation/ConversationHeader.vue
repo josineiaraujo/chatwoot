@@ -16,6 +16,7 @@ import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import { buildConversationProtocol } from 'dashboard/ibsoft/conversation/protocol';
 
 const props = defineProps({
   chat: {
@@ -95,10 +96,25 @@ const hasMultipleInboxes = computed(
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
 
-const copyConversationId = async () => {
+const conversationProtocol = computed(
+  () =>
+    buildConversationProtocol({
+      createdAt: props.chat.created_at,
+      accountId: props.chat.account_id || accountId.value,
+      conversationId: props.chat.id,
+    }) || String(props.chat.id || '')
+);
+
+const conversationProtocolLabel = computed(() =>
+  t('IBSOFT_THEME.CONVERSATION_PROTOCOL.LABEL', {
+    protocol: conversationProtocol.value,
+  })
+);
+
+const copyConversationProtocol = async () => {
   try {
-    await copyTextToClipboard(String(props.chat.id));
-    useAlert(t('CONVERSATION.HEADER.COPY_ID_SUCCESS'));
+    await copyTextToClipboard(conversationProtocol.value);
+    useAlert(t('IBSOFT_THEME.CONVERSATION_PROTOCOL.COPY_SUCCESS'));
   } catch (error) {
     // error
   }
@@ -149,9 +165,9 @@ const copyConversationId = async () => {
           <button
             type="button"
             class="truncate text-label-small text-n-slate-11 hover:text-n-slate-12 !p-0 cucursor-pointer"
-            @click="copyConversationId"
+            @click="copyConversationProtocol"
           >
-            {{ `#${chat.id}` }}
+            {{ conversationProtocolLabel }}
           </button>
           <span v-if="hasMultipleInboxes">•</span>
           <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />

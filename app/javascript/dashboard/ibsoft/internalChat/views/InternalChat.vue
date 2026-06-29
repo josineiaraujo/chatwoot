@@ -1138,7 +1138,7 @@ if (import.meta.hot) {
     class="flex h-full min-h-0 w-full overflow-hidden bg-n-background max-md:flex-col"
   >
     <aside
-      class="flex w-[22rem] min-w-[19rem] flex-col border-r border-n-weak bg-n-background max-md:h-72 max-md:w-full max-md:min-w-0 max-md:border-b max-md:border-r-0"
+      class="conversations-list-wrap relative flex w-[340px] flex-shrink-0 flex-col border-r border-n-weak bg-n-surface-1 2xl:w-[412px] max-md:h-72 max-md:w-full max-md:min-w-0 max-md:border-b max-md:border-r-0"
     >
       <header class="grid gap-3 border-b border-n-weak px-4 py-3">
         <div class="flex items-center justify-between gap-3">
@@ -1216,7 +1216,9 @@ if (import.meta.hot) {
         </div>
       </header>
 
-      <section class="flex-1 min-h-0 overflow-y-auto px-2 py-2">
+      <section
+        class="conversations-list flex-1 min-h-0 overflow-y-auto px-2 py-2"
+      >
         <div v-if="isLoadingRooms" class="px-3 py-4 text-sm text-n-slate-11">
           {{ t('IBSOFT_INTERNAL_CHAT.ROOMS.LOADING') }}
         </div>
@@ -1238,7 +1240,7 @@ if (import.meta.hot) {
             v-for="room in filteredRooms"
             :key="room.id"
             type="button"
-            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-n-alpha-2"
+            class="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-n-alpha-2"
             :class="{
               'ibsoft-internal-chat-room--active': room.id === selectedRoomId,
               'bg-n-alpha-2': room.id === selectedRoomId,
@@ -1267,10 +1269,10 @@ if (import.meta.hot) {
               />
               <span v-else :class="roomIcon(room)" />
             </span>
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center justify-between gap-2">
+            <span class="block min-w-0 flex-1 overflow-hidden">
+              <span class="flex min-w-0 items-center justify-between gap-2">
                 <span
-                  class="ibsoft-internal-chat-room__name truncate text-sm font-medium text-n-slate-12"
+                  class="ibsoft-internal-chat-room__name min-w-0 flex-1 truncate text-sm font-medium text-n-slate-12"
                 >
                   {{ roomDisplayName(room) }}
                 </span>
@@ -1287,9 +1289,11 @@ if (import.meta.hot) {
                   }}
                 </time>
               </span>
-              <span class="mt-0.5 flex items-center gap-2">
+              <span
+                class="mt-0.5 flex min-w-0 items-center gap-2 overflow-hidden"
+              >
                 <span
-                  class="ibsoft-internal-chat-room__preview min-w-0 flex-1 truncate text-xs"
+                  class="ibsoft-internal-chat-room__preview block min-w-0 max-w-full flex-1 truncate text-xs"
                   :class="
                     hasUnreadRoomMessages(room)
                       ? 'font-medium text-n-slate-12'
@@ -1399,19 +1403,22 @@ if (import.meta.hot) {
       <section
         v-if="selectedRoom"
         ref="messagesPanel"
-        class="flex-1 min-h-0 overflow-y-auto px-5 py-5"
+        class="conversation-panel relative m-0 flex h-full min-h-0 flex-shrink flex-grow basis-px flex-col overflow-y-auto bg-n-surface-1 pb-4"
         @scroll="handleMessagesScroll"
       >
-        <div v-if="isLoadingMessages" class="text-sm text-n-slate-11">
+        <div v-if="isLoadingMessages" class="px-4 py-5 text-sm text-n-slate-11">
           {{ t('IBSOFT_INTERNAL_CHAT.MESSAGES.LOADING') }}
         </div>
         <div
           v-else-if="!messages.length"
-          class="grid h-full place-content-center text-center text-sm text-n-slate-11"
+          class="ibsoft-internal-chat-empty-state flex h-full flex-col items-center justify-center text-center text-sm text-n-slate-11"
         >
           {{ t('IBSOFT_INTERNAL_CHAT.MESSAGES.EMPTY') }}
         </div>
-        <div v-else class="mx-auto grid w-full max-w-5xl gap-2">
+        <div
+          v-else
+          class="flex min-h-0 w-full flex-1 flex-col bg-n-surface-1 px-4"
+        >
           <div
             v-if="isLoadingOlderMessages"
             class="flex justify-center py-2 text-xs text-n-slate-11"
@@ -1421,7 +1428,7 @@ if (import.meta.hot) {
           <article
             v-for="(message, index) in messages"
             :key="message.id"
-            class="message-bubble-container mb-2 flex w-full gap-2"
+            class="message-bubble-container mb-2 flex w-full gap-2 first:mt-auto"
             :class="{ 'justify-end': isOwnMessage(message) }"
           >
             <Avatar
@@ -1434,7 +1441,7 @@ if (import.meta.hot) {
               rounded-full
             />
             <div
-              class="grid max-w-lg gap-1"
+              class="grid max-w-lg min-w-0 gap-1"
               :class="
                 isOwnMessage(message)
                   ? 'justify-items-end ltr:ml-8 rtl:mr-8'
@@ -1563,25 +1570,32 @@ if (import.meta.hot) {
                 </div>
               </div>
             </div>
+            <Avatar
+              v-if="isOwnMessage(message)"
+              :name="agentDisplayName(currentUser)"
+              :src="agentAvatarSrc(currentUser)"
+              :status="agentAvailabilityStatus(currentUser)"
+              :size="24"
+              class="mt-auto"
+              rounded-full
+            />
           </article>
+          <div aria-hidden="true" class="h-4 shrink-0" />
         </div>
       </section>
 
       <section
         v-else
-        class="grid flex-1 place-content-center px-5 text-center text-sm text-n-slate-11"
+        class="ibsoft-internal-chat-select-empty-state flex flex-1 flex-col items-center justify-center px-5 text-center text-sm text-n-slate-11"
       >
         {{ t('IBSOFT_INTERNAL_CHAT.ROOMS.SELECT_CHAT') }}
       </section>
 
-      <footer
-        v-if="selectedRoom"
-        class="border-t border-n-weak bg-n-background px-3 py-3"
-      >
+      <div v-if="selectedRoom" class="relative flex flex-col bg-n-surface-1">
         <div class="w-full">
           <div
             v-if="!canPostSelectedRoom"
-            class="rounded-lg border border-n-weak bg-n-alpha-2 px-3 py-2 text-sm text-n-slate-11"
+            class="mx-2 mb-2 rounded-lg border border-n-weak bg-n-alpha-2 px-3 py-2 text-sm text-n-slate-11"
           >
             {{ t('IBSOFT_INTERNAL_CHAT.MESSAGES.READ_ONLY') }}
           </div>
@@ -1589,6 +1603,8 @@ if (import.meta.hot) {
             v-else
             ref="resizableEditorWrapper"
             :container-height="composerContainerHeight"
+            :default-height="80"
+            :min-height="64"
           >
             <InternalChatComposer
               v-model="composerText"
@@ -1602,7 +1618,7 @@ if (import.meta.hot) {
             />
           </ResizableEditorWrapper>
         </div>
-      </footer>
+      </div>
     </section>
 
     <MediaPreviewModal

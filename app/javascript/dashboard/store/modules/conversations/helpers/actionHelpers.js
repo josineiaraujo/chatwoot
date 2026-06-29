@@ -50,11 +50,14 @@ export const buildConversationList = (
   context,
   requestPayload,
   responseData,
-  filterType
+  filterType,
+  { preserveConversationStats = false } = {}
 ) => {
   const { payload: conversationList, meta: metaData } = responseData;
   context.commit(types.SET_ALL_CONVERSATION, conversationList);
-  context.dispatch('conversationStats/set', metaData);
+  if (!preserveConversationStats) {
+    context.dispatch('conversationStats/set', metaData);
+  }
   context.dispatch(
     'conversationLabels/setBulkConversationLabels',
     conversationList

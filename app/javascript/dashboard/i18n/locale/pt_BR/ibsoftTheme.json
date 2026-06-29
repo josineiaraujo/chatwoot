@@ -1,8 +1,43 @@
 {
+  "INBOX": {
+    "LIST": {
+      "TITLE": "Atenção"
+    }
+  },
+  "SIDEBAR": {
+    "INBOX": "Atenção"
+  },
   "IBSOFT_THEME": {
+    "CONVERSATION_STATUS": {
+      "PENDING_OPERATIONAL": "Automação"
+    },
+    "CONVERSATION_TABS": {
+      "AUTOMATION": "Automações",
+      "MORE_VIEWS": "Mais visões"
+    },
+    "CONVERSATION_PROTOCOL": {
+      "LABEL": "Protocolo {protocol}",
+      "COPY_SUCCESS": "Protocolo copiado para a área de transferência",
+      "FILTER_LABEL": "Protocolo"
+    },
+    "CONVERSATION_ACTIONS": {
+      "CLOSE_SERVICE": "Encerrar atendimento",
+      "CLOSE_SERVICES": "Encerrar atendimentos",
+      "CLOSE_SERVICE_SUCCESS": "Atendimento encerrado",
+      "CLOSE_SERVICES_SUCCESS": "Atendimentos encerrados com sucesso.",
+      "CLOSE_SERVICES_FAILED": "Falha ao encerrar atendimentos. Por favor, tente novamente.",
+      "ALL_MISSING_REQUIRED_ATTRIBUTES": "Não é possível encerrar o atendimento devido à ausência de atributos obrigatórios.",
+      "PARTIAL_CLOSE_SUCCESS": "Alguns atendimentos exigem atributos obrigatórios antes do encerramento e foram ignorados.",
+      "REQUIRED_ATTRIBUTES_TITLE": "Encerrar atendimento",
+      "REQUIRED_ATTRIBUTES_DESCRIPTION": "Preencha os atributos obrigatórios antes de encerrar este atendimento.",
+      "CLOSE_AND_NEXT_SHORTCUT": "Encerrar e ir para o próximo"
+    },
     "SIDEBAR": {
       "COLLAPSE": "Recolher menu",
       "EXPAND": "Expandir menu"
+    },
+    "INBOX": {
+      "EMPTY_STATE_NOTE": "Conversas aparecem aqui quando há novas mensagens, menções ou atribuições para você."
     }
   }
 }

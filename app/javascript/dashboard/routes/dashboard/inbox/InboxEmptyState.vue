@@ -20,7 +20,7 @@ export default {
       if (this.emptyStateMessage) {
         return this.emptyStateMessage;
       }
-      return this.$t('INBOX.LIST.NOTE');
+      return this.$t('IBSOFT_THEME.INBOX.EMPTY_STATE_NOTE');
     },
   },
 };
@@ -33,8 +33,15 @@ export default {
     <div v-if="uiFlags.isFetching" class="flex justify-center my-4">
       <Spinner class="text-n-brand" />
     </div>
-    <div v-else class="flex flex-col items-center gap-2">
-      <fluent-icon icon="mail-inbox" size="40" class="text-n-slate-11" />
+    <div
+      v-else
+      class="ibsoft-inbox-empty-state flex flex-col items-center gap-2"
+    >
+      <fluent-icon
+        icon="mail-inbox"
+        size="40"
+        class="ibsoft-empty-state-icon text-n-slate-11"
+      />
       <span class="text-sm font-medium text-n-slate-11">
         {{ emptyMessage }}
       </span>

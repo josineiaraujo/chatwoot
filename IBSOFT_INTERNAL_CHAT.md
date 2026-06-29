@@ -218,7 +218,9 @@ for removido.
 | `app/javascript/dashboard/ibsoft/internalChat/api/internalChat.js` | Cliente API do modulo. Centraliza chamadas para salas, mensagens, membros, leitura, anexos e contagem. |
 | `app/javascript/dashboard/ibsoft/internalChat/store.js` | Store Vuex do modulo. Controla contador global, salas nao lidas, sala ativa e eventos realtime. |
 | `app/javascript/dashboard/ibsoft/internalChat/views/InternalChat.vue` | Tela principal. Lista chats, abre sala/chat, carrega mensagens, envia mensagens/anexos, exibe composer e trata eventos locais. |
-| `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatComposer.vue` | Area de composicao de mensagem. Reaproveita padroes visuais do Chatwoot para texto, anexos, emoji e acoes. |
+| `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatComposer.vue` | Reply box interno. Orquestra editor, anexos, audio e atalhos mantendo o contrato com a tela principal. |
+| `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatReplyTopPanel.vue` | Painel superior do composer interno, isolado para acompanhar a composicao do `ReplyBox` do Chatwoot sem carregar modos de conversa com cliente. |
+| `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatReplyBottomPanel.vue` | Painel inferior do composer interno. Centraliza botoes de emoji, anexo, audio e envio usando a mesma organizacao visual do Chatwoot. |
 | `app/javascript/dashboard/ibsoft/internalChat/components/MediaPreviewModal.vue` | Modal de preview de imagem/video com carregamento, zoom, rotacao, navegacao e download. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/audioNotifications.js` | Controla som de novas mensagens e sala ativa para evitar alertas indevidos. |
 

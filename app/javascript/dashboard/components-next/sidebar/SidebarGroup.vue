@@ -4,6 +4,8 @@ import { useSidebarContext, usePopoverState } from './provider';
 import { useRoute, useRouter } from 'vue-router';
 import Policy from 'dashboard/components/policy.vue';
 import Icon from 'next/icon/Icon.vue';
+import { useMapGetter } from 'dashboard/composables/store.js';
+import SidebarPulseLed from 'dashboard/ibsoft/sidebar/SidebarPulseLed.vue';
 import SidebarGroupHeader from './SidebarGroupHeader.vue';
 import SidebarGroupLeaf from './SidebarGroupLeaf.vue';
 import SidebarSubGroup from './SidebarSubGroup.vue';
@@ -18,6 +20,7 @@ const props = defineProps({
   activeOn: { type: Array, default: () => [] },
   children: { type: Array, default: undefined },
   getterKeys: { type: Object, default: () => ({}) },
+  pulseCount: { type: [Number, String], default: null },
 });
 
 const {
@@ -197,6 +200,15 @@ const hasActiveChild = computed(() => {
   return activeChild.value !== undefined;
 });
 
+const dynamicCount = useMapGetter(props.getterKeys.count);
+const normalizedPulseCount = computed(() => {
+  const value =
+    props.pulseCount === undefined || props.pulseCount === null
+      ? Number(dynamicCount.value)
+      : Number(props.pulseCount);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+});
+
 const handleCollapsedClick = () => {
   if (hasChildren.value && hasAccessibleChildren.value) {
     const firstItem = accessibleItems.value[0];
@@ -271,7 +283,13 @@ watch(
           :title="label"
           @click="hasChildren ? handleCollapsedClick() : undefined"
         >
-          <Icon v-if="icon" :icon="icon" class="size-4" />
+          <span v-if="icon" class="relative grid place-content-center">
+            <Icon :icon="icon" class="size-4" />
+            <SidebarPulseLed
+              :active="normalizedPulseCount > 0"
+              class="absolute -top-1 ltr:-right-1 rtl:-left-1"
+            />
+          </span>
         </component>
         <SidebarCollapsedPopover
           v-if="hasChildren && isPopoverOpen"
@@ -294,6 +312,7 @@ watch(
         :label
         :to
         :getter-keys="getterKeys"
+        :pulse-count="pulseCount"
         :is-active="isActive"
         :has-active-child="hasActiveChild"
         :expandable="hasChildren"

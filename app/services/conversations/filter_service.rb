@@ -4,6 +4,10 @@ class Conversations::FilterService < FilterService
   def initialize(params, user, account)
     @account = account
     super(params, user)
+    @params = Ibsoft::Conversation::ProtocolFilterPayload.new(
+      params: @params,
+      account_id: @account.id
+    ).perform
   end
 
   def perform

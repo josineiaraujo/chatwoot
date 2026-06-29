@@ -44,6 +44,26 @@ RSpec.describe 'Search', type: :request do
         expect(response_data[:payload][:contacts].length).to eq 1
         expect(response_data[:payload][:articles].length).to eq 1
       end
+
+      it 'returns conversations matching the Ibsoft protocol' do
+        protocol_conversation = create(
+          :conversation,
+          account: account,
+          created_at: Time.utc(2026, 10, 4, 12)
+        )
+        create(:message, conversation: protocol_conversation, account: account, content: 'protocol message')
+        create(:inbox_member, user: agent, inbox: protocol_conversation.inbox)
+
+        get "/api/v1/accounts/#{account.id}/search",
+            headers: agent.create_new_auth_token,
+            params: { q: "20261004-#{account.id}-#{protocol_conversation.display_id}" },
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        response_data = JSON.parse(response.body, symbolize_names: true)
+
+        expect(response_data[:payload][:conversations].pluck(:id)).to eq([protocol_conversation.display_id])
+      end
     end
   end
 
@@ -167,6 +187,26 @@ RSpec.describe 'Search', type: :request do
 
         expect(response_data[:payload].keys).to contain_exactly(:conversations)
         expect(response_data[:payload][:conversations].length).to eq 1
+      end
+
+      it 'returns conversations matching the Ibsoft protocol' do
+        protocol_conversation = create(
+          :conversation,
+          account: account,
+          created_at: Time.utc(2026, 10, 4, 12)
+        )
+        create(:message, conversation: protocol_conversation, account: account, content: 'protocol message')
+        create(:inbox_member, user: agent, inbox: protocol_conversation.inbox)
+
+        get "/api/v1/accounts/#{account.id}/search/conversations",
+            headers: agent.create_new_auth_token,
+            params: { q: "20261004-#{account.id}-#{protocol_conversation.display_id}" },
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        response_data = JSON.parse(response.body, symbolize_names: true)
+
+        expect(response_data[:payload][:conversations].pluck(:id)).to eq([protocol_conversation.display_id])
       end
 
       context 'with advanced_search feature enabled', :opensearch do

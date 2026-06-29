@@ -24,7 +24,7 @@ const SNOOZE_OPTIONS = wootConstants.SNOOZE_OPTIONS;
 export const OPEN_CONVERSATION_ACTIONS = [
   {
     id: 'resolve_conversation',
-    title: 'COMMAND_BAR.COMMANDS.RESOLVE_CONVERSATION',
+    title: 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE',
     section: 'COMMAND_BAR.SECTIONS.CONVERSATION',
     icon: ICON_RESOLVE_CONVERSATION,
     handler: () => emitter.emit(CMD_RESOLVE_CONVERSATION),

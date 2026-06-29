@@ -45,6 +45,48 @@ RSpec.describe Conversation do
       uuid_pattern = /[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}$/i
       expect(conversation.uuid).to match(uuid_pattern)
     end
+
+    context 'when the inbox has an active bot' do
+      let(:account) { create(:account) }
+      let(:agent) { create(:user, account: account, role: :agent) }
+      let(:inbox) { create(:inbox, account: account) }
+      let(:contact) { create(:contact, account: account) }
+      let(:contact_inbox) { create(:contact_inbox, contact: contact, inbox: inbox) }
+
+      before do
+        create(:agent_bot_inbox, inbox: inbox, agent_bot: create(:agent_bot, account: account))
+      end
+
+      it 'keeps the default Chatwoot pending status for regular conversations' do
+        conversation = create(
+          :conversation,
+          account: account,
+          inbox: inbox,
+          contact: contact,
+          contact_inbox: contact_inbox,
+          assignee: agent
+        )
+
+        expect(conversation).to be_pending
+      end
+
+      it 'forces agent-created conversations to open and removes the request flag' do
+        Current.user = agent
+
+        conversation = create(
+          :conversation,
+          account: account,
+          inbox: inbox,
+          contact: contact,
+          contact_inbox: contact_inbox,
+          assignee: agent,
+          additional_attributes: { 'ibsoft_force_open_on_create' => true }
+        )
+
+        expect(conversation).to be_open
+        expect(conversation.additional_attributes).not_to have_key('ibsoft_force_open_on_create')
+      end
+    end
   end
 
   describe '.after_create' do

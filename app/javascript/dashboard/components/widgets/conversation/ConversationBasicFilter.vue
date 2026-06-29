@@ -8,6 +8,7 @@ import { useMapGetter, useStore } from 'dashboard/composables/store.js';
 import wootConstants from 'dashboard/constants/globals';
 import SelectMenu from 'dashboard/components-next/selectmenu/SelectMenu.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { getConversationStatusLabel } from 'dashboard/ibsoft/conversation/statusPresentation';
 
 defineProps({
   isOnExpandedLayout: {
@@ -38,25 +39,29 @@ const currentSortBy = computed(() => {
   );
 });
 
+const chatStatusLabel = status => {
+  return getConversationStatusLabel(t, status);
+};
+
 const chatStatusOptions = computed(() => [
   {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
+    label: chatStatusLabel('open'),
     value: 'open',
   },
   {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+    label: chatStatusLabel('resolved'),
     value: 'resolved',
   },
   {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+    label: chatStatusLabel('pending'),
     value: 'pending',
   },
   {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+    label: chatStatusLabel('snoozed'),
     value: 'snoozed',
   },
   {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
+    label: chatStatusLabel('all'),
     value: 'all',
   },
 ]);

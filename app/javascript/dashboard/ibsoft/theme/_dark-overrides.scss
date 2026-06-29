@@ -57,6 +57,12 @@ body.dark {
   );
 }
 
+#app {
+  --ibsoft-sidebar-pulse-color: var(--purple, #a855f7);
+  --ibsoft-sidebar-pulse-core: var(--lilac-light, #d8b4fe);
+  --ibsoft-sidebar-pulse-ring: var(--bg-deep, #050010);
+}
+
 body.dark,
 body.dark #app {
   background: var(--ibsoft-dark-gradient);
@@ -184,17 +190,24 @@ body.dark #app .ibsoft-sidebar-brand-logo {
 }
 
 #app .ibsoft-conversation-empty-state,
-#app .ibsoft-select-conversation-empty-state {
+#app .ibsoft-select-conversation-empty-state,
+#app .ibsoft-internal-chat-empty-state,
+#app .ibsoft-internal-chat-select-empty-state,
+#app .ibsoft-inbox-empty-state {
   gap: 18px;
 }
 
 #app .ibsoft-conversation-empty-state > img,
-#app .ibsoft-select-conversation-empty-state > img {
+#app .ibsoft-select-conversation-empty-state > img,
+#app .ibsoft-inbox-empty-state > .ibsoft-empty-state-icon {
   display: none !important;
 }
 
 #app .ibsoft-conversation-empty-state::before,
-#app .ibsoft-select-conversation-empty-state::before {
+#app .ibsoft-select-conversation-empty-state::before,
+#app .ibsoft-internal-chat-empty-state::before,
+#app .ibsoft-internal-chat-select-empty-state::before,
+#app .ibsoft-inbox-empty-state::before {
   content: '';
   width: 210px;
   height: 64px;
@@ -205,12 +218,32 @@ body.dark #app .ibsoft-sidebar-brand-logo {
 }
 
 body.dark #app .ibsoft-conversation-empty-state::before,
-body.dark #app .ibsoft-select-conversation-empty-state::before {
+body.dark #app .ibsoft-select-conversation-empty-state::before,
+body.dark #app .ibsoft-internal-chat-empty-state::before,
+body.dark #app .ibsoft-internal-chat-select-empty-state::before,
+body.dark #app .ibsoft-inbox-empty-state::before {
   background-image: url('dashboard/ibsoft/theme/assets/chathub-logo-white.png');
 }
 
+#app .space-y-1:has(label[for='site-language']),
+#app .flex.gap-2.justify-between.w-full.items-start:has(select[name='language']),
+#app .grid.grid-cols-2.items-center:has(.i-lucide-languages) {
+  display: none !important;
+}
+
+#app .p-4.text-sm.text-center:has(.build-id) {
+  display: none !important;
+}
+
+#app .max-w-2xl > section:has(.relative.text-left .hljs) {
+  display: none !important;
+}
+
 body.dark #app .ibsoft-conversation-empty-state > span,
-body.dark #app .ibsoft-select-conversation-empty-state > span {
+body.dark #app .ibsoft-select-conversation-empty-state > span,
+body.dark #app .ibsoft-internal-chat-empty-state > span,
+body.dark #app .ibsoft-internal-chat-select-empty-state > span,
+body.dark #app .ibsoft-inbox-empty-state > span {
   max-width: 18rem;
   color: var(--lilac-ghost);
 }

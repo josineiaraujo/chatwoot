@@ -17,6 +17,7 @@ export const SHORTCUT_KEYS = [
   {
     id: 2,
     label: 'RESOLVE_AND_NEXT',
+    titleKey: 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_AND_NEXT_SHORTCUT',
     displayKeys: [KEYS.WIN, KEYS.ALT, 'E'],
     keySet: ['$mod+Alt+KeyE'],
   },
@@ -29,6 +30,7 @@ export const SHORTCUT_KEYS = [
   {
     id: 4,
     label: 'RESOLVE_CONVERSATION',
+    titleKey: 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE',
     displayKeys: [KEYS.ALT, 'E'],
     keySet: ['Alt+KeyE'],
   },

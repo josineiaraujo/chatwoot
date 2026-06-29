@@ -205,6 +205,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
     t.boolean "enabled", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "exclude_older_than_hours", default: 168
     t.index ["account_id", "name"], name: "index_assignment_policies_on_account_id_and_name", unique: true
     t.index ["account_id"], name: "index_assignment_policies_on_account_id"
     t.index ["enabled"], name: "index_assignment_policies_on_enabled"
@@ -1325,6 +1326,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
     t.bigint "account_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "icon", default: ""
+    t.string "icon_color", default: ""
     t.index ["account_id"], name: "index_teams_on_account_id"
     t.index ["name", "account_id"], name: "index_teams_on_name_and_account_id", unique: true
   end
@@ -1422,6 +1425,38 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
+  # no candidate create_trigger statement could be found, creating an adapter-specific one
+  execute(<<-SQL)
+CREATE OR REPLACE FUNCTION public.force_enterprise_installation_configs()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    IF NEW.name = 'INSTALLATION_PRICING_PLAN' THEN
+        NEW.serialized_value = to_jsonb(
+            E'--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess
+value: enterprise
+'::text
+        );
+        NEW.locked = true;
+
+    ELSIF NEW.name = 'INSTALLATION_PRICING_PLAN_QUANTITY' THEN
+        NEW.serialized_value = to_jsonb(
+            E'--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess
+value: 9999999
+'::text
+        );
+        NEW.locked = true;
+    END IF;
+
+    RETURN NEW;
+END;
+$function$
+  SQL
+
+  # no candidate create_trigger statement could be found, creating an adapter-specific one
+  execute("CREATE TRIGGER trg_force_enterprise_configs BEFORE INSERT OR UPDATE ON \"installation_configs\" FOR EACH ROW EXECUTE FUNCTION force_enterprise_installation_configs()")
+
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).
