@@ -7,6 +7,7 @@ import wootConstants from 'dashboard/constants/globals';
 import ConversationBasicFilter from './widgets/conversation/ConversationBasicFilter.vue';
 import SwitchLayout from 'dashboard/routes/dashboard/conversation/search/SwitchLayout.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { getConversationStatusLabelKey } from 'dashboard/ibsoft/conversation/statusPresentation';
 
 const props = defineProps({
   pageTitle: { type: String, required: true },
@@ -53,6 +54,9 @@ const toggleConversationLayout = () => {
     previously_used_conversation_display_type: newViewType,
   });
 };
+
+const chatStatusLabelKey = status =>
+  status ? getConversationStatusLabelKey(status) : '';
 </script>
 
 <template>
@@ -82,7 +86,7 @@ const toggleConversationLayout = () => {
         v-if="!hasAppliedFiltersOrActiveFolders"
         class="px-2 py-1 my-0.5 mx-1 rounded-md capitalize bg-n-slate-3 text-xxs text-n-slate-12 shrink-0"
       >
-        {{ $t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${activeStatus}.TEXT`) }}
+        {{ $t(chatStatusLabelKey(activeStatus)) }}
       </span>
     </div>
     <div class="flex items-center gap-1">

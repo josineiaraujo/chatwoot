@@ -32,9 +32,18 @@ class SearchService
 
   def filter_conversations
     conversations_query = current_account.conversations.where(inbox_id: accessable_inbox_ids)
-                                         .joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
-                                         .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
-                            ILIKE :search OR contacts.phone_number ILIKE :search OR contacts.identifier ILIKE :search", search: "%#{search_query}%")
+    protocol_search = Ibsoft::Conversation::ProtocolSearch.new(
+      scope: conversations_query,
+      query: search_query,
+      account_id: current_account.id
+    )
+    conversations_query = if protocol_search.protocol?
+                            protocol_search.perform
+                          else
+                            conversations_query.joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
+                                               .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
+                                  ILIKE :search OR contacts.phone_number ILIKE :search OR contacts.identifier ILIKE :search", search: "%#{search_query}%")
+                          end
 
     if current_account.feature_enabled?('advanced_search')
       conversations_query = apply_time_filter(conversations_query,

@@ -1,7 +1,6 @@
 <script setup>
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import FileUpload from 'vue-upload-component';
 
 import { useAlert } from 'dashboard/composables';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
@@ -9,12 +8,13 @@ import { useMapGetter } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 
-import Button from 'dashboard/components-next/button/Button.vue';
 import AttachmentPreview from 'dashboard/components/widgets/AttachmentsPreview.vue';
 import AudioRecorder from 'dashboard/components/widgets/WootWriter/AudioRecorder.vue';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
+import InternalChatReplyBottomPanel from './InternalChatReplyBottomPanel.vue';
+import InternalChatReplyTopPanel from './InternalChatReplyTopPanel.vue';
 
-import { ALLOWED_FILE_TYPES, AUDIO_FORMATS } from 'shared/constants/messages';
+import { AUDIO_FORMATS } from 'shared/constants/messages';
 import {
   checkFileSizeLimit,
   resolveMaximumFileUploadSize,
@@ -68,7 +68,6 @@ const globalConfig = useMapGetter('globalConfig/get');
 
 const messageEditor = ref(null);
 const audioRecorderInput = ref(null);
-const uploadRef = ref(null);
 const isFocused = ref(false);
 const showEmojiPicker = ref(false);
 const isRecordingAudio = ref(false);
@@ -105,18 +104,6 @@ const sendButtonText = computed(() => {
     ? `(${shortcutKey.value})`
     : '(↵)';
   return `${t('IBSOFT_INTERNAL_CHAT.ACTIONS.SEND')} ${keyLabel}`;
-});
-
-const audioRecorderPlayStopIcon = computed(() => {
-  switch (recordingAudioState.value) {
-    case 'playing':
-      return 'i-ph-pause';
-    case 'paused':
-    case 'stopped':
-      return 'i-ph-play';
-    default:
-      return 'i-ph-stop';
-  }
 });
 
 const attachmentId = () => {
@@ -310,6 +297,9 @@ watch(
       :class="{ 'is-focused': isFocused || hasAttachments }"
       @paste="onPaste"
     >
+      <InternalChatReplyTopPanel
+        @toggle-editor-size="emit('toggleEditorSize')"
+      />
       <div class="reply-box__top">
         <EmojiIconPicker
           v-if="showEmojiPicker"
@@ -333,7 +323,7 @@ watch(
           v-model="composerMessage"
           :conversation-id="roomId"
           :editor-id="`ibsoft-internal-chat-${roomId}`"
-          class="input popover-prosemirror-menu"
+          class="input popover-prosemirror-menu internal-chat-editor"
           :placeholder="t('IBSOFT_INTERNAL_CHAT.MESSAGES.PLACEHOLDER')"
           :update-selection-with="updateEditorSelectionWith"
           :disabled="disabled"
@@ -352,94 +342,20 @@ watch(
         </div>
       </div>
 
-      <div class="flex justify-between p-3">
-        <div class="left-wrap">
-          <Button
-            v-tooltip.top-end="
-              t('IBSOFT_INTERNAL_CHAT.ACTIONS.SHOW_EMOJI_PICKER')
-            "
-            icon="i-ph-smiley-sticker"
-            slate
-            faded
-            sm
-            @click="toggleEmojiPicker"
-          />
-          <FileUpload
-            ref="uploadRef"
-            v-tooltip.top-end="t('IBSOFT_INTERNAL_CHAT.ACTIONS.ATTACH')"
-            input-id="ibsoftInternalChatAttachment"
-            :size="4096 * 4096"
-            :accept="ALLOWED_FILE_TYPES"
-            multiple
-            drop
-            :drop-directory="false"
-            @input-file="onFileUpload"
-          >
-            <Button
-              v-tooltip.top-end="t('IBSOFT_INTERNAL_CHAT.ACTIONS.ATTACH')"
-              icon="i-ph-paperclip"
-              slate
-              faded
-              sm
-            />
-          </FileUpload>
-          <Button
-            v-tooltip.top-end="t('IBSOFT_INTERNAL_CHAT.ACTIONS.RECORD_AUDIO')"
-            :icon="
-              !isRecordingAudio ? 'i-ph-microphone' : 'i-ph-microphone-slash'
-            "
-            slate
-            faded
-            sm
-            @click="toggleAudioRecorder"
-          />
-          <Button
-            v-if="isRecordingAudio"
-            v-tooltip.top-end="
-              t('IBSOFT_INTERNAL_CHAT.ACTIONS.TOGGLE_RECORDED_AUDIO')
-            "
-            :icon="audioRecorderPlayStopIcon"
-            slate
-            faded
-            sm
-            :label="recordingAudioDurationText"
-            @click="toggleAudioRecorderPlayPause"
-          />
-          <transition name="modal-fade">
-            <div
-              v-show="uploadRef && uploadRef.dropActive"
-              class="fixed bottom-0 left-0 right-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center gap-2 bg-modal-backdrop-light text-n-slate-12 dark:bg-modal-backdrop-dark"
-            >
-              <fluent-icon icon="cloud-backup" size="40" />
-              <h4 class="break-words text-2xl text-n-slate-12">
-                {{ t('IBSOFT_INTERNAL_CHAT.MESSAGES.DRAG_DROP') }}
-              </h4>
-            </div>
-          </transition>
-        </div>
-        <div class="right-wrap">
-          <Button
-            v-tooltip.top-end="
-              t('IBSOFT_INTERNAL_CHAT.ACTIONS.TOGGLE_COMPOSER_HEIGHT')
-            "
-            ghost
-            class="text-n-slate-11"
-            sm
-            icon="i-lucide-maximize-2"
-            @click="emit('toggleEditorSize')"
-          />
-          <Button
-            :label="sendButtonText"
-            type="submit"
-            sm
-            color="blue"
-            :disabled="isSendDisabled"
-            :is-loading="isSending"
-            class="flex-shrink-0"
-            @click="emitSend"
-          />
-        </div>
-      </div>
+      <InternalChatReplyBottomPanel
+        :disabled="disabled"
+        :is-recording-audio="isRecordingAudio"
+        :is-send-disabled="isSendDisabled"
+        :is-sending="isSending"
+        :recording-audio-duration-text="recordingAudioDurationText"
+        :recording-audio-state="recordingAudioState"
+        :send-button-text="sendButtonText"
+        @file-upload="onFileUpload"
+        @send="emitSend"
+        @toggle-audio-recorder="toggleAudioRecorder"
+        @toggle-audio-recorder-play-pause="toggleAudioRecorderPlayPause"
+        @toggle-emoji-picker="toggleEmojiPicker"
+      />
     </div>
   </div>
 </template>
@@ -450,19 +366,11 @@ watch(
 }
 
 .reply-box {
-  @apply relative mb-0 mx-0 border border-n-weak rounded-xl bg-n-solid-1;
+  @apply relative mb-2 mx-2 border border-n-weak rounded-xl bg-n-solid-1;
 }
 
 .reply-box__top {
-  @apply relative py-0 px-3 -mt-px;
-}
-
-.left-wrap {
-  @apply items-center flex gap-2;
-}
-
-.right-wrap {
-  @apply flex;
+  @apply relative -mt-px py-0 ltr:pl-3 ltr:pr-12 rtl:pl-12 rtl:pr-3;
 }
 
 .emoji-dialog {
@@ -474,13 +382,11 @@ watch(
   }
 }
 
-::v-deep .file-uploads {
-  label {
-    @apply cursor-pointer;
-  }
+::v-deep .internal-chat-editor .ProseMirror-menubar-wrapper {
+  @apply gap-3;
+}
 
-  &:hover button {
-    @apply enabled:bg-n-slate-9/20;
-  }
+::v-deep .internal-chat-editor .ProseMirror-woot-style {
+  @apply pr-1;
 }
 </style>

@@ -287,6 +287,9 @@ describe('composeConversationHelper', () => {
         contactId: 2,
         message: { content: 'Hello' },
         assigneeId: 3,
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       });
     });
 
@@ -332,6 +335,9 @@ describe('composeConversationHelper', () => {
           template_params: { param1: 'value1' },
         },
         assigneeId: 3,
+        additionalAttributes: {
+          ibsoft_force_open_on_create: true,
+        },
       });
     });
   });

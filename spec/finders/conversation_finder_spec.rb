@@ -217,6 +217,23 @@ describe ConversationFinder do
       end
     end
 
+    context 'with Ibsoft protocol query' do
+      it 'returns the matching conversation' do
+        protocol_conversation = create(
+          :conversation,
+          account: account,
+          inbox: inbox,
+          created_at: Time.utc(2026, 10, 4, 12)
+        )
+        result = described_class.new(
+          user_1,
+          { q: "20261004-#{account.id}-#{protocol_conversation.display_id}" }
+        ).perform
+
+        expect(result[:conversations].map(&:id)).to eq([protocol_conversation.id])
+      end
+    end
+
     context 'with updated_within' do
       let(:params) { { updated_within: 20, assignee_type: 'unassigned', sort_by: 'created_at_asc' } }
 

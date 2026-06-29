@@ -11,6 +11,7 @@ import { useConversationRequiredAttributes } from 'dashboard/composables/useConv
 import WootDropdownItem from 'shared/components/ui/dropdown/DropdownItem.vue';
 import WootDropdownMenu from 'shared/components/ui/dropdown/DropdownMenu.vue';
 import wootConstants from 'dashboard/constants/globals';
+import { canManuallyMarkConversationPending } from 'dashboard/ibsoft/conversation/statusPresentation';
 import {
   CMD_REOPEN_CONVERSATION,
   CMD_RESOLVE_CONVERSATION,
@@ -96,7 +97,11 @@ const toggleStatus = (status, snoozedUntil, customAttributes = null) => {
   }
 
   store.dispatch('toggleStatus', payload).then(() => {
-    useAlert(t('CONVERSATION.CHANGE_STATUS'));
+    const alertKey =
+      status === wootConstants.STATUS_TYPE.RESOLVED
+        ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE_SUCCESS'
+        : 'CONVERSATION.CHANGE_STATUS';
+    useAlert(t(alertKey));
     isLoading.value = false;
   });
 };
@@ -178,7 +183,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
     >
       <Button
         v-if="isOpen"
-        :label="t('CONVERSATION.HEADER.RESOLVE_ACTION')"
+        :label="t('IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE')"
         size="sm"
         color="slate"
         no-animation
@@ -236,7 +241,9 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
             @click="() => openSnoozeModal()"
           />
         </WootDropdownItem>
-        <WootDropdownItem v-if="!isPending">
+        <WootDropdownItem
+          v-if="canManuallyMarkConversationPending && !isPending"
+        >
           <Button
             :label="t('CONVERSATION.RESOLVE_DROPDOWN.MARK_PENDING')"
             ghost

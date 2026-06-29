@@ -161,9 +161,10 @@ export function useBulkActions() {
 
     let conversationIds = selectedConversations.value;
     let skippedCount = 0;
+    const isClosingService = status === wootConstants.STATUS_TYPE.RESOLVED;
 
     // If resolving, check for required attributes
-    if (status === wootConstants.STATUS_TYPE.RESOLVED) {
+    if (isClosingService) {
       const { validIds, skippedIds } = selectedConversations.value.reduce(
         (acc, id) => {
           const conversation = store.getters.getConversationById(id);
@@ -188,8 +189,9 @@ export function useBulkActions() {
       if (skippedCount > 0 && validIds.length === 0) {
         // All conversations have missing attributes
         useAlert(
-          t('BULK_ACTION.RESOLVE.ALL_MISSING_ATTRIBUTES') ||
-            'Cannot resolve conversations due to missing required attributes'
+          t(
+            'IBSOFT_THEME.CONVERSATION_ACTIONS.ALL_MISSING_REQUIRED_ATTRIBUTES'
+          )
         );
         return;
       }
@@ -210,12 +212,24 @@ export function useBulkActions() {
       store.dispatch('bulkActions/clearSelectedConversationIds');
 
       if (skippedCount > 0) {
-        useAlert(t('BULK_ACTION.RESOLVE.PARTIAL_SUCCESS'));
+        useAlert(t('IBSOFT_THEME.CONVERSATION_ACTIONS.PARTIAL_CLOSE_SUCCESS'));
       } else {
-        useAlert(t('BULK_ACTION.UPDATE.UPDATE_SUCCESFUL'));
+        useAlert(
+          t(
+            isClosingService
+              ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICES_SUCCESS'
+              : 'BULK_ACTION.UPDATE.UPDATE_SUCCESFUL'
+          )
+        );
       }
     } catch (err) {
-      useAlert(t('BULK_ACTION.UPDATE.UPDATE_FAILED'));
+      useAlert(
+        t(
+          isClosingService
+            ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICES_FAILED'
+            : 'BULK_ACTION.UPDATE.UPDATE_FAILED'
+        )
+      );
     }
   }
 

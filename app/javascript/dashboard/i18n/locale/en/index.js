@@ -44,8 +44,9 @@ import mfa from './mfa.json';
 import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
+import { mergeLocaleWithOverrides } from 'dashboard/ibsoft/i18n/mergeLocale';
 
-export default {
+const locale = {
   ...advancedFilters,
   ...agentBots,
   ...agentMgmt,
@@ -71,7 +72,6 @@ export default {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
-  ...ibsoftTheme,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,
@@ -93,3 +93,5 @@ export default {
   ...sessionLimit,
   ...yearInReview,
 };
+
+export default mergeLocaleWithOverrides(locale, ibsoftTheme);

@@ -6,17 +6,17 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 
 const props = defineProps({
   containerHeight: { type: Number, default: 0 },
+  defaultHeight: { type: Number, default: 120 },
+  minHeight: { type: Number, default: 80 },
+  minMessagesHeight: { type: Number, default: 200 },
+  expandRatio: { type: Number, default: 0.5 },
 });
 
-const DEFAULT_HEIGHT = 120;
-const MIN_HEIGHT = 80;
-const MIN_MESSAGES_HEIGHT = 200;
-const EXPAND_RATIO = 0.5;
 const RESET_DELAY_MS = 120;
 
 const wrapperRef = useTemplateRef('wrapperRef');
 const surroundingHeight = ref(0);
-const editorHeight = ref(DEFAULT_HEIGHT);
+const editorHeight = ref(props.defaultHeight);
 const isResizing = ref(false);
 const startY = ref(0);
 const startHeight = ref(0);
@@ -39,13 +39,17 @@ const isContainerReady = computed(() => props.containerHeight > 0);
 const sizeBounds = computed(() => {
   const h = props.containerHeight;
   const s = surroundingHeight.value;
-  const max = Math.max(MIN_HEIGHT, h - MIN_MESSAGES_HEIGHT - s);
-  const expanded = clamp(Math.floor(h * EXPAND_RATIO - s / 2), MIN_HEIGHT, max);
+  const max = Math.max(props.minHeight, h - props.minMessagesHeight - s);
+  const expanded = clamp(
+    Math.floor(h * props.expandRatio - s / 2),
+    props.minHeight,
+    max
+  );
   return {
-    min: MIN_HEIGHT,
-    max: isContainerReady.value ? max : DEFAULT_HEIGHT,
+    min: props.minHeight,
+    max: isContainerReady.value ? max : props.defaultHeight,
     expanded,
-    default: clamp(DEFAULT_HEIGHT, MIN_HEIGHT, max),
+    default: clamp(props.defaultHeight, props.minHeight, max),
   };
 });
 

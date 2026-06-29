@@ -12,6 +12,7 @@ import SLACardLabel from 'dashboard/components-next/Conversation/Sla/SLACardLabe
 import CardStatusIcon from './CardStatusIcon.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import { buildConversationProtocol } from 'dashboard/ibsoft/conversation/protocol';
 
 const props = defineProps({
   chat: { type: Object, required: true },
@@ -52,6 +53,15 @@ const slaCardLabel = useTemplateRef('slaCardLabel');
 
 const hasSlaPolicyId = computed(
   () => props.chat?.sla_policy_id || slaCardLabel.value?.hasSlaThreshold
+);
+
+const conversationProtocol = computed(
+  () =>
+    buildConversationProtocol({
+      createdAt: props.chat.created_at,
+      accountId: props.chat.account_id,
+      conversationId: props.chat.id,
+    }) || String(props.chat.id || '')
 );
 
 const selectedModel = computed({
@@ -129,17 +139,17 @@ const selectedModel = computed({
 
       <div
         v-tooltip.top="{
-          content: chat.id,
+          content: conversationProtocol,
           delay: { show: 500, hide: 0 },
         }"
-        class="h-6 flex items-center gap-1 max-w-20 w-full min-w-0 flex-shrink-0"
+        class="h-6 flex items-center gap-1 max-w-32 w-full min-w-0 flex-shrink-0"
       >
         <Icon
-          icon="i-woot-hash"
+          icon="i-lucide-fingerprint"
           class="size-3.5 text-n-slate-10 flex-shrink-0"
         />
         <span class="text-body-main text-n-slate-11 truncate">
-          {{ chat.id }}
+          {{ conversationProtocol }}
         </span>
       </div>
 

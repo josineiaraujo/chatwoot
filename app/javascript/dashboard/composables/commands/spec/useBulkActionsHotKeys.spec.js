@@ -49,7 +49,7 @@ describe('useBulkActionsHotKeys', () => {
     expect(bulkActionsHotKeys.value).toContainEqual(
       expect.objectContaining({
         id: 'bulk_action_resolve_conversation',
-        title: 'COMMAND_BAR.COMMANDS.RESOLVE_CONVERSATION',
+        title: 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICES',
         section: 'COMMAND_BAR.SECTIONS.BULK_ACTIONS',
       })
     );

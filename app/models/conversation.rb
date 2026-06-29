@@ -278,6 +278,8 @@ class Conversation < ApplicationRecord
   end
 
   def determine_conversation_status
+    return if Ibsoft::Conversation::ForceOpenOnAgentCreatedConversation.new(conversation: self).perform
+
     self.status = :resolved and return if contact.blocked?
 
     return handle_campaign_status if campaign.present?

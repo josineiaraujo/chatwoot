@@ -221,6 +221,10 @@ const labels = useMapGetter('labels/getLabelsOnSidebar');
 const allUnreadCount = useMapGetter(
   'conversationUnreadCounts/getAllUnreadCount'
 );
+const inboxAttentionUnreadCount = useMapGetter('notifications/getUnreadCount');
+const internalChatUnreadCount = useMapGetter(
+  'ibsoftInternalChat/getUnreadRoomCount'
+);
 const getInboxUnreadCount = useMapGetter(
   'conversationUnreadCounts/getInboxUnreadCount'
 );
@@ -350,9 +354,10 @@ const menuItems = computed(() => {
     {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
-      icon: 'i-lucide-inbox',
+      icon: 'i-lucide-bell',
       to: accountScopedRoute('inbox_view'),
       activeOn: ['inbox_view', 'inbox_view_conversation'],
+      pulseCount: inboxAttentionUnreadCount.value,
       getterKeys: {
         count: 'notifications/getUnreadCount',
       },
@@ -361,6 +366,7 @@ const menuItems = computed(() => {
       name: 'Conversation',
       label: t('SIDEBAR.CONVERSATIONS'),
       icon: 'i-lucide-message-circle',
+      pulseCount: allUnreadCount.value,
       children: [
         {
           name: 'All',
@@ -472,6 +478,7 @@ const menuItems = computed(() => {
       icon: 'i-lucide-messages-square',
       to: accountScopedRoute('ibsoft_internal_chat'),
       activeOn: ['ibsoft_internal_chat'],
+      pulseCount: internalChatUnreadCount.value,
       getterKeys: {
         count: 'ibsoftInternalChat/getUnreadRoomCount',
       },

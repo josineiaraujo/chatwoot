@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import Icon from 'next/icon/Icon.vue';
+import SidebarPulseLed from 'dashboard/ibsoft/sidebar/SidebarPulseLed.vue';
 
 const props = defineProps({
   to: { type: [Object, String], default: '' },
@@ -12,14 +13,26 @@ const props = defineProps({
   isActive: { type: Boolean, default: false },
   hasActiveChild: { type: Boolean, default: false },
   getterKeys: { type: Object, default: () => ({}) },
+  pulseCount: { type: [Number, String], default: null },
 });
 
 const emit = defineEmits(['toggle']);
 
 const showBadge = useMapGetter(props.getterKeys.badge);
 const dynamicCount = useMapGetter(props.getterKeys.count);
+const normalizedDynamicCount = computed(() => {
+  const value = Number(dynamicCount.value);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+});
+const normalizedPulseCount = computed(() => {
+  const value =
+    props.pulseCount === undefined || props.pulseCount === null
+      ? Number(normalizedDynamicCount.value)
+      : Number(props.pulseCount);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+});
 const count = computed(() =>
-  dynamicCount.value > 99 ? '99+' : dynamicCount.value
+  normalizedDynamicCount.value > 99 ? '99+' : normalizedDynamicCount.value
 );
 </script>
 
@@ -40,6 +53,10 @@ const count = computed(() =>
   >
     <div v-if="icon" class="relative flex items-center gap-2">
       <Icon v-if="icon" :icon="icon" class="size-4" />
+      <SidebarPulseLed
+        :active="normalizedPulseCount > 0"
+        class="absolute -top-1 ltr:-right-1 rtl:-left-1"
+      />
       <span
         v-if="showBadge"
         class="size-2 -top-px ltr:-right-px rtl:-left-px bg-n-brand absolute rounded-full border border-n-solid-2"
@@ -58,7 +75,7 @@ const count = computed(() =>
         {{ label }}
       </span>
       <span
-        v-if="dynamicCount && !expandable"
+        v-if="normalizedDynamicCount && !expandable"
         class="inline-grid h-5 min-w-5 place-items-center rounded-full bg-n-slate-4 px-1 text-xxs font-medium leading-3 text-n-slate-12 dark:bg-n-slate-5 flex-shrink-0"
       >
         {{ count }}

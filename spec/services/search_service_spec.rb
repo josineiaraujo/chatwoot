@@ -259,6 +259,20 @@ describe SearchService do
         search = described_class.new(current_user: user, current_account: account, params: params, search_type: 'Conversation')
         expect(search.perform[:conversations].map(&:id)).to include new_converstion.id
       end
+
+      it 'searches across conversations with Ibsoft protocol' do
+        protocol_conversation = create(
+          :conversation,
+          contact: harry,
+          inbox: inbox,
+          account: account,
+          created_at: Time.utc(2026, 10, 4, 12)
+        )
+        params = { q: "20261004-#{account.id}-#{protocol_conversation.display_id}" }
+        search = described_class.new(current_user: user, current_account: account, params: params, search_type: 'Conversation')
+
+        expect(search.perform[:conversations].map(&:id)).to eq([protocol_conversation.id])
+      end
     end
 
     context 'when article search' do

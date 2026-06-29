@@ -12,7 +12,7 @@ import ConversationList from './ConversationList.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ConversationFilter from 'next/filter/ConversationFilter.vue';
 import SaveCustomView from 'next/filter/SaveCustomView.vue';
-import ChatTypeTabs from './widgets/ChatTypeTabs.vue';
+import OperationalChatTypeTabs from 'dashboard/ibsoft/conversation/components/OperationalChatTypeTabs.vue';
 import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCustomViews.vue';
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
@@ -52,6 +52,16 @@ import {
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
+import { fetchAutomationConversationCount } from 'dashboard/ibsoft/conversation/automationConversationStats';
+import {
+  ALL_ASSIGNEE_TAB,
+  PENDING_STATUS,
+  buildOperationalAssigneeTabItems,
+  getAssigneeTypeForConversationTab,
+  getConversationPageFilterKey,
+  getStatusForConversationTab,
+  isAutomationAssigneeTab,
+} from 'dashboard/ibsoft/conversation/statusPresentation';
 
 const props = defineProps({
   conversationInbox: { type: [String, Number], default: 0 },
@@ -74,8 +84,11 @@ const resolveAttributesModalRef = ref(null);
 
 const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
+const lastNonAutomationStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
+const automationConversationCount = ref(0);
+let automationConversationStatsRequestId = 0;
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
 const chatsOnView = ref([]);
@@ -175,7 +188,7 @@ const userPermissions = computed(() => {
   return getUserPermissions(currentUser.value, currentAccountId.value);
 });
 
-const assigneeTabItems = computed(() => {
+const baseAssigneeTabItems = computed(() => {
   return filterItemsByPermission(
     ASSIGNEE_TYPE_TAB_PERMISSIONS,
     userPermissions.value,
@@ -187,23 +200,50 @@ const assigneeTabItems = computed(() => {
   }));
 });
 
+const operationalAssigneeTabs = computed(() =>
+  buildOperationalAssigneeTabItems({
+    items: baseAssigneeTabItems.value,
+    translate: t,
+    automationCount: automationConversationCount.value,
+  })
+);
+
+const assigneeTabItems = computed(
+  () => operationalAssigneeTabs.value.primaryItems
+);
+
+const assigneeTabOverflowItems = computed(
+  () => operationalAssigneeTabs.value.overflowItems
+);
+
+const allAssigneeTabItems = computed(() => [
+  ...assigneeTabItems.value,
+  ...assigneeTabOverflowItems.value,
+]);
+
+const effectiveActiveStatus = computed(() =>
+  getStatusForConversationTab(activeAssigneeTab.value, activeStatus.value)
+);
+
 const showAssigneeInConversationCard = computed(() => {
   return (
     hasAppliedFiltersOrActiveFolders.value ||
-    activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL
+    getAssigneeTypeForConversationTab(activeAssigneeTab.value) ===
+      wootConstants.ASSIGNEE_TYPE.ALL
   );
 });
 
-const currentPageFilterKey = computed(() => {
-  return hasAppliedFiltersOrActiveFolders.value
-    ? 'appliedFilters'
-    : activeAssigneeTab.value;
-});
+const currentPageFilterKey = computed(() =>
+  getConversationPageFilterKey({
+    hasAppliedFiltersOrActiveFolders: hasAppliedFiltersOrActiveFolders.value,
+    activeAssigneeTab: activeAssigneeTab.value,
+  })
+);
 
 const inbox = useFunctionGetter('inboxes/getInbox', activeInbox);
 const currentPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
-  activeAssigneeTab
+  currentPageFilterKey
 );
 const currentFiltersPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
@@ -220,10 +260,10 @@ const conversationCustomAttributes = useFunctionGetter(
 );
 
 const activeAssigneeTabCount = computed(() => {
-  const count = assigneeTabItems.value.find(
+  const selectedTab = allAssigneeTabItems.value.find(
     item => item.key === activeAssigneeTab.value
-  ).count;
-  return count;
+  );
+  return selectedTab?.count || 0;
 });
 
 const conversationListPagination = computed(() => {
@@ -243,20 +283,30 @@ const conversationListPagination = computed(() => {
     return 1;
   }
 
-  return currentPage.value + 1;
+  return (currentPage.value || 0) + 1;
 });
 
 const conversationFilters = computed(() => {
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
-    assigneeType: activeAssigneeTab.value,
-    status: activeStatus.value,
+    assigneeType: getAssigneeTypeForConversationTab(activeAssigneeTab.value),
+    pageFilterKey: currentPageFilterKey.value,
+    status: effectiveActiveStatus.value,
     sortBy: activeSortBy.value,
     page: conversationListPagination.value,
+    preserveConversationStats: isAutomationAssigneeTab(
+      activeAssigneeTab.value
+    ),
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
   };
+});
+
+const conversationStatsFilters = computed(() => {
+  const { page, pageFilterKey, preserveConversationStats, ...statsFilters } =
+    conversationFilters.value;
+  return statsFilters;
 });
 
 const activeTeam = computed(() => {
@@ -382,6 +432,7 @@ function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
   const { status, order_by: orderBy } = filterBy;
   activeStatus.value = status || wootConstants.STATUS_TYPE.OPEN;
+  lastNonAutomationStatus.value = activeStatus.value;
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
@@ -491,9 +542,9 @@ function setParamsForEditFolderModal() {
 
 function initializeExistingFilterToModal() {
   const statusFilter = initializeStatusAndAssigneeFilterToModal(
-    activeStatus.value,
+    effectiveActiveStatus.value,
     currentUserDetails.value,
-    activeAssigneeTab.value
+    getAssigneeTypeForConversationTab(activeAssigneeTab.value)
   );
   // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
   if (statusFilter) {
@@ -572,6 +623,27 @@ function fetchConversations() {
   store.dispatch('fetchAllConversations').then(emitConversationLoaded);
 }
 
+async function refreshAutomationConversationCount() {
+  const requestId = (automationConversationStatsRequestId += 1);
+
+  try {
+    const count = await fetchAutomationConversationCount({
+      inboxId: props.conversationInbox ? props.conversationInbox : undefined,
+      labels: props.label ? [props.label] : undefined,
+      teamId: props.teamId || undefined,
+      conversationType: props.conversationType || undefined,
+    });
+
+    if (requestId === automationConversationStatsRequestId) {
+      automationConversationCount.value = count;
+    }
+  } catch (error) {
+    if (requestId === automationConversationStatsRequestId) {
+      automationConversationCount.value = 0;
+    }
+  }
+}
+
 function resetAndFetchData() {
   appliedFilter.value = [];
   resetBulkActions();
@@ -605,9 +677,25 @@ function loadMoreConversations() {
 
 function updateAssigneeTab(selectedTab) {
   if (activeAssigneeTab.value !== selectedTab) {
+    const wasAutomationTab = isAutomationAssigneeTab(activeAssigneeTab.value);
+
+    if (!wasAutomationTab) {
+      lastNonAutomationStatus.value = activeStatus.value;
+    }
+
     resetBulkActions();
     emitter.emit('clearSearchInput');
     activeAssigneeTab.value = selectedTab;
+
+    if (isAutomationAssigneeTab(selectedTab)) {
+      activeStatus.value = PENDING_STATUS;
+    } else if (wasAutomationTab && activeStatus.value === PENDING_STATUS) {
+      activeStatus.value =
+        lastNonAutomationStatus.value || wootConstants.STATUS_TYPE.OPEN;
+    }
+
+    store.dispatch('setChatStatusFilter', effectiveActiveStatus.value);
+
     if (!currentPage.value) {
       fetchConversations();
     }
@@ -617,6 +705,16 @@ function updateAssigneeTab(selectedTab) {
 function onBasicFilterChange(value, type) {
   if (type === 'status') {
     activeStatus.value = value;
+    if (!isAutomationAssigneeTab(activeAssigneeTab.value)) {
+      lastNonAutomationStatus.value = value;
+    }
+    if (
+      isAutomationAssigneeTab(activeAssigneeTab.value) &&
+      value !== PENDING_STATUS
+    ) {
+      activeAssigneeTab.value = ALL_ASSIGNEE_TAB;
+      lastNonAutomationStatus.value = value;
+    }
   } else {
     activeSortBy.value = value;
   }
@@ -740,7 +838,11 @@ function toggleConversationStatus(
   }
 
   store.dispatch('toggleStatus', payload).then(() => {
-    useAlert(t('CONVERSATION.CHANGE_STATUS'));
+    const alertKey =
+      status === wootConstants.STATUS_TYPE.RESOLVED
+        ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE_SUCCESS'
+        : 'CONVERSATION.CHANGE_STATUS';
+    useAlert(t(alertKey));
   });
 }
 
@@ -802,15 +904,19 @@ function toggleSelectAll(check) {
 
 useEmitter('fetch_conversation_stats', () => {
   if (hasAppliedFiltersOrActiveFolders.value) return;
-  store.dispatch('conversationStats/get', conversationFilters.value);
+  if (!isAutomationAssigneeTab(activeAssigneeTab.value)) {
+    store.dispatch('conversationStats/get', conversationStatsFilters.value);
+  }
+  refreshAutomationConversationCount();
 });
 
 onMounted(() => {
   store.dispatch('setChatListFilters', conversationFilters.value);
   setFiltersFromUISettings();
-  store.dispatch('setChatStatusFilter', activeStatus.value);
+  store.dispatch('setChatStatusFilter', effectiveActiveStatus.value);
   store.dispatch('setChatSortFilter', activeSortBy.value);
   resetAndFetchData();
+  refreshAutomationConversationCount();
   if (hasActiveFolders.value) {
     store.dispatch('campaigns/get');
   }
@@ -880,6 +986,16 @@ watch(conversationFilters, (newVal, oldVal) => {
     store.dispatch('updateChatListFilters', newVal);
   }
 });
+
+watch(
+  () => [
+    props.conversationInbox,
+    props.label,
+    props.teamId,
+    props.conversationType,
+  ],
+  () => refreshAutomationConversationCount()
+);
 </script>
 
 <template>
@@ -895,7 +1011,7 @@ watch(conversationFilters, (newVal, oldVal) => {
       :page-title="pageTitle"
       :has-applied-filters="hasAppliedFilters"
       :has-active-folders="hasActiveFolders"
-      :active-status="activeStatus"
+      :active-status="effectiveActiveStatus"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
@@ -927,11 +1043,11 @@ watch(conversationFilters, (newVal, oldVal) => {
       @close="onCloseDeleteFoldersModal"
     />
 
-    <ChatTypeTabs
+    <OperationalChatTypeTabs
       v-if="!hasAppliedFiltersOrActiveFolders"
       :items="assigneeTabItems"
+      :overflow-items="assigneeTabOverflowItems"
       :active-tab="activeAssigneeTab"
-      is-compact
       @chat-tab-change="updateAssigneeTab"
     />
 

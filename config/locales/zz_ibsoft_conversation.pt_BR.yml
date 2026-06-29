@@ -1,0 +1,13 @@
+pt_BR:
+  conversations:
+    activity:
+      captain:
+        resolved: 'A conversa foi marcada como encerrada por %{user_name} por inatividade'
+        resolved_with_reason: 'A conversa foi marcada como encerrada por %{user_name} (%{reason})'
+        resolved_by_tool: 'A conversa foi marcada como encerrada por %{user_name}: %{reason}'
+      status:
+        resolved: 'Conversa foi marcada como encerrada por %{user_name}'
+        contact_resolved: 'A conversa foi encerrada por %{contact_name}'
+        auto_resolved_days: 'A conversa foi marcada como encerrada pelo sistema por ter %{count} dias de inatividade'
+        auto_resolved_hours: 'A conversa foi marcada como encerrada pelo sistema por ter %{count} horas de inatividade'
+        auto_resolved_minutes: 'A conversa foi marcada como encerrada pelo sistema por ter %{count} minutos de inatividade'

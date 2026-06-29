@@ -19,6 +19,7 @@ misturar regra de negocio com o core do produto.
 - Estilo premium para salas/chats selecionados do chat interno.
 - Logos ChatHub em empty states de conversas.
 - Ajustes visuais do topo da sidebar.
+- LED lilas pulsante para itens operacionais com nao lidos na sidebar.
 
 ## Arquivos do patch
 
@@ -26,6 +27,8 @@ misturar regra de negocio com o core do produto.
   visuais.
 - `assets/chathub-logo-color.png`: logo ChatHub para tema claro.
 - `assets/chathub-logo-white.png`: logo ChatHub para tema escuro.
+- `app/javascript/dashboard/ibsoft/sidebar/SidebarPulseLed.vue`: indicador SVG
+  pulsante usado pela sidebar quando ha itens nao lidos.
 
 ## Pontos de acoplamento no Chatwoot
 
@@ -33,7 +36,12 @@ misturar regra de negocio com o core do produto.
 - `app/javascript/dashboard/components/widgets/conversation/EmptyState/EmptyState.vue`:
   adiciona classes estaveis para substituir icones por logos do patch.
 - `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: ajusta topo da
-  sidebar, botao de recolher/expandir e abertura inicial recolhida.
+  sidebar, botao de recolher/expandir, abertura inicial recolhida, icone do
+  item operacional `Atencao` e contadores oficiais usados pelo LED.
+- `app/javascript/dashboard/components-next/sidebar/SidebarGroup.vue`: renderiza
+  o LED no estado recolhido da sidebar.
+- `app/javascript/dashboard/components-next/sidebar/SidebarGroupHeader.vue`:
+  renderiza o LED no estado expandido da sidebar.
 - `app/javascript/dashboard/components-next/sidebar/SidebarAccountSwitcher.vue`:
   aumenta o logo compacto no estado recolhido.
 - `app/javascript/dashboard/ibsoft/internalChat/views/InternalChat.vue`: adiciona
