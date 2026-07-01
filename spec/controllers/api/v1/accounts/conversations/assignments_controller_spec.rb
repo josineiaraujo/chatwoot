@@ -89,6 +89,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
         expect(conversation.reload.team).to eq(team)
         # assignee will be from team
         expect(conversation.reload.assignee).to eq(team_member)
+        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
       end
     end
 
@@ -133,6 +134,7 @@ RSpec.describe 'Conversation Assignment API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(conversation.reload.team).to eq(team)
+        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('system_team_transfer')
       end
     end
 

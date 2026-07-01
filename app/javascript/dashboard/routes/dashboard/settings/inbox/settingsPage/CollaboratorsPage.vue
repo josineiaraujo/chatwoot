@@ -15,6 +15,7 @@ import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.v
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import assignmentPoliciesAPI from 'dashboard/api/assignmentPolicies';
+import InboxDistributionSettings from 'dashboard/ibsoft/conversationDistribution/components/InboxDistributionSettings.vue';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
@@ -667,6 +668,7 @@ onMounted(() => {
         </template>
       </SettingsToggleSection>
     </SettingsAccordion>
+    <InboxDistributionSettings :inbox="inbox" />
 
     <woot-modal
       v-if="showDeleteConfirmModal"

@@ -35,6 +35,11 @@ class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Account
 
   def set_team
     @team = Current.account.teams.find_by(id: params[:team_id])
+    if @team.present?
+      Ibsoft::ConversationDistribution::SourceMarker.new(
+        conversation: @conversation
+      ).assign
+    end
     @conversation.update!(team: @team)
     render json: @team
   end

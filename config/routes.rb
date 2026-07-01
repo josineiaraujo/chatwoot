@@ -319,6 +319,16 @@ Rails.application.routes.draw do
                 resource :read, only: [:create], controller: :reads
               end
             end
+
+            namespace :conversation_distribution do
+              resources :inbox_policies, only: [:show, :update], param: :inbox_id
+              resources :team_policies, only: [:show, :update], param: :team_id do
+                post :copy, on: :collection
+              end
+              resources :dry_runs, only: [:index]
+              resources :executions, only: [:create]
+              get :effective_policy, to: 'effective_policies#show'
+            end
           end
 
           # Assignment V2 Routes
