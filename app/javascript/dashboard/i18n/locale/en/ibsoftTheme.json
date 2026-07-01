@@ -7,6 +7,27 @@
   "SIDEBAR": {
     "INBOX": "Attention"
   },
+  "INBOX_MGMT": {
+    "BUSINESS_HOURS": {
+      "DAY_NAMES": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "BREAKS": {
+        "LABEL": "Breaks",
+        "ADD": "Add break",
+        "START": "Start",
+        "END": "End",
+        "REMOVE": "Remove break",
+        "VALIDATION_ERROR": "Break end time must be after start time."
+      }
+    }
+  },
   "IBSOFT_THEME": {
     "CONVERSATION_STATUS": {
       "PENDING_OPERATIONAL": "Automation"
@@ -38,6 +59,78 @@
     },
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversations appear here when there are new messages, mentions, or assignments for you."
+    },
+    "CONVERSATION_DISTRIBUTION": {
+      "TEAM_ACTION": "Configure distribution",
+      "ENABLED": {
+        "TITLE": "Automatic distribution",
+        "DESCRIPTION": "Enable this policy to control how conversations transferred to humans should be distributed."
+      },
+      "OVERRIDE": {
+        "TITLE": "Override channel rule",
+        "DESCRIPTION": "Use a specific rule for this team. When disabled, the team follows the channel-wide configuration."
+      },
+      "DISTRIBUTION": {
+        "TITLE": "Agent login",
+        "DESCRIPTION": "Define how the agent receives waiting conversations when they become available.",
+        "MIN_ON_LOGIN": "Required minimum on login",
+        "MAX_PER_ROUND": "Maximum per round",
+        "SINGLE_AGENT": "Assign every waiting conversation when there is only one available agent in the team"
+      },
+      "REDISTRIBUTION": {
+        "TITLE": "Redistribution",
+        "DESCRIPTION": "Rules to move conversations when the first agent does not answer the customer.",
+        "ENABLE_TIMEOUT": "Redistribute if the agent does not answer within the configured time",
+        "TIMEOUT": "First response timeout"
+      },
+      "UNAVAILABLE": {
+        "TITLE": "No available agent",
+        "DESCRIPTION": "Choose what happens when the bot or system transfers a conversation and no agent is available.",
+        "ACTION": "Action",
+        "WAIT": "Wait in the department",
+        "NOTIFY_CUSTOMER": "Send automatic message",
+        "FALLBACK_TEAM": "Transfer to fallback department",
+        "FALLBACK_TEAM_LABEL": "Fallback department",
+        "SELECT_TEAM": "Select department",
+        "MESSAGE": "Automatic message to customer"
+      },
+      "BUSINESS_HOURS": {
+        "TITLE": "Business hours",
+        "DESCRIPTION": "Define whether this policy follows the channel schedule or uses team-specific availability.",
+        "MODE": "Schedule rule",
+        "INHERIT_CHANNEL": "Follow channel schedule",
+        "CUSTOM": "Use team-specific schedule",
+        "ALWAYS_AVAILABLE": "Always available"
+      },
+      "SUPERVISOR_ALERT": {
+        "TITLE": "Supervisor alert",
+        "DESCRIPTION": "Register waiting conversations for administrator or supervisor follow-up.",
+        "ENABLED": "Alert supervisor when the customer is waiting",
+        "THRESHOLD": "Alert timeout"
+      },
+      "ACTIONS": {
+        "SAVE": "Save policy"
+      },
+      "API": {
+        "LOADING": "Loading distribution policy...",
+        "SAVE_SUCCESS": "Distribution policy saved successfully.",
+        "SAVE_ERROR": "Could not save the distribution policy.",
+        "COPY_SUCCESS": "Policy copied successfully.",
+        "COPY_ERROR": "Could not copy the selected policy."
+      },
+      "INBOX_SECTION": {
+        "TITLE": "Conversation distribution",
+        "DESCRIPTION": "Configure this channel's general rule. Team-specific rules can override this configuration."
+      },
+      "TEAM_MODAL": {
+        "TITLE": "{teamName} distribution",
+        "DESCRIPTION": "Configure how this team receives, waits, and redistributes conversations transferred to humans."
+      },
+      "COPY": {
+        "LABEL": "Copy rule from another team",
+        "PLACEHOLDER": "Select source team",
+        "BUTTON": "Copy rule"
+      }
     }
   }
 }

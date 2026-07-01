@@ -14,11 +14,15 @@ import {
 } from '../helpers/businessHour';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
-
-const DEFAULT_TIMEZONE = {
-  label: 'Pacific Time (US & Canada) (GMT-07:00)',
-  value: 'America/Los_Angeles',
-};
+import {
+  ibsoftBusinessHoursDayNameKey,
+  ibsoftBusinessHoursTimezoneOption,
+  ibsoftDefaultBusinessHoursTimezone,
+} from 'dashboard/ibsoft/localization/businessHoursDefaults';
+import {
+  parseWorkingHourBreaks,
+  transformWorkingHourBreaks,
+} from 'dashboard/ibsoft/localization/workingHourBreaks';
 
 export default {
   components: {
@@ -40,31 +44,43 @@ export default {
     return {
       isBusinessHoursEnabled: false,
       unavailableMessage: '',
-      timeZone: DEFAULT_TIMEZONE,
+      timeZone: ibsoftDefaultBusinessHoursTimezone(),
       dayNames: {
-        0: 'Sunday',
-        1: 'Monday',
-        2: 'Tuesday',
-        3: 'Wednesday',
-        4: 'Thursday',
-        5: 'Friday',
-        6: 'Saturday',
+        0: ibsoftBusinessHoursDayNameKey(0),
+        1: ibsoftBusinessHoursDayNameKey(1),
+        2: ibsoftBusinessHoursDayNameKey(2),
+        3: ibsoftBusinessHoursDayNameKey(3),
+        4: ibsoftBusinessHoursDayNameKey(4),
+        5: ibsoftBusinessHoursDayNameKey(5),
+        6: ibsoftBusinessHoursDayNameKey(6),
       },
       timeSlots: [...defaultTimeSlot],
+      workingHourBreaks: {},
     };
   },
   computed: {
     ...mapGetters({ uiFlags: 'inboxes/getUIFlags' }),
     hasError() {
       if (!this.isBusinessHoursEnabled) return false;
-      return this.timeSlots.filter(slot => slot.from && !slot.valid).length > 0;
+
+      const hasInvalidWorkingHours = this.timeSlots.some(
+        slot => slot.from && !slot.valid
+      );
+      const hasInvalidBreaks = Object.values(this.workingHourBreaks).some(
+        breaks => breaks.some(workingHourBreak => !workingHourBreak.valid)
+      );
+
+      return hasInvalidWorkingHours || hasInvalidBreaks;
     },
     timeZones() {
       return [...timeZoneOptions()];
     },
     timeZoneValue: {
       get() {
-        return this.timeZone.value;
+        return ibsoftBusinessHoursTimezoneOption(
+          this.timeZone?.value,
+          this.timeZones
+        ).value;
       },
       set(value) {
         const match = this.timeZones.find(tz => tz.value === value);
@@ -97,20 +113,32 @@ export default {
         working_hours: timeSlots = [],
         timezone: timeZone,
       } = this.inbox;
+      const workingHourBreaks =
+        this.inbox.ibsoft_working_hour_breaks ||
+        this.inbox.ibsoftWorkingHourBreaks ||
+        [];
       const slots = timeSlotParse(timeSlots).length
         ? timeSlotParse(timeSlots)
         : defaultTimeSlot;
       this.isBusinessHoursEnabled = isEnabled;
       this.unavailableMessage = unavailableMessage || '';
       this.timeSlots = slots;
-      this.timeZone =
-        this.timeZones.find(item => timeZone === item.value) ||
-        DEFAULT_TIMEZONE;
+      this.workingHourBreaks = parseWorkingHourBreaks(workingHourBreaks);
+      this.timeZone = ibsoftBusinessHoursTimezoneOption(
+        timeZone,
+        this.timeZones
+      );
     },
     onSlotUpdate(slotIndex, slotData) {
       this.timeSlots = this.timeSlots.map(item =>
         item.day === slotIndex ? slotData : item
       );
+    },
+    onBreaksUpdate(day, breaks) {
+      this.workingHourBreaks = {
+        ...this.workingHourBreaks,
+        [day]: breaks,
+      };
     },
     async updateInbox() {
       try {
@@ -120,7 +148,10 @@ export default {
           working_hours_enabled: this.isBusinessHoursEnabled,
           out_of_office_message: this.unavailableMessage,
           working_hours: timeSlotTransform(this.timeSlots),
-          timezone: this.timeZone.value,
+          ibsoft_working_hour_breaks: transformWorkingHourBreaks(
+            this.workingHourBreaks
+          ),
+          timezone: this.timeZoneValue,
           channel: {},
         };
         await this.$store.dispatch('inboxes/updateInbox', payload);
@@ -206,9 +237,11 @@ export default {
               <BusinessDay
                 v-for="timeSlot in timeSlots"
                 :key="timeSlot.day"
-                :day-name="dayNames[timeSlot.day]"
+                :day-name="$t(dayNames[timeSlot.day])"
                 :time-slot="timeSlot"
+                :break-slots="workingHourBreaks[timeSlot.day] || []"
                 @update="data => onSlotUpdate(timeSlot.day, data)"
+                @update-breaks="data => onBreaksUpdate(timeSlot.day, data)"
               />
             </tbody>
           </table>
