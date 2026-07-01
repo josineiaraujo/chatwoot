@@ -27,6 +27,8 @@ padrao do Chatwoot.
   apresentacao do status `pending` e da aba operacional.
 - `automationConversationStats.js`: busca a contagem de conversas em
   `Automacoes` usando a API oficial de meta de conversas.
+- `statusStatsRefresh.js`: centraliza o criterio para recarregar contadores
+  quando uma conversa entra ou sai do status `pending`.
 - `protocol.js`: calcula o protocolo operacional a partir de `created_at`,
   `account_id` e `display_id` da conversa, e valida o formato usado pelo filtro.
 - `app/services/ibsoft/conversation/protocol.rb`: concentra o parser backend do
@@ -69,6 +71,9 @@ padrao do Chatwoot.
 - Acoes de encerramento no header, menu contextual, command bar, modal de
   atributos obrigatorios e acoes em massa usam traducoes Ibsoft para apresentar
   `Encerrar atendimento`, preservando o status interno `resolved`.
+- Mudancas locais de status feitas pelo header, menu contextual ou acoes em
+  massa disparam refresh dos contadores quando envolvem `pending`, mantendo a
+  badge `Automacoes` sincronizada com a lista.
 - O modal de atalhos aceita `titleKey` opcional para que os atalhos de
   encerramento usem traducoes Ibsoft sem alterar traducoes globais do
   Chatwoot.
@@ -93,6 +98,7 @@ padrao do Chatwoot.
 - `git diff --check`
 - `node --check app/javascript/dashboard/ibsoft/conversation/statusPresentation.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/automationConversationStats.js`
+- `node --check app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/protocol.js`
 - `bundle exec rspec spec/services/search_service_spec.rb spec/finders/conversation_finder_spec.rb spec/controllers/api/v1/accounts/search_controller_spec.rb`
 - ESLint deve ser executado quando `node_modules` estiver instalado.
