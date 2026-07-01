@@ -35,6 +35,98 @@ registrado aqui no mesmo commit da mudanca.
 
 ## Modulos e patches privados
 
+### 0. Distribuicao de atendimentos Ibsoft
+
+Documento detalhado: `IBSOFT_CONVERSATION_DISTRIBUTION.md`.
+
+Objetivo:
+
+- Criar uma politica privada de distribuicao e redistribuicao de atendimentos
+  humanos, separada do Assignment V2 como motor executor.
+- Permitir configuracao padrao por canal de comunicacao e sobrescrita por time.
+- Preparar suporte a horarios de funcionamento por time, fallback, alerta de
+  supervisor e auditoria de redistribuicoes.
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/conversation_distribution/`
+- `app/services/ibsoft/conversation_distribution/`
+- `app/jobs/ibsoft/conversation_distribution/`
+- `app/controllers/api/v1/accounts/ibsoft/conversation_distribution/`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/`
+- `spec/**/ibsoft/conversation_distribution/`
+
+Banco de dados:
+
+- `db/migrate/20260701090000_create_ibsoft_conversation_distribution.rb`
+- tabelas `ibsoft_conversation_distribution_channel_policies`,
+  `ibsoft_conversation_distribution_team_policies` e
+  `ibsoft_conversation_distribution_event_logs`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra rotas API do namespace
+  `/api/v1/accounts/:account_id/ibsoft/conversation_distribution`.
+- `config/schedule.yml`: registra o cron privado
+  `ibsoft_conversation_distribution_watchdog_job`, inerte por flag.
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CollaboratorsPage.vue`:
+  registra a secao de distribuicao de atendimentos na configuracao do canal.
+- `app/javascript/dashboard/routes/dashboard/settings/teams/Index.vue`: registra
+  o botao de configuracao de distribuicao por time.
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
+  `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: registram
+  textos da UI do modulo.
+- `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
+  marca origem Ibsoft quando uma conversa e atribuida a time via API/UI.
+- `app/services/action_service.rb`: marca origem Ibsoft quando uma acao,
+  automacao ou macro atribui a conversa a um time.
+
+Estado atual:
+
+- Incremento inicial de configuracao, UI administrativa e resolucao de politica
+  efetiva.
+- Endpoint administrativo `GET /dry_runs` para pre-visualizar, sem escrita, as
+  conversas candidatas a distribuicao.
+- Endpoint administrativo `POST /executions` para executar a atribuicao com
+  auditoria. Por padrao, a execucao real fica bloqueada pela env
+  `IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=false`.
+- Job automatico `Ibsoft::ConversationDistribution::WatchdogJob` registrado no
+  cron, mas inerte por padrao pela env
+  `IBSOFT_CONVERSATION_DISTRIBUTION_JOB_ENABLED=false`.
+- Service `DecisionResolver` centraliza a decisao antes da atribuicao,
+  considerando elegibilidade, politica efetiva, horario e acao configurada para
+  indisponibilidade.
+- Service `DecisionActionExecutor` executa `notify_customer` e `fallback_team`
+  com idempotencia, mantendo os efeitos colaterais protegidos pela flag de
+  execucao real.
+- Services `RedistributionCandidateFinder` e `RedistributionExecutor` executam a
+  redistribuicao de conversas atribuidas pelo modulo Ibsoft quando o agente nao
+  deu primeira resposta dentro do timeout configurado.
+- Marcacao explicita da origem de transferencia para time em
+  `additional_attributes.ibsoft_distribution_source`, sem executar atribuicao
+  automatica.
+- Nenhum comportamento automatico de conversa fica ativo sem flag explicita.
+- Nenhum callback de conversa, presenca de agente ou Assignment V2 foi alterado.
+- A cobertura automatizada valida que o executor Ibsoft continua atribuindo
+  conversas elegiveis com `assignment_v2` desligado, sem enfileirar o worker
+  nativo do Assignment V2.
+- A matriz automatizada tambem cobre origens permitidas/bloqueadas, precedencia
+  time > canal, limite e ordem por `waiting_since`, falhas parciais, multiplos
+  agentes online, limite de capacidade legado, filtros por canal/time e
+  isolamento entre contas.
+- A redistribuicao valida que apenas conversas com ultimo evento Ibsoft
+  `assignment_completed` ou `redistribution_completed` sao candidatas, ignora
+  reatribuicoes manuais e conversas ja respondidas, exclui o agente atual da
+  rodada, respeita a flag de execucao real e usa o ultimo evento Ibsoft como
+  novo marco de timeout.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
+- `bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
+- `bundle exec rspec spec/controllers/api/v1/accounts/conversations/assignments_controller_spec.rb spec/services/action_service_spec.rb`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/conversationDistribution app/javascript/dashboard/routes/dashboard/settings/teams/Index.vue app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CollaboratorsPage.vue`
+
 ### 1. Chat interno Ibsoft
 
 Documento detalhado: `IBSOFT_INTERNAL_CHAT.md`.
@@ -102,6 +194,8 @@ Objetivo:
 - Permitir pesquisar/filtrar conversas por protocolo sem criar coluna nova no
   banco.
 - Apresentar `resolved` como `Encerrar atendimento` nos fluxos operacionais.
+- Manter a contagem da aba `Automacoes` sincronizada quando uma conversa entra
+  ou sai de `pending` por acoes locais de status.
 - Forcar conversas iniciadas manualmente por agente pela tela de nova mensagem
   a nascerem como `open`, mesmo em caixas com bot ativo, sem alterar o fluxo de
   clientes que entram de fora e devem continuar indo para `pending`.
@@ -133,7 +227,8 @@ Pontos de acoplamento no Chatwoot original:
 - `app/services/conversations/filter_service.rb`: expande filtro privado
   `ibsoft_protocol` para filtros nativos.
 - `app/javascript/dashboard/components/ChatList.vue`: conecta tabs
-  operacionais, contagem de automacoes e mapeamento de `Automacoes`.
+  operacionais, contagem de automacoes, refresh de contadores em mudancas de
+  status e mapeamento de `Automacoes`.
 - `app/javascript/dashboard/components/ChatListHeader.vue`: usa helper Ibsoft
   para label de status.
 - `app/javascript/dashboard/components-next/filter/provider.js`: registra o
@@ -151,13 +246,15 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`:
   oculta `pending` manual e troca texto de encerramento.
 - `app/javascript/dashboard/components/buttons/ResolveAction.vue`: troca
-  apresentacao de resolver para encerrar atendimento e impede pendente manual.
+  apresentacao de resolver para encerrar atendimento, impede pendente manual e
+  dispara refresh de contadores quando uma conversa sai de `pending`.
 - `app/javascript/dashboard/components/widgets/conversation/conversationBulkActions/BulkUpdateActions.vue`:
   troca textos de encerramento em massa.
 - `app/javascript/dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue`:
   troca textos de atributos obrigatorios no encerramento.
 - `app/javascript/dashboard/composables/chatlist/useBulkActions.js`: mensagens
-  de sucesso/erro do encerramento em massa.
+  de sucesso/erro do encerramento em massa e refresh de contadores quando uma
+  acao em massa envolve `pending`.
 - `app/javascript/dashboard/composables/commands/useBulkActionsHotKeys.js` e
   spec correspondente: atalhos de encerramento.
 - `app/javascript/dashboard/helper/commandbar/actions.js`: texto do comando de
@@ -167,6 +264,9 @@ Pontos de acoplamento no Chatwoot original:
   Ibsoft.
 - `app/javascript/dashboard/store/modules/conversations/actions.js` e
   `helpers/actionHelpers.js`: preservam contadores ao buscar automacoes.
+- `app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`:
+  centraliza a emissao de refresh dos contadores quando uma mudanca de status
+  envolve `pending`.
 
 Specs relacionadas:
 
@@ -246,7 +346,11 @@ Objetivo:
 
 - Sobrescrever textos pontuais sem editar arquivos oficiais de traducao do
   Chatwoot.
-- Exemplo atual: `Caixa de entrada` passou a ser exibido como `Atencao`.
+- Manter a area operacional de conversas como `Atencao`, por exemplo
+  `INBOX.LIST.TITLE` e `SIDEBAR.INBOX`.
+- Exibir o conceito administrativo de inbox como `Canais de comunicacao` nas
+  telas de configuracao, filtros, relatorios, campanhas, integracoes e
+  politicas.
 
 Arquivos privados principais:
 
@@ -270,7 +374,10 @@ Risco principal:
 
 ### 5. Datas, horarios e tempos relativos localizados
 
-Documento detalhado: `app/javascript/shared/ibsoft/locale/README.md`.
+Documentos detalhados:
+
+- `app/javascript/shared/ibsoft/locale/README.md`
+- `app/javascript/dashboard/ibsoft/localization/README.md`
 
 Objetivo:
 
@@ -278,19 +385,60 @@ Objetivo:
 - Centralizar formatos em helper privado com fallback compativel.
 - Cobrir mensagens, tooltips, snooze, busca, inbox, relatorios, billing,
   date picker, eventos SLA, Shopify e emails citados.
+- Definir Brasilia (`America/Sao_Paulo`) como fuso padrao operacional da
+  instalacao Ibsoft para canais de comunicacao e relatorios.
+- Traduzir e ajustar a tela de horario de atendimento do canal de comunicacao
+  sem editar os arquivos oficiais de locale do Chatwoot.
+- Permitir intervalos/pausas dentro do horario de atendimento usando tabela
+  Ibsoft separada, sem alterar a estrutura nativa de `working_hours`.
 
 Arquivos privados principais:
 
 - `app/javascript/shared/ibsoft/locale/dateTime.js`
 - `app/javascript/shared/ibsoft/locale/README.md`
+- `app/javascript/dashboard/ibsoft/localization/README.md`
+- `app/javascript/dashboard/ibsoft/localization/defaultTimezone.js`
+- `app/javascript/dashboard/ibsoft/localization/businessHoursDefaults.js`
+- `app/javascript/dashboard/ibsoft/localization/workingHourBreaks.js`
+- `app/services/ibsoft/localization/default_timezone.rb`
+- `app/models/ibsoft/localization/working_hour_break.rb`
+- `app/models/concerns/ibsoft/localization/account_default_timezone.rb`
+- `app/models/concerns/ibsoft/localization/inbox_working_hour_breaks.rb`
+- `app/models/concerns/ibsoft/localization/working_hour_break_aware.rb`
+- `app/controllers/concerns/ibsoft/localization/inboxes_controller_working_hour_breaks.rb`
+- `config/locales/zz_ibsoft_localization.en.yml`
+- `config/locales/zz_ibsoft_localization.pt_BR.yml`
+- `config/initializers/ibsoft_localization_defaults.rb`
+- `db/migrate/20260630090000_set_ibsoft_default_timezone.rb`
+- `db/migrate/20260630091000_create_ibsoft_working_hour_breaks.rb`
+- `spec/models/ibsoft/localization/working_hour_break_spec.rb`
+- `spec/factories/ibsoft/localization/working_hour_breaks.rb`
 
 Pontos de acoplamento no Chatwoot original:
 
+- `app/views/api/v1/models/_inbox.json.jbuilder`,
+  `app/views/public/api/v1/models/_inbox.json.jbuilder` e
+  `app/views/api/v1/widget/configs/create.json.jbuilder`: expoem
+  `ibsoft_working_hour_breaks`.
 - `app/javascript/shared/helpers/timeHelper.js`
 - `app/javascript/shared/helpers/DateHelper.js`
 - `app/javascript/dashboard/App.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/WeeklyAvailability.vue`:
+  usa helper Ibsoft para o fuso padrao de horario de atendimento e traduz os
+  nomes dos dias; tambem envia pausas de atendimento.
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/BusinessDay.vue`:
+  adiciona a UI de intervalos por dia.
+- `app/javascript/dashboard/routes/dashboard/onboarding/account-details/useAccountEnrichment.js`:
+  usa o fuso padrao Ibsoft quando a conta ainda nao possui timezone enriquecido.
+- `app/javascript/widget/helpers/availabilityHelpers.js`,
+  `app/javascript/widget/composables/useAvailability.js`,
+  `app/javascript/widget/components/Availability/AvailabilityContainer.vue` e
+  `app/javascript/widget/components/Availability/AvailabilityText.vue`:
+  aplicam pausas no widget.
+- `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`: sobrescreve textos
+  de horario de atendimento por merge de locale Ibsoft.
 - Componentes que usavam `date-fns/format` diretamente foram ajustados para
   usar `ibsoftFormatDate`.
 
@@ -299,6 +447,10 @@ Risco principal:
 - Novos componentes do upstream podem voltar a usar `date-fns/format`
   diretamente. Ao atualizar, procurar por imports diretos de `format` em telas
   exibidas ao usuario.
+- Se o upstream alterar a tela de disponibilidade da inbox, preservar apenas a
+  delegacao para `businessHoursDefaults.js` e as traducoes via `ibsoftTheme`.
+- Se o upstream alterar o widget ou o modelo `working_hours`, validar que
+  `ibsoft_working_hour_breaks` continua sendo aplicado no backend e no widget.
 
 ### 6. Imagem Docker privada
 
@@ -330,8 +482,12 @@ quando o upstream alterar a mesma area.
 
 ### Backend Rails
 
+- `config/initializers/ibsoft_localization_defaults.rb`
 - `config/routes.rb`
+- `config/schedule.yml`
+- `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`
 - `app/finders/conversation_finder.rb`
+- `app/services/action_service.rb`
 - `app/services/search_service.rb`
 - `app/services/conversations/filter_service.rb`
 - `db/schema.rb`
@@ -377,11 +533,19 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/store/modules/conversations/actions.js`
 - `app/javascript/dashboard/store/modules/conversations/helpers/actionHelpers.js`
 - `app/javascript/dashboard/store/modules/conversations/helpers/filterHelpers.js`
+- `app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`
 
 ### Frontend: datas e horarios
 
+- `app/javascript/widget/helpers/availabilityHelpers.js`
+- `app/javascript/widget/composables/useAvailability.js`
+- `app/javascript/widget/components/Availability/AvailabilityContainer.vue`
+- `app/javascript/widget/components/Availability/AvailabilityText.vue`
 - `app/javascript/shared/helpers/timeHelper.js`
 - `app/javascript/shared/helpers/DateHelper.js`
+- `app/javascript/dashboard/routes/dashboard/onboarding/account-details/useAccountEnrichment.js`
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/WeeklyAvailability.vue`
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/BusinessDay.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
 
@@ -425,6 +589,7 @@ diff atual e a intencao da branch.
 - `bundle exec rspec spec/models/ibsoft/internal_chat spec/policies/ibsoft/internal_chat spec/services/ibsoft/internal_chat spec/requests/api/v1/accounts/ibsoft/internal_chat`
 - `bundle exec rspec spec/services/search_service_spec.rb spec/finders/conversation_finder_spec.rb spec/controllers/api/v1/accounts/search_controller_spec.rb`
 - `node --check app/javascript/dashboard/ibsoft/conversation/statusPresentation.js`
+- `node --check app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/protocol.js`
 - `node --check app/javascript/dashboard/ibsoft/i18n/mergeLocale.js`
 - validar manualmente: sidebar, Atencao, conversas, Automacoes, Protocolo,
