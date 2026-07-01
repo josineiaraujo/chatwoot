@@ -5,7 +5,568 @@
     }
   },
   "SIDEBAR": {
-    "INBOX": "Atenção"
+    "INBOX": "Atenção",
+    "INBOX_VIEW": "Canal de comunicação",
+    "CAPTAIN_INBOXES": "Canais de comunicação",
+    "INBOXES": "Canais de comunicação",
+    "NEW_INBOX": "Novo canal de comunicação",
+    "REPORTS_INBOX": "Canais de comunicação",
+    "REAUTHORIZE": "A conexão com o seu canal de comunicação expirou. Reconecte para continuar recebendo e enviando mensagens."
+  },
+  "FILTER": {
+    "ATTRIBUTES": {
+      "INBOX_NAME": "Canal de comunicação"
+    }
+  },
+  "AUTOMATION": {
+    "ATTRIBUTES": {
+      "INBOX": "Canal de comunicação"
+    }
+  },
+  "AUDIT_LOGS": {
+    "INBOX": {
+      "ADD": "{agentName} criou um canal de comunicação (#{id})",
+      "EDIT": "{agentName} atualizou um canal de comunicação (#{id})",
+      "DELETE": "{agentName} excluiu um canal de comunicação (#{id})"
+    },
+    "INBOX_MEMBER": {
+      "ADD": "{agentName} adicionou {user} ao canal de comunicação (#{inbox_id})",
+      "REMOVE": "{agentName} removeu {user} do canal de comunicação (#{inbox_id})"
+    }
+  },
+  "AGENT_BOTS": {
+    "BOT_CONFIGURATION": {
+      "DESC": "Atribua um agente robô ao seu canal de comunicação. Ele pode lidar com as conversas iniciais e transferi-las para um agente humano quando necessário."
+    }
+  },
+  "AGENT_MGMT": {
+    "ADD": {
+      "DESC": "Você pode adicionar pessoas que poderão acompanhar o suporte dos seus canais de comunicação."
+    }
+  },
+  "CAMPAIGN": {
+    "LIVE_CHAT": {
+      "CREATE": {
+        "FORM": {
+          "INBOX": {
+            "LABEL": "Selecionar canal de comunicação",
+            "PLACEHOLDER": "Selecionar canal de comunicação",
+            "ERROR": "Canal de comunicação obrigatório"
+          }
+        }
+      }
+    },
+    "SMS": {
+      "CREATE": {
+        "FORM": {
+          "INBOX": {
+            "LABEL": "Selecionar canal de comunicação",
+            "PLACEHOLDER": "Selecionar canal de comunicação",
+            "ERROR": "Canal de comunicação obrigatório"
+          }
+        }
+      }
+    },
+    "WHATSAPP": {
+      "CREATE": {
+        "FORM": {
+          "INBOX": {
+            "LABEL": "Selecionar canal de comunicação",
+            "PLACEHOLDER": "Selecionar canal de comunicação",
+            "ERROR": "Canal de comunicação obrigatório"
+          }
+        }
+      }
+    }
+  },
+  "CONTACT_PANEL": {
+    "VOICE_INBOX_PICKER": {
+      "TITLE": "Escolha um canal de comunicação de voz"
+    }
+  },
+  "NEW_CONVERSATION": {
+    "NO_INBOX": "Não foi possível encontrar um canal de comunicação para iniciar uma nova conversa com este contato.",
+    "FORM": {
+      "INBOX": {
+        "LABEL": "Canal de comunicação",
+        "PLACEHOLDER": "Escolher o canal de comunicação de origem",
+        "ERROR": "Selecione um canal de comunicação"
+      }
+    }
+  },
+  "COMPOSE_NEW_CONVERSATION": {
+    "FORM": {
+      "NO_INBOX_ALERT": "Não há canais de comunicação disponíveis para iniciar uma conversa com este contato.",
+      "INBOX_SELECTOR": {
+        "BUTTON": "Mostrar canais de comunicação"
+      }
+    }
+  },
+  "CONVERSATION": {
+    "NO_MESSAGE_1": "Oh oh! Parece que não há mensagens de clientes nos seus atendimentos.",
+    "NO_INBOX_1": "Olá! Parece que você ainda não adicionou nenhum canal de comunicação.",
+    "NO_INBOX_AGENT": "Uh oh! Parece que você não faz parte de nenhum canal de comunicação. Contate seu administrador.",
+    "LOADING_INBOXES": "Carregando canais de comunicação",
+    "OLD_INSTAGRAM_INBOX_REPLY_BANNER": "Esta conta do Instagram foi migrada para o novo canal de comunicação do Instagram. Todas as novas mensagens serão mostradas lá. Você não poderá mais enviar mensagens desta conversa.",
+    "ONBOARDING": {
+      "ALL_CONVERSATION": {
+        "NEW_LINK": "Clique aqui para criar um canal de comunicação"
+      }
+    }
+  },
+  "GENERAL_SETTINGS": {
+    "LIMIT_MESSAGES": {
+      "INBOXES": "Você excedeu o limite de canais de comunicação. O plano Hacker só suporta chat ao vivo do site. Canais adicionais como e-mail, WhatsApp etc. requerem um plano pago."
+    }
+  },
+  "COMMAND_BAR": {
+    "COMMANDS": {
+      "GO_TO_INBOX_REPORTS": "Ir para relatórios de canais de comunicação",
+      "GO_TO_SETTINGS_INBOXES": "Ir para configurações de canais de comunicação"
+    }
+  },
+  "ONBOARDING": {
+    "ALL_CONVERSATION": {
+      "NEW_LINK": "Clique aqui para criar um canal de comunicação"
+    }
+  },
+  "PROFILE_SETTINGS": {
+    "FORM": {
+      "MESSAGE_SIGNATURE_SECTION": {
+        "NOTE": "Crie uma assinatura de mensagem única para aparecer no final de cada mensagem que você enviar por qualquer canal de comunicação. Você também pode incluir uma imagem anexada, suportada em live-chat, e-mail e canais de API."
+      }
+    }
+  },
+  "YEAR_IN_REVIEW": {
+    "CONVERSATIONS": {
+      "COMPARISON": {
+        "0_50": "Você esteve presente e é assim que todo bom canal de comunicação começa.",
+        "2000_10000": "Você lidou com alto tráfego no seu canal de comunicação com tranquilidade."
+      }
+    },
+    "BUSIEST_DAY": {
+      "COMPARISON": {
+        "0_5": "Só um aquecimento leve, mal deu tempo do canal de comunicação acordar.",
+        "10_25": "A coisa começou a esquentar e o canal de comunicação teve que ficar ligado o tempo todo.",
+        "500_PLUS": "O canal de comunicação perdeu totalmente a calma e não deu trégua em nenhum momento."
+      }
+    },
+    "PERSONALITY": {
+      "MESSAGES": {
+        "QUICK_RESPONDER": "Você respondia em média em {time}. O canal de comunicação mal teve tempo de esperar."
+      }
+    },
+    "THANK_YOU": {
+      "TITLE": "Parabéns por sobreviver ao canal de comunicação de {year}."
+    }
+  },
+  "INTEGRATION_APPS": {
+    "LIST": {
+      "INBOX": "Canal de comunicação"
+    },
+    "ADD": {
+      "FORM": {
+        "INBOX": {
+          "LABEL": "Selecionar canal de comunicação",
+          "PLACEHOLDER": "Selecionar canal de comunicação"
+        }
+      }
+    }
+  },
+  "INTEGRATION_SETTINGS": {
+    "WEBHOOK": {
+      "FORM": {
+        "SUBSCRIPTIONS": {
+          "EVENTS": {
+            "INBOX_UPDATED": "Canal de comunicação atualizado"
+          }
+        }
+      }
+    }
+  },
+  "CAPTAIN": {
+    "ASSISTANTS": {
+      "DELETE": {
+        "DESCRIPTION": "Esta ação é permanente. Excluir este assistente irá removê-lo de todos os canais de comunicação conectados e apagará permanentemente todo o conhecimento gerado."
+      },
+      "SETTINGS": {
+        "DELETE": {
+          "DESCRIPTION": "Esta ação é permanente. Excluir este assistente irá removê-lo de todos os canais de comunicação conectados e apagará permanentemente todo o conhecimento gerado."
+        }
+      },
+      "OPTIONS": {
+        "VIEW_CONNECTED_INBOXES": "Ver canais de comunicação conectados"
+      }
+    },
+    "INBOXES": {
+      "HEADER": "Canais de comunicação conectados",
+      "ADD_NEW": "Conectar um novo canal de comunicação",
+      "DELETE": {
+        "TITLE": "Tem certeza que deseja desconectar o canal de comunicação?",
+        "SUCCESS_MESSAGE": "O canal de comunicação foi desconectado com sucesso.",
+        "ERROR_MESSAGE": "Ocorreu um erro ao desconectar o canal de comunicação. Tente novamente."
+      },
+      "FORM_DESCRIPTION": "Escolha um canal de comunicação para conectar ao assistente.",
+      "CREATE": {
+        "TITLE": "Conectar canal de comunicação",
+        "SUCCESS_MESSAGE": "O canal de comunicação foi conectado com sucesso.",
+        "ERROR_MESSAGE": "Ocorreu um erro ao conectar o canal de comunicação. Tente novamente."
+      },
+      "FORM": {
+        "INBOX": {
+          "LABEL": "Canal de comunicação",
+          "PLACEHOLDER": "Selecione o canal de comunicação para implantar o assistente.",
+          "ERROR": "É obrigatório selecionar um canal de comunicação."
+        }
+      },
+      "EMPTY_STATE": {
+        "TITLE": "Canal de comunicação não conectado",
+        "SUBTITLE": "Conectar um canal de comunicação permite ao assistente lidar com perguntas iniciais de seus clientes antes de transferi-las para você."
+      }
+    }
+  },
+  "INBOX_MGMT": {
+    "HEADER": "Canais de comunicação",
+    "DESCRIPTION": "Um canal de comunicação é o modo que seu cliente escolhe para interagir com você. Aqui você gerencia interações de canais como e-mail, chat ao vivo e mídias sociais.",
+    "LEARN_MORE": "Saiba mais sobre os canais de comunicação",
+    "COUNT": "{n} canal de comunicação | {n} canais de comunicação",
+    "SEARCH_PLACEHOLDER": "Pesquisar canais de comunicação...",
+    "NO_RESULTS": "Nenhum canal de comunicação encontrado correspondente à sua busca",
+    "RECONNECTION_REQUIRED": "Seu canal de comunicação está desconectado. Você não receberá novas mensagens até reautorizar.",
+    "LIST": {
+      "404": "Não há canais de comunicação anexados a esta conta."
+    },
+    "CREATE_FLOW": {
+      "INBOX": {
+        "TITLE": "Criar canal de comunicação",
+        "BODY": "Autenticar sua conta e criar um canal de comunicação."
+      },
+      "AGENT": {
+        "BODY": "Adicionar agentes ao canal de comunicação criado."
+      }
+    },
+    "ADD": {
+      "CHANNEL_NAME": {
+        "LABEL": "Nome do canal de comunicação",
+        "PLACEHOLDER": "Digite o nome do canal de comunicação (ex: Acme Inc)"
+      },
+      "FB": {
+        "INBOX_NAME": "Nome do canal de comunicação",
+        "ADD_NAME": "Adicione um nome para seu canal de comunicação",
+        "PICK_NAME": "Escolha um nome para seu canal de comunicação",
+        "CREATE_INBOX": "Criar canal de comunicação"
+      },
+      "INSTAGRAM": {
+        "NEW_INBOX_SUGGESTION": "Esta conta do Instagram estava conectada a outro canal de comunicação e agora foi migrada para aqui. Todas as novas mensagens aparecerão aqui. O canal antigo não poderá mais enviar ou receber mensagens para esta conta.",
+        "DUPLICATE_INBOX_BANNER": "Esta conta do Instagram foi migrada para o novo canal de comunicação do Instagram. Você não poderá mais enviar/receber mensagens do Instagram por este canal."
+      },
+      "WEBSITE_CHANNEL": {
+        "SUBMIT_BUTTON": "Criar canal de comunicação"
+      },
+      "TWILIO": {
+        "CHANNEL_NAME": {
+          "LABEL": "Nome do canal de comunicação",
+          "PLACEHOLDER": "Digite um nome para o canal de comunicação"
+        }
+      },
+      "SMS": {
+        "BANDWIDTH": {
+          "INBOX_NAME": {
+            "LABEL": "Nome do canal de comunicação",
+            "PLACEHOLDER": "Digite um nome para o canal de comunicação"
+          }
+        }
+      },
+      "WHATSAPP": {
+        "INBOX_NAME": {
+          "LABEL": "Nome do canal de comunicação",
+          "PLACEHOLDER": "Digite um nome para o canal de comunicação"
+        },
+        "EMBEDDED_SIGNUP": {
+          "CALLING_ENABLE_FAILED": "Seu canal de comunicação do WhatsApp está pronto, mas as chamadas de voz não puderam ser ativadas. Este número ainda não está cadastrado na API de Chamadas do WhatsApp Business. Entre em contato com a Meta ou com seu provedor de soluções WhatsApp Business para realizar o cadastro e, depois, ative as chamadas nas configurações de Chamadas do canal."
+        }
+      },
+      "EMAIL_CHANNEL": {
+        "DESC": "Integre seu canal de comunicação de e-mail.",
+        "FINISH_MESSAGE_NO_FORWARDING": "Seu canal de comunicação de e-mail foi criado com sucesso. É necessário configurar as credenciais de SMTP e IMAP para enviar e receber e-mails. Sem essas configurações, nenhum e-mail será processado."
+      },
+      "AGENTS": {
+        "DESC": "Aqui você pode adicionar agentes para gerenciar seu canal de comunicação recém-criado. Somente esses agentes selecionados terão acesso ao canal. Os agentes que não fazem parte deste canal não poderão ver ou responder mensagens nele quando fizerem login. <br> <b> PS: </b> Como administrador, se você precisar acessar todos os canais de comunicação, adicione-se como agente a todos os canais criados.",
+        "VALIDATION_ERROR": "Adicione pelo menos um agente ao seu novo canal de comunicação",
+        "PICK_AGENTS": "Escolha agentes para o canal de comunicação"
+      },
+      "DETAILS": {
+        "TITLE": "Detalhes do canal de comunicação",
+        "DESC": "No menu abaixo, selecione a Página do Facebook que você deseja conectar ao Chatwoot. Você também pode dar um nome personalizado para seu canal de comunicação para uma melhor identificação."
+      },
+      "FINISH": {
+        "DESC": "Você concluiu a integração da sua página do Facebook com o Chatwoot. Na próxima vez que um cliente enviar uma mensagem para sua página, a conversa aparecerá automaticamente no seu canal de comunicação. <br> Também fornecemos um script de widget que você pode adicionar ao seu site. Assim que estiver disponível no site, os clientes poderão enviar mensagens diretamente pelo site, e a conversa aparecerá aqui no Chatwoot."
+      },
+      "MICROSOFT": {
+        "DESCRIPTION": "Clique no botão Entrar com a Microsoft para começar. Você será redirecionado para o login do e-mail. Após aceitar as permissões solicitadas, você será redirecionado de volta para a etapa de criação do canal de comunicação."
+      },
+      "GOOGLE": {
+        "DESCRIPTION": "Clique no botão Entrar com o Google para começar. Você será redirecionado para o login do e-mail. Depois que você aceitar as permissões solicitadas, você será redirecionado de volta para a etapa de criação do canal de comunicação."
+      }
+    },
+    "DETAILS": {
+      "CREATING_CHANNEL": "Criando seu canal de comunicação...",
+      "TITLE": "Configurar detalhes do canal de comunicação"
+    },
+    "AGENTS": {
+      "ADD_AGENTS": "Adicionando agentes ao seu canal de comunicação..."
+    },
+    "FINISH": {
+      "TITLE": "Seu canal de comunicação está pronto!",
+      "WEBSITE_SUCCESS": "Você concluiu a criação de um canal de site. Copie o código mostrado abaixo e cole-o no seu site. Na próxima vez que um cliente usar o bate-papo ao vivo, a conversa aparecerá automaticamente no seu canal de comunicação.",
+      "WHATSAPP_QR_INSTRUCTION": "Escaneie o código QR acima para testar rapidamente seu canal de comunicação do WhatsApp",
+      "MESSENGER_QR_INSTRUCTION": "Escaneie o código QR acima para testar rapidamente seu canal de comunicação do Facebook Messenger",
+      "TELEGRAM_QR_INSTRUCTION": "Escaneie o código QR acima para testar rapidamente seu canal de comunicação do Telegram"
+    },
+    "EDIT": {
+      "API": {
+        "SUCCESS_MESSAGE": "Configurações do canal de comunicação atualizadas com sucesso",
+        "ERROR_MESSAGE": "Não foi possível atualizar as configurações do canal de comunicação. Tente novamente mais tarde."
+      }
+    },
+    "DELETE": {
+      "API": {
+        "ERROR_MESSAGE": "Não foi possível excluir o canal de comunicação. Tente novamente mais tarde.",
+        "AVATAR_SUCCESS_MESSAGE": "Perfil do canal de comunicação excluído com sucesso",
+        "AVATAR_ERROR_MESSAGE": "Não foi possível excluir o perfil do canal de comunicação. Tente novamente mais tarde."
+      }
+    },
+    "VOICE_CONFIGURATION": {
+      "ENABLE_VOICE": {
+        "DESCRIPTION": "Habilite chamadas de voz neste canal de comunicação. Agentes poderão fazer e receber chamadas telefônicas."
+      }
+    },
+    "WHATSAPP_CALLING": {
+      "ENABLE": {
+        "DESCRIPTION": "Permita que os atendentes recebam e realizem chamadas do WhatsApp Cloud neste canal de comunicação. Os clientes poderão ligar diretamente para este número comercial pelo WhatsApp."
+      }
+    },
+    "FEATURES": {
+      "USE_INBOX_AVATAR_FOR_BOT": "Use o nome do canal de comunicação e avatar do bot"
+    },
+    "SETTINGS_POPUP": {
+      "INBOX_AGENTS_SUB_TEXT": "Adicionar ou remover agentes desse canal de comunicação",
+      "INBOX_UPDATE_TITLE": "Configurações do canal de comunicação",
+      "INBOX_UPDATE_SUB_TEXT": "Atualize as configurações do canal de comunicação",
+      "AUTO_ASSIGNMENT_SUB_TEXT": "Ativar ou desativar a atribuição automática de novas conversas aos agentes adicionados a esse canal de comunicação.",
+      "INBOX_IDENTIFIER": "Identificador do canal de comunicação",
+      "FORWARD_EMAIL_NOT_CONFIGURED": "O encaminhamento de e-mails para seu canal de comunicação está desativado nesta instalação. Para utilizar esse recurso, ele deve ser habilitado pelo administrador.",
+      "WHATSAPP_EMBEDDED_SIGNUP_SUBHEADER": "Este canal de comunicação está conectado através da inscrição incorporada do WhatsApp.",
+      "WHATSAPP_EMBEDDED_SIGNUP_DESCRIPTION": "Você pode reconfigurar este canal de comunicação para atualizar suas configurações do WhatsApp Business.",
+      "WHATSAPP_CONNECT_DESCRIPTION": "Conecte este canal de comunicação ao WhatsApp Business para ter recursos aprimorados e um gerenciamento mais fácil.",
+      "WHATSAPP_CALLING_ENABLED": {
+        "DESCRIPTION": "Permita que os atendentes iniciem e recebam chamadas de voz do WhatsApp neste canal de comunicação. Disponível apenas para canais do WhatsApp Cloud com cadastro incorporado e permissão de chamadas concedida pela Meta."
+      }
+    },
+    "HELP_CENTER": {
+      "SUB_TEXT": "Anexe um Centro de Ajuda ao canal de comunicação"
+    },
+    "AUTO_ASSIGNMENT": {
+      "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limitar o número máximo de conversas deste canal de comunicação que pode ser atribuído automaticamente a um agente"
+    },
+    "ASSIGNMENT": {
+      "USING_POLICY": "Utilizando política de atribuição personalizada para este canal de comunicação",
+      "DEFAULT_POLICY_DESCRIPTION": "Vincule uma política de atribuição personalizada para definir como as conversas serão atribuídas aos agentes neste canal de comunicação."
+    },
+    "ASSIGNMENT_POLICY": {
+      "DELETE_CONFIRM_MESSAGE": "Tem certeza de que deseja remover esta política de atribuição deste canal de comunicação? O canal voltará às regras de atribuição padrão."
+    },
+    "BUSINESS_HOURS": {
+      "TITLE": "Definir disponibilidade",
+      "SUBTITLE": "Defina a disponibilidade no widget de chat",
+      "WEEKLY_TITLE": "Definir horários semanais",
+      "TIMEZONE_LABEL": "Selecionar fuso horário",
+      "UPDATE": "Salvar horários",
+      "TOGGLE_AVAILABILITY": "Ativar horário de atendimento para este canal de comunicação",
+      "UNAVAILABLE_MESSAGE_LABEL": "Mensagem fora do horário de atendimento",
+      "TOGGLE_HELP": "Ao ativar o horário de atendimento, o widget mostra quando a equipe está disponível. Fora desse horário, visitantes podem receber uma mensagem e um formulário pré-chat.",
+      "DAY_NAMES": {
+        "0": "Domingo",
+        "1": "Segunda-feira",
+        "2": "Terça-feira",
+        "3": "Quarta-feira",
+        "4": "Quinta-feira",
+        "5": "Sexta-feira",
+        "6": "Sábado"
+      },
+      "DAY": {
+        "DAY": "Dia",
+        "AVAILABILITY": "Disponibilidade",
+        "HOURS": "Horário",
+        "ENABLE": "Ativar atendimento neste dia",
+        "UNAVAILABLE": "Fechado",
+        "VALIDATION_ERROR": "O horário inicial deve ser anterior ao horário final.",
+        "CHOOSE": "Selecionar"
+      },
+      "BREAKS": {
+        "LABEL": "Intervalos",
+        "ADD": "Adicionar intervalo",
+        "START": "Início",
+        "END": "Fim",
+        "REMOVE": "Remover intervalo",
+        "VALIDATION_ERROR": "O fim do intervalo deve ser posterior ao início."
+      },
+      "ALL_DAY": "24 horas"
+    },
+    "IMAP": {
+      "TOGGLE_AVAILABILITY": "Habilitar a configuração IMAP para este canal de comunicação"
+    },
+    "SMTP": {
+      "TOGGLE_AVAILABILITY": "Ativar a configuração SMTP para este canal de comunicação"
+    }
+  },
+  "INBOX_REPORTS": {
+    "HEADER": "Visualizar canal de comunicação",
+    "DESCRIPTION": "Veja rapidamente o desempenho do canal de comunicação com métricas-chave como conversas, tempos de resposta, tempos de resolução e casos resolvidos. Clique no canal para mais detalhes.",
+    "FILTER_DROPDOWN_LABEL": "Selecionar canal de comunicação",
+    "ALL_INBOXES": "Todos os canais de comunicação",
+    "SEARCH_INBOX": "Pesquisar canal de comunicação",
+    "FILTERS": {
+      "INPUT_PLACEHOLDER": {
+        "INBOXES": "Pesquisar canais de comunicação"
+      }
+    }
+  },
+  "CSAT_REPORTS": {
+    "FILTERS": {
+      "INPUT_PLACEHOLDER": {
+        "INBOXES": "Pesquisar canais de comunicação"
+      },
+      "INBOXES": {
+        "LABEL": "Canal de comunicação"
+      }
+    }
+  },
+  "SLA_REPORTS": {
+    "DROPDOWN": {
+      "INPUT_PLACEHOLDER": {
+        "INBOXES": "Nome do canal de comunicação"
+      },
+      "INBOXES": "Canal de comunicação"
+    }
+  },
+  "SUMMARY_REPORTS": {
+    "INBOX": "Canal de comunicação"
+  },
+  "SEARCH": {
+    "FILTERS": {
+      "IN": "Canal de comunicação",
+      "INBOXES": "Canais de comunicação",
+      "NO_INBOXES": "Nenhum canal de comunicação encontrado"
+    }
+  },
+  "SETTINGS": {
+    "INBOXES": {
+      "NEW_INBOX": "Adicionar canal de comunicação"
+    }
+  },
+  "ASSIGNMENT_POLICY": {
+    "INDEX": {
+      "HEADER": {
+        "DESCRIPTION": "Defina políticas para gerenciar a carga de trabalho de forma eficaz e encaminhar conversas com base nas necessidades dos canais de comunicação e dos agentes. Saiba mais aqui"
+      },
+      "ASSIGNMENT_POLICY": {
+        "DESCRIPTION": "Gerencie como as conversas são atribuídas nos canais de comunicação.",
+        "FEATURES": {
+          "2": "Adicione canais de comunicação a uma política - uma política por canal"
+        }
+      },
+      "AGENT_CAPACITY_POLICY": {
+        "FEATURES": {
+          "0": "Defina o número máximo de conversas por canal de comunicação"
+        }
+      }
+    },
+    "AGENT_ASSIGNMENT_POLICY": {
+      "INDEX": {
+        "CARD": {
+          "POPOVER": "Canais de comunicação adicionados"
+        }
+      },
+      "CREATE": {
+        "API": {
+          "INBOX_LINKED": "O canal de comunicação foi vinculado à política"
+        }
+      },
+      "EDIT": {
+        "CONFIRM_ADD_INBOX_DIALOG": {
+          "TITLE": "Adicionar canal de comunicação",
+          "DESCRIPTION": "O canal de comunicação {inboxName} já está vinculado a outra política. Tem certeza de que deseja vinculá-lo a esta política? Ele será desvinculado da outra.",
+          "CONFIRM_BUTTON_LABEL": "Adicionar canal de comunicação"
+        },
+        "INBOX_LINK_PROMPT": {
+          "TITLE": "Vincular canal de comunicação à política",
+          "DESCRIPTION": "Deseja vincular este canal de comunicação à política de atribuição?",
+          "LINK_BUTTON": "Vincular canal de comunicação"
+        },
+        "INBOX_API": {
+          "ADD": {
+            "SUCCESS_MESSAGE": "Canal de comunicação adicionado à política com sucesso",
+            "ERROR_MESSAGE": "Falha ao adicionar o canal de comunicação à política"
+          },
+          "REMOVE": {
+            "SUCCESS_MESSAGE": "Canal de comunicação removido da política com sucesso",
+            "ERROR_MESSAGE": "Falha ao remover o canal de comunicação da política"
+          }
+        }
+      },
+      "FORM": {
+        "INBOXES": {
+          "LABEL": "Canais de comunicação adicionados",
+          "DESCRIPTION": "Adicionar canais de comunicação aos quais esta política será aplicada.",
+          "ADD_BUTTON": "Adicionar canal de comunicação",
+          "DROPDOWN": {
+            "SEARCH_PLACEHOLDER": "Pesquisar e selecionar canais de comunicação para adicionar"
+          },
+          "EMPTY_STATE": "Nenhum canal de comunicação adicionado a esta política. Adicione um canal para começar",
+          "API": {
+            "SUCCESS_MESSAGE": "Canal de comunicação adicionado à política com sucesso",
+            "ERROR_MESSAGE": "Falha ao adicionar o canal de comunicação à política"
+          }
+        }
+      }
+    },
+    "AGENT_CAPACITY_POLICY": {
+      "EDIT": {
+        "INBOX_LIMIT_API": {
+          "ADD": {
+            "SUCCESS_MESSAGE": "Limite de canal de comunicação adicionado com sucesso",
+            "ERROR_MESSAGE": "Falha ao adicionar limite de canal de comunicação"
+          },
+          "UPDATE": {
+            "SUCCESS_MESSAGE": "Limite de canal de comunicação atualizado com sucesso",
+            "ERROR_MESSAGE": "Falha ao atualizar limite do canal de comunicação"
+          },
+          "DELETE": {
+            "SUCCESS_MESSAGE": "Limite do canal de comunicação excluído com sucesso",
+            "ERROR_MESSAGE": "Falha ao excluir o limite do canal de comunicação"
+          }
+        }
+      },
+      "FORM": {
+        "INBOX_CAPACITY_LIMIT": {
+          "LABEL": "Limites de capacidade do canal de comunicação",
+          "ADD_BUTTON": "Adicionar canal de comunicação",
+          "FIELD": {
+            "SELECT_INBOX": "Selecionar canal de comunicação"
+          },
+          "EMPTY_STATE": "Nenhum limite de canal de comunicação definido"
+        }
+      }
+    }
+  },
+  "TEAMS_SETTINGS": {
+    "AGENTS": {
+      "ADD_AGENTS": "Adicionando agentes ao seu canal de comunicação..."
+    },
+    "FINISH": {
+      "TITLE": "Seu canal de comunicação está pronto!"
+    }
   },
   "IBSOFT_THEME": {
     "CONVERSATION_STATUS": {
@@ -38,6 +599,78 @@
     },
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversas aparecem aqui quando há novas mensagens, menções ou atribuições para você."
+    },
+    "CONVERSATION_DISTRIBUTION": {
+      "TEAM_ACTION": "Configurar distribuição",
+      "ENABLED": {
+        "TITLE": "Distribuição automática",
+        "DESCRIPTION": "Ative esta política para controlar como atendimentos transferidos para humanos devem ser distribuídos."
+      },
+      "OVERRIDE": {
+        "TITLE": "Sobrescrever regra do canal",
+        "DESCRIPTION": "Use uma regra específica para este time. Quando desligado, o time segue a configuração geral do canal de comunicação."
+      },
+      "DISTRIBUTION": {
+        "TITLE": "Entrada do agente",
+        "DESCRIPTION": "Defina como o agente recebe atendimentos pendentes quando fica disponível.",
+        "MIN_ON_LOGIN": "Mínimo obrigatório ao entrar",
+        "MAX_PER_ROUND": "Máximo por rodada",
+        "SINGLE_AGENT": "Atribuir todos os atendimentos pendentes quando houver apenas um agente disponível no time"
+      },
+      "REDISTRIBUTION": {
+        "TITLE": "Redistribuição",
+        "DESCRIPTION": "Regras para mover atendimentos quando o primeiro agente não responde ao cliente.",
+        "ENABLE_TIMEOUT": "Redistribuir se o agente não responder dentro do prazo",
+        "TIMEOUT": "Tempo sem primeira resposta"
+      },
+      "UNAVAILABLE": {
+        "TITLE": "Sem atendente disponível",
+        "DESCRIPTION": "Escolha o que fazer quando o robô ou o sistema transferir um atendimento e não houver agente disponível.",
+        "ACTION": "Ação",
+        "WAIT": "Aguardar no departamento",
+        "NOTIFY_CUSTOMER": "Enviar mensagem automática",
+        "FALLBACK_TEAM": "Transferir para departamento de fallback",
+        "FALLBACK_TEAM_LABEL": "Departamento de fallback",
+        "SELECT_TEAM": "Selecionar departamento",
+        "MESSAGE": "Mensagem automática ao cliente"
+      },
+      "BUSINESS_HOURS": {
+        "TITLE": "Horário de funcionamento",
+        "DESCRIPTION": "Defina se esta política segue o horário do canal ou usa uma disponibilidade própria do time.",
+        "MODE": "Regra de horário",
+        "INHERIT_CHANNEL": "Seguir horário do canal",
+        "CUSTOM": "Usar horário específico do time",
+        "ALWAYS_AVAILABLE": "Sempre disponível"
+      },
+      "SUPERVISOR_ALERT": {
+        "TITLE": "Alerta ao supervisor",
+        "DESCRIPTION": "Registre atendimentos parados para acompanhamento por administradores ou supervisores.",
+        "ENABLED": "Alertar supervisor quando o cliente ficar aguardando",
+        "THRESHOLD": "Tempo limite para alerta"
+      },
+      "ACTIONS": {
+        "SAVE": "Salvar política"
+      },
+      "API": {
+        "LOADING": "Carregando política de distribuição...",
+        "SAVE_SUCCESS": "Política de distribuição salva com sucesso.",
+        "SAVE_ERROR": "Não foi possível salvar a política de distribuição.",
+        "COPY_SUCCESS": "Política copiada com sucesso.",
+        "COPY_ERROR": "Não foi possível copiar a política selecionada."
+      },
+      "INBOX_SECTION": {
+        "TITLE": "Distribuição de atendimentos",
+        "DESCRIPTION": "Configure a regra geral deste canal de comunicação. Regras específicas de time podem sobrescrever esta configuração."
+      },
+      "TEAM_MODAL": {
+        "TITLE": "Distribuição de {teamName}",
+        "DESCRIPTION": "Configure como este time recebe, aguarda e redistribui atendimentos transferidos para humanos."
+      },
+      "COPY": {
+        "LABEL": "Copiar regra de outro time",
+        "PLACEHOLDER": "Selecionar time de origem",
+        "BUTTON": "Copiar regra"
+      }
     }
   }
 }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_01_090000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -870,6 +870,56 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "ibsoft_conversation_distribution_channel_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.boolean "enabled", default: false, null: false
+    t.jsonb "config", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "inbox_id"], name: "idx_ibsoft_distribution_channel_policy", unique: true
+    t.index ["account_id"], name: "idx_on_account_id_ead7529b02"
+    t.index ["inbox_id"], name: "idx_on_inbox_id_54ce8caae9"
+  end
+
+  create_table "ibsoft_conversation_distribution_event_logs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id"
+    t.bigint "inbox_id"
+    t.bigint "team_id"
+    t.bigint "previous_assignee_id"
+    t.bigint "new_assignee_id"
+    t.string "event_type", null: false
+    t.string "reason"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "idx_ibsoft_distribution_events_account_created"
+    t.index ["account_id"], name: "idx_on_account_id_f411ea7c53"
+    t.index ["conversation_id", "created_at"], name: "idx_ibsoft_distribution_events_conversation_created"
+    t.index ["conversation_id"], name: "idx_on_conversation_id_fd153e5c47"
+    t.index ["inbox_id"], name: "index_ibsoft_conversation_distribution_event_logs_on_inbox_id"
+    t.index ["new_assignee_id"], name: "idx_on_new_assignee_id_538e25b841"
+    t.index ["previous_assignee_id"], name: "idx_on_previous_assignee_id_031e5475e3"
+    t.index ["team_id"], name: "index_ibsoft_conversation_distribution_event_logs_on_team_id"
+  end
+
+  create_table "ibsoft_conversation_distribution_team_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "team_id", null: false
+    t.bigint "inbox_id"
+    t.boolean "enabled", default: false, null: false
+    t.boolean "override_channel_policy", default: false, null: false
+    t.jsonb "config", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "team_id", "inbox_id"], name: "idx_ibsoft_distribution_team_inbox_policy", unique: true, where: "(inbox_id IS NOT NULL)"
+    t.index ["account_id", "team_id"], name: "idx_ibsoft_distribution_team_policy", unique: true, where: "(inbox_id IS NULL)"
+    t.index ["account_id"], name: "idx_on_account_id_1409f9bfca"
+    t.index ["inbox_id"], name: "idx_on_inbox_id_6f03247c22"
+    t.index ["team_id"], name: "idx_on_team_id_d59e9eeb35"
+  end
+
   create_table "ibsoft_internal_chat_attachments", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "message_id", null: false
@@ -930,6 +980,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
     t.index ["created_by_id"], name: "index_ibsoft_internal_chat_rooms_on_created_by_id"
   end
 
+  create_table "ibsoft_working_hour_breaks", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.integer "day_of_week", null: false
+    t.integer "start_hour", null: false
+    t.integer "start_minutes", null: false
+    t.integer "end_hour", null: false
+    t.integer "end_minutes", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_ibsoft_working_hour_breaks_on_account_id"
+    t.index ["inbox_id", "day_of_week"], name: "idx_ibsoft_working_hour_breaks_on_inbox_day"
+    t.index ["inbox_id"], name: "index_ibsoft_working_hour_breaks_on_inbox_id"
+  end
+
   create_table "inbox_assignment_policies", force: :cascade do |t|
     t.bigint "inbox_id", null: false
     t.bigint "assignment_policy_id", null: false
@@ -972,7 +1037,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
     t.string "email_address"
     t.boolean "working_hours_enabled", default: false
     t.string "out_of_office_message"
-    t.string "timezone", default: "UTC"
+    t.string "timezone", default: "America/Sao_Paulo"
     t.boolean "enable_email_collect", default: true
     t.boolean "csat_survey_enabled", default: false
     t.boolean "allow_messages_after_resolved", default: true
@@ -1423,6 +1488,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_20_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "ibsoft_working_hour_breaks", "accounts"
+  add_foreign_key "ibsoft_working_hour_breaks", "inboxes"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
   # no candidate create_trigger statement could be found, creating an adapter-specific one

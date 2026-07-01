@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import EmojiIcon from 'dashboard/components-next/emoji-icon-picker/EmojiIcon.vue';
+import TeamDistributionSettingsModal from 'dashboard/ibsoft/conversationDistribution/components/TeamDistributionSettingsModal.vue';
 
 const store = useStore();
 const { t } = useI18n();
@@ -45,6 +46,8 @@ const deleteTeam = async ({ id }) => {
 
 const showDeletePopup = ref(false);
 const selectedTeam = ref({});
+const showDistributionPolicyModal = ref(false);
+const selectedDistributionTeam = ref(null);
 
 const openDelete = team => {
   showDeletePopup.value = true;
@@ -54,6 +57,11 @@ const openDelete = team => {
 const closeDelete = () => {
   showDeletePopup.value = false;
   selectedTeam.value = {};
+};
+
+const openDistributionPolicy = team => {
+  selectedDistributionTeam.value = team;
+  showDistributionPolicyModal.value = true;
 };
 
 const confirmDeletion = () => {
@@ -148,6 +156,16 @@ const confirmPlaceHolderText = computed(() =>
             </div>
           </div>
           <div class="flex justify-end gap-3">
+            <Button
+              v-if="isAdmin"
+              v-tooltip.top="
+                $t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.TEAM_ACTION')
+              "
+              icon="i-lucide-sliders-horizontal"
+              slate
+              sm
+              @click="openDistributionPolicy(team)"
+            />
             <router-link
               :to="{
                 name: 'settings_teams_edit',
@@ -188,6 +206,11 @@ const confirmPlaceHolderText = computed(() =>
       :confirm-place-holder-text="confirmPlaceHolderText"
       @on-confirm="confirmDeletion"
       @on-close="closeDelete"
+    />
+    <TeamDistributionSettingsModal
+      v-model:show="showDistributionPolicyModal"
+      :team="selectedDistributionTeam"
+      :teams="teamsList"
     />
   </SettingsLayout>
 </template>

@@ -69,6 +69,54 @@ const isTimeWithinRange = (currentMinutes, openMinutes, closeMinutes) => {
     : currentMinutes >= openMinutes && currentMinutes < closeMinutes;
 };
 
+const getBreaksForDay = (workingHourBreaks, dayOfWeek) =>
+  (workingHourBreaks || []).filter(item => item.dayOfWeek === dayOfWeek);
+
+const getBreakRange = workingHourBreak => ({
+  start: toMinutes(
+    workingHourBreak.startHour ?? 0,
+    workingHourBreak.startMinutes ?? 0
+  ),
+  end: toMinutes(
+    workingHourBreak.endHour ?? 0,
+    workingHourBreak.endMinutes ?? 0
+  ),
+});
+
+const getCurrentWorkingHourBreak = (currentMinutes, workingHourBreaks = []) =>
+  workingHourBreaks.find(workingHourBreak => {
+    const { start, end } = getBreakRange(workingHourBreak);
+    return currentMinutes >= start && currentMinutes < end;
+  });
+
+const checkBreakAvailability = (
+  currentDay,
+  currentMinutes,
+  openDays,
+  workingHourBreaks = []
+) => {
+  const todayConfig = openDays.get(currentDay);
+  if (!todayConfig) return null;
+
+  const currentBreak = getCurrentWorkingHourBreak(
+    currentMinutes,
+    getBreaksForDay(workingHourBreaks, currentDay)
+  );
+  if (!currentBreak) return null;
+
+  const { end } = getBreakRange(currentBreak);
+  return {
+    config: {
+      ...todayConfig,
+      openHour: currentBreak.endHour,
+      openMinutes: currentBreak.endMinutes,
+    },
+    minutesUntilOpen: end - currentMinutes,
+    daysUntilOpen: 0,
+    dayOfWeek: currentDay,
+  };
+};
+
 /**
  * Build a map keyed by `dayOfWeek` for all slots that are NOT closed all day.
  * @private
@@ -230,21 +278,31 @@ export const isClosedAllDay = (time, utcOffset, workingHours = []) => {
  * @param {Date|string} time
  * @param {string} utcOffset
  * @param {Array} workingHours
+ * @param {Array} workingHourBreaks
  * @returns {boolean}
  */
-export const isInWorkingHours = (time, utcOffset, workingHours = []) => {
+export const isInWorkingHours = (
+  time,
+  utcOffset,
+  workingHours = [],
+  workingHourBreaks = []
+) => {
   if (!workingHours.length) return false;
 
   const todayConfig = getTodayConfig(time, utcOffset, workingHours);
   if (!todayConfig) return false;
 
-  // Handle all-day states
-  if (todayConfig.openAllDay) return true;
   if (todayConfig.closedAllDay) return false;
 
-  // Check time-based availability
   const date = getDateInTimezone(time, utcOffset);
+  const dayBreaks = getBreaksForDay(workingHourBreaks, date.getDay());
   const currentMinutes = toMinutes(date.getHours(), date.getMinutes());
+  const isInBreak = Boolean(
+    getCurrentWorkingHourBreak(currentMinutes, dayBreaks)
+  );
+
+  // Handle all-day states
+  if (todayConfig.openAllDay) return !isInBreak;
 
   const openMinutes = toMinutes(
     todayConfig.openHour ?? 0,
@@ -255,7 +313,9 @@ export const isInWorkingHours = (time, utcOffset, workingHours = []) => {
     todayConfig.closeMinutes ?? 0
   );
 
-  return isTimeWithinRange(currentMinutes, openMinutes, closeMinutes);
+  return (
+    isTimeWithinRange(currentMinutes, openMinutes, closeMinutes) && !isInBreak
+  );
 };
 
 /**
@@ -264,12 +324,14 @@ export const isInWorkingHours = (time, utcOffset, workingHours = []) => {
  * @param {Date|string} time
  * @param {string} utcOffset
  * @param {Array} workingHours
+ * @param {Array} workingHourBreaks
  * @returns {Object|null}
  */
 export const findNextAvailableSlotDetails = (
   time,
   utcOffset,
-  workingHours = []
+  workingHours = [],
+  workingHourBreaks = []
 ) => {
   const date = getDateInTimezone(time, utcOffset);
   const currentDay = date.getDay();
@@ -286,10 +348,18 @@ export const findNextAvailableSlotDetails = (
     currentMinutes,
     openDays
   );
+  const breakSlot = checkBreakAvailability(
+    currentDay,
+    currentMinutes,
+    openDays,
+    workingHourBreaks
+  );
 
   // Find the slot (today or next)
   const slotDetails =
-    todaySlot || findNextSlot(currentDay, currentMinutes, openDays);
+    todaySlot ||
+    breakSlot ||
+    findNextSlot(currentDay, currentMinutes, openDays);
 
   // Convert to user timezone for display
   return convertSlotToUserTimezone(time, utcOffset, slotDetails);
@@ -300,18 +370,25 @@ export const findNextAvailableSlotDetails = (
  * @param {Date|string} time
  * @param {string} utcOffset
  * @param {Array} workingHours
+ * @param {Array} workingHourBreaks
  * @returns {number|null}
  */
 export const findNextAvailableSlotDiff = (
   time,
   utcOffset,
-  workingHours = []
+  workingHours = [],
+  workingHourBreaks = []
 ) => {
-  if (isInWorkingHours(time, utcOffset, workingHours)) {
+  if (isInWorkingHours(time, utcOffset, workingHours, workingHourBreaks)) {
     return 0;
   }
 
-  const nextSlot = findNextAvailableSlotDetails(time, utcOffset, workingHours);
+  const nextSlot = findNextAvailableSlotDetails(
+    time,
+    utcOffset,
+    workingHours,
+    workingHourBreaks
+  );
   return nextSlot ? nextSlot.minutesUntilOpen : null;
 };
 
@@ -321,6 +398,7 @@ export const findNextAvailableSlotDiff = (
  * @param {Date|string} time
  * @param {string} utcOffset
  * @param {Array} workingHours
+ * @param {Array} workingHourBreaks
  * @param {boolean} hasOnlineAgents
  * @returns {boolean}
  */
@@ -329,12 +407,18 @@ export const isOnline = (
   time,
   utcOffset,
   workingHours,
-  hasOnlineAgents
+  hasOnlineAgents,
+  workingHourBreaks = []
 ) => {
   if (!workingHoursEnabled) {
     return hasOnlineAgents;
   }
 
-  const inWorkingHours = isInWorkingHours(time, utcOffset, workingHours);
+  const inWorkingHours = isInWorkingHours(
+    time,
+    utcOffset,
+    workingHours,
+    workingHourBreaks
+  );
   return inWorkingHours && hasOnlineAgents;
 };

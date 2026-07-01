@@ -68,6 +68,7 @@ class ActionService
     # if team_id is nil, then it means that the team is being unassigned
     return unless !team_ids[0].nil? && team_belongs_to_account?(team_ids)
 
+    mark_ibsoft_distribution_source
     @conversation.update!(team_id: team_ids[0])
   end
 
@@ -108,6 +109,12 @@ class ActionService
 
   def team_belongs_to_account?(team_ids)
     @account.team_ids.include?(team_ids[0])
+  end
+
+  def mark_ibsoft_distribution_source
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: @conversation
+    ).assign
   end
 
   def conversation_a_tweet?

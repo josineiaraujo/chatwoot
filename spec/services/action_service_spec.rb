@@ -128,6 +128,17 @@ describe ActionService do
         expect do
           action_service.assign_team([team.id])
         end.to change { conversation.reload.team }.from(original_team)
+        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
+      end
+
+      it 'marks automation team assignment as system transfer' do
+        Current.executed_by = create(:automation_rule, account: account)
+
+        action_service.assign_team([team.id])
+
+        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('system_team_transfer')
+      ensure
+        Current.reset
       end
 
       it 'does not assign the team if the team is part of the account' do

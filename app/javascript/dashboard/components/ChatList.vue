@@ -53,6 +53,7 @@ import { matchesFilters } from '../store/modules/conversations/helpers/filterHel
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 import { fetchAutomationConversationCount } from 'dashboard/ibsoft/conversation/automationConversationStats';
+import { refreshConversationStatsAfterStatusChange } from 'dashboard/ibsoft/conversation/statusStatsRefresh';
 import {
   ALL_ASSIGNEE_TAB,
   PENDING_STATUS,
@@ -827,6 +828,7 @@ function toggleConversationStatus(
   snoozedUntil,
   customAttributes = null
 ) {
+  const previousStatus = getConversationById.value(conversationId)?.status;
   const payload = {
     conversationId,
     status,
@@ -843,6 +845,10 @@ function toggleConversationStatus(
         ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE_SUCCESS'
         : 'CONVERSATION.CHANGE_STATUS';
     useAlert(t(alertKey));
+    refreshConversationStatsAfterStatusChange({
+      previousStatus,
+      nextStatus: status,
+    });
   });
 }
 

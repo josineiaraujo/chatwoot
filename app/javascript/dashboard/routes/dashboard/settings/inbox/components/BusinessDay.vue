@@ -4,6 +4,10 @@ import differenceInMinutes from 'date-fns/differenceInMinutes';
 import { generateTimeSlots } from '../helpers/businessHour';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import NextSelect from 'dashboard/components-next/select/Select.vue';
+import {
+  defaultWorkingHourBreak,
+  isValidWorkingHourBreak,
+} from 'dashboard/ibsoft/localization/workingHourBreaks';
 
 const timeSlots = generateTimeSlots(30);
 
@@ -34,8 +38,12 @@ export default {
         to: '',
       }),
     },
+    breakSlots: {
+      type: Array,
+      default: () => [],
+    },
   },
-  emits: ['update'],
+  emits: ['update', 'updateBreaks'],
   computed: {
     fromTimeSlots() {
       return groupByPeriod(timeSlots);
@@ -144,6 +152,37 @@ export default {
       },
     },
   },
+  methods: {
+    addBreak() {
+      this.$emit('updateBreaks', [
+        ...this.breakSlots,
+        { ...defaultWorkingHourBreak },
+      ]);
+    },
+    removeBreak(index) {
+      this.$emit(
+        'updateBreaks',
+        this.breakSlots.filter((_, breakIndex) => breakIndex !== index)
+      );
+    },
+    updateBreak(index, key, value) {
+      const nextBreaks = this.breakSlots.map((item, breakIndex) => {
+        if (breakIndex !== index) return item;
+
+        const updated = {
+          ...item,
+          [key]: value,
+        };
+
+        return {
+          ...updated,
+          valid: isValidWorkingHourBreak(updated),
+        };
+      });
+
+      this.$emit('updateBreaks', nextBreaks);
+    },
+  },
 };
 </script>
 
@@ -193,6 +232,57 @@ export default {
             :placeholder="$t('INBOX_MGMT.BUSINESS_HOURS.DAY.CHOOSE')"
             :disabled="isOpenAllDay"
           />
+        </div>
+        <div class="flex flex-col gap-2 mt-2">
+          <div class="flex items-center justify-between">
+            <span class="text-label-small text-n-slate-11">
+              {{ $t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.LABEL') }}
+            </span>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-label-small text-n-brand hover:text-n-brand"
+              @click="addBreak"
+            >
+              <Icon icon="i-lucide-plus size-3.5" />
+              {{ $t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.ADD') }}
+            </button>
+          </div>
+          <div
+            v-for="(breakSlot, index) in breakSlots"
+            :key="index"
+            class="flex items-center gap-2"
+          >
+            <NextSelect
+              :model-value="breakSlot.from"
+              :groups="fromTimeSlots"
+              :placeholder="$t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.START')"
+              @update:model-value="value => updateBreak(index, 'from', value)"
+            />
+            <div class="flex items-center">
+              <Icon icon="i-lucide-minus size-4" />
+            </div>
+            <NextSelect
+              :model-value="breakSlot.to"
+              :groups="toTimeSlots"
+              :placeholder="$t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.END')"
+              @update:model-value="value => updateBreak(index, 'to', value)"
+            />
+            <button
+              type="button"
+              class="inline-flex items-center justify-center text-n-slate-11 hover:text-n-ruby-11"
+              :aria-label="$t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.REMOVE')"
+              :title="$t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.REMOVE')"
+              @click="removeBreak(index)"
+            >
+              <Icon icon="i-lucide-trash-2 size-4" />
+            </button>
+          </div>
+          <span
+            v-if="breakSlots.some(breakSlot => !breakSlot.valid)"
+            class="error text-label-small text-n-ruby-9"
+          >
+            {{ $t('INBOX_MGMT.BUSINESS_HOURS.BREAKS.VALIDATION_ERROR') }}
+          </span>
         </div>
         <span v-if="hasError" class="error text-label-small text-n-ruby-9">
           {{ $t('INBOX_MGMT.BUSINESS_HOURS.DAY.VALIDATION_ERROR') }}

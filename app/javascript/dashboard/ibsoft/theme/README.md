@@ -20,6 +20,8 @@ misturar regra de negocio com o core do produto.
 - Logos ChatHub em empty states de conversas.
 - Ajustes visuais do topo da sidebar.
 - LED lilas pulsante para itens operacionais com nao lidos na sidebar.
+- Override de textos para manter `Atencao` na area operacional e exibir
+  `Canais de comunicacao` nas telas administrativas de canais.
 
 ## Arquivos do patch
 
@@ -47,7 +49,7 @@ misturar regra de negocio com o core do produto.
 - `app/javascript/dashboard/ibsoft/internalChat/views/InternalChat.vue`: adiciona
   classe estavel para item selecionado do chat interno.
 - `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`: traducoes
-  especificas do patch.
+  especificas do patch, incluindo `Atencao` e `Canais de comunicacao`.
 - `app/javascript/dashboard/i18n/locale/*/index.js`: registra as traducoes do
   patch.
 

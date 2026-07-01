@@ -1,6 +1,7 @@
 json.name resource.name
 json.timezone resource.timezone
 json.working_hours resource.weekly_schedule
+json.ibsoft_working_hour_breaks resource.ibsoft_working_hour_breaks_schedule if resource.respond_to?(:ibsoft_working_hour_breaks_schedule)
 json.working_hours_enabled resource.working_hours_enabled
 json.csat_survey_enabled resource.csat_survey_enabled
 json.greeting_enabled resource.greeting_enabled

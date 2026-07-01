@@ -20,6 +20,9 @@ json.website_channel_config do
   json.welcome_tagline @web_widget.welcome_tagline
   json.welcome_title @web_widget.welcome_title
   json.widget_color @web_widget.widget_color
+  if @web_widget.inbox.respond_to?(:ibsoft_working_hour_breaks_schedule)
+    json.ibsoft_working_hour_breaks @web_widget.inbox.ibsoft_working_hour_breaks_schedule
+  end
   json.working_hours @web_widget.inbox.working_hours
   json.working_hours_enabled @web_widget.inbox.working_hours_enabled
 end
