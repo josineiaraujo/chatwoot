@@ -17,6 +17,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  workingHourBreaks: {
+    type: Array,
+    default: () => [],
+  },
   workingHoursEnabled: {
     type: Boolean,
     required: true,
@@ -74,7 +78,8 @@ const nextSlot = computed(() => {
   const slot = findNextAvailableSlotDetails(
     props.time,
     props.utcOffset,
-    props.workingHours
+    props.workingHours,
+    props.workingHourBreaks
   );
   if (!slot) return null;
 

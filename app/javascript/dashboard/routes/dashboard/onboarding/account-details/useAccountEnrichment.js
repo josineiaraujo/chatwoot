@@ -1,6 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useConfig } from 'dashboard/composables/useConfig';
+import { IBSOFT_DEFAULT_TIMEZONE } from 'dashboard/ibsoft/localization/defaultTimezone';
 
 const ENRICHMENT_TIMEOUT = 30000;
 
@@ -68,10 +69,7 @@ export function useAccountEnrichment(fields) {
 
     fillIfEmpty(fields.locale, detectBestLocale());
     fillIfEmpty(fields.website, website || brandInfo?.domain);
-    fillIfEmpty(
-      fields.timezone,
-      timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
-    );
+    fillIfEmpty(fields.timezone, timezone || IBSOFT_DEFAULT_TIMEZONE);
     fillIfEmpty(fields.companySize, companySize);
     fillIfEmpty(
       fields.industry,

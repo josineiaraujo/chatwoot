@@ -41,6 +41,9 @@ const {
 } = useAvailability(toRef(props, 'agents'));
 
 const workingHours = computed(() => inboxConfig.value.workingHours || []);
+const workingHourBreaks = computed(
+  () => inboxConfig.value.workingHourBreaks || []
+);
 const workingHoursEnabled = computed(
   () => inboxConfig.value.workingHoursEnabled || false
 );
@@ -74,6 +77,7 @@ const headerText = computed(() =>
         :time="currentTime"
         :utc-offset="utcOffset"
         :working-hours="workingHours"
+        :working-hour-breaks="workingHourBreaks"
         :working-hours-enabled="workingHoursEnabled"
         :has-online-agents="hasOnlineAgents"
         :reply-time="replyTime"

@@ -11,7 +11,10 @@ import { useConversationRequiredAttributes } from 'dashboard/composables/useConv
 import WootDropdownItem from 'shared/components/ui/dropdown/DropdownItem.vue';
 import WootDropdownMenu from 'shared/components/ui/dropdown/DropdownMenu.vue';
 import wootConstants from 'dashboard/constants/globals';
-import { canManuallyMarkConversationPending } from 'dashboard/ibsoft/conversation/statusPresentation';
+import {
+  canManuallyMarkConversationPending,
+} from 'dashboard/ibsoft/conversation/statusPresentation';
+import { refreshConversationStatsAfterStatusChange } from 'dashboard/ibsoft/conversation/statusStatsRefresh';
 import {
   CMD_REOPEN_CONVERSATION,
   CMD_RESOLVE_CONVERSATION,
@@ -85,6 +88,7 @@ const openSnoozeModal = () => {
 const toggleStatus = (status, snoozedUntil, customAttributes = null) => {
   closeDropdown();
   isLoading.value = true;
+  const previousStatus = currentChat.value.status;
 
   const payload = {
     conversationId: currentChat.value.id,
@@ -102,6 +106,10 @@ const toggleStatus = (status, snoozedUntil, customAttributes = null) => {
         ? 'IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE_SUCCESS'
         : 'CONVERSATION.CHANGE_STATUS';
     useAlert(t(alertKey));
+    refreshConversationStatsAfterStatusChange({
+      previousStatus,
+      nextStatus: status,
+    });
     isLoading.value = false;
   });
 };

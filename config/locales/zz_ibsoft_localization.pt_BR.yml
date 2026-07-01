@@ -1,0 +1,5 @@
+pt_BR:
+  ibsoft_localization:
+    working_hour_break:
+      errors:
+        end_after_start: O fim do intervalo deve ser posterior ao início
