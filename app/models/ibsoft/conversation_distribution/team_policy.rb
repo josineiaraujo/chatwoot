@@ -1,3 +1,25 @@
+# == Schema Information
+#
+# Table name: ibsoft_conversation_distribution_team_policies
+#
+#  id                      :bigint           not null, primary key
+#  config                  :jsonb            not null
+#  enabled                 :boolean          default(FALSE), not null
+#  override_channel_policy :boolean          default(FALSE), not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  account_id              :bigint           not null
+#  inbox_id                :bigint
+#  team_id                 :bigint           not null
+#
+# Indexes
+#
+#  idx_ibsoft_distribution_team_inbox_policy  (account_id,team_id,inbox_id) UNIQUE WHERE (inbox_id IS NOT NULL)
+#  idx_ibsoft_distribution_team_policy        (account_id,team_id) UNIQUE WHERE (inbox_id IS NULL)
+#  idx_on_account_id_1409f9bfca               (account_id)
+#  idx_on_inbox_id_6f03247c22                 (inbox_id)
+#  idx_on_team_id_d59e9eeb35                  (team_id)
+#
 class Ibsoft::ConversationDistribution::TeamPolicy < ApplicationRecord
   self.table_name = 'ibsoft_conversation_distribution_team_policies'
 
