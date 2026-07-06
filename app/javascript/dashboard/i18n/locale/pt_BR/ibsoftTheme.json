@@ -569,6 +569,215 @@
     }
   },
   "IBSOFT_THEME": {
+    "CHATHUB_SETTINGS": {
+      "SIDEBAR": "Configurações ChatHub",
+      "TITLE": "Configurações de canais e times",
+      "DESCRIPTION": "Ajustes globais da operação que valem para todos os canais e times.",
+      "SAVE": "Salvar configurações",
+      "SAVED": "Configurações salvas com sucesso.",
+      "USER_OPTION": "{name} · {email}",
+      "MENU": {
+        "CHANNELS": "Canais de comunicação",
+        "TEAMS": "Times",
+        "ACCOUNT": "Conta",
+        "ATTENDANCE": "Políticas de atendentes",
+        "POLICIES": "Políticas de distribuição",
+        "AGENTS": "Agentes",
+        "ACCESS_CONTROL": "Perfis e permissões"
+      },
+      "CHANNELS": {
+        "TITLE": "Canais de comunicação",
+        "DESCRIPTION": "Gerencie os pontos de entrada usados pelos clientes para conversar com a equipe.",
+        "COUNT_ONE": "{count} canal",
+        "COUNT_MANY": "{count} canais",
+        "NEW": "Novo canal",
+        "SEARCH_PLACEHOLDER": "Pesquisar canais",
+        "EMPTY": "Nenhum canal de comunicação foi criado.",
+        "NO_RESULTS": "Nenhum canal encontrado para esta busca.",
+        "SETTINGS": "Configurar",
+        "DELETE": "Remover canal",
+        "DELETE_TITLE": "Remover canal",
+        "DELETE_MESSAGE": "Tem certeza que deseja remover {name}?",
+        "DELETE_PLACEHOLDER": "Digite {name} para confirmar",
+        "DELETE_CONFIRM": "Sim, remover canal",
+        "DELETE_CANCEL": "Cancelar",
+        "DELETE_SUCCESS": "Canal removido com sucesso.",
+        "DELETE_ERROR": "Não foi possível remover o canal."
+      },
+      "POLICIES": {
+        "TITLE": "Políticas de distribuição",
+        "DESCRIPTION": "Crie e mantenha políticas reutilizáveis para vincular aos canais de comunicação e aos times.",
+        "SELECT": "Selecionar política",
+        "NEW": "Nova política",
+        "NEW_OPTION": "Criar nova política",
+        "CREATE_TITLE": "Criar política de distribuição",
+        "EDIT_TITLE": "Editar política de distribuição",
+        "NEW_NAME": "Nova política",
+        "NAME": "Nome da política",
+        "CARD_DESCRIPTION": "Controla distribuição, redistribuição, horário de funcionamento e alertas operacionais.",
+        "EDIT": "Editar",
+        "ENABLED": "Ativa",
+        "DISABLED": "Inativa",
+        "ORDER": "Ordem",
+        "PRIORITY": "Prioridade",
+        "USAGE": "Vinculada a {channels} canais e {teams} times.",
+        "SAVED": "Política salva com sucesso.",
+        "DELETED": "Política removida com sucesso.",
+        "EMPTY": "Nenhuma política foi criada.",
+        "SELECT_EMPTY": "Selecione uma política para editar ou clique em Nova política.",
+        "DELETE": "Remover política",
+        "DELETE_TITLE": "Remover política",
+        "DELETE_MESSAGE": "Tem certeza que deseja remover esta política?",
+        "DELETE_CONFIRM": "Sim, remover política",
+        "DELETE_CANCEL": "Cancelar"
+      },
+      "ATTENDANCE": {
+        "AGENT_ENTRY": {
+          "TITLE": "Modal pós-login",
+          "DESCRIPTION": "Defina quantos atendimentos o agente precisa assumir ao entrar, usando a fila total disponível para ele.",
+          "PERCENTAGE": "Percentual obrigatório da fila",
+          "MINIMUM": "Mínimo obrigatório",
+          "BLOCK_CLOSE": "Bloquear fechamento se houver obrigatórios"
+        },
+        "STABILIZATION": {
+          "TITLE": "Distribuição gradual após login",
+          "DESCRIPTION": "Evita sobrecarregar o primeiro agente que volta online, limitando temporariamente os atendimentos recebidos automaticamente.",
+          "OFFLINE_THRESHOLD": "Aplicar quando o agente ficou offline por pelo menos",
+          "WINDOW": "Manter o limite pelos primeiros",
+          "MAX_DURING_WINDOW": "Máximo de atendimentos automáticos nesse período",
+          "MIN_ONLINE": "Desativar limite quando houver pelo menos",
+          "UNITS": {
+            "MINUTES": "minutos",
+            "CONVERSATIONS": "atendimentos",
+            "ONLINE_AGENTS": "agentes online"
+          }
+        }
+      },
+      "AGENT_PROVISIONING": {
+        "TITLE": "Cadastro rápido de agentes",
+        "DESCRIPTION": "Crie agentes confirmados usando a estrutura nativa do Chatwoot, sem depender do e-mail de confirmação.",
+        "NAME": "Nome",
+        "NAME_PLACEHOLDER": "Nome do agente",
+        "EMAIL": "E-mail",
+        "EMAIL_PLACEHOLDER": "agente@empresa.com",
+        "PICTURE": "Foto do agente",
+        "AVATAR_FALLBACK": "Agente",
+        "CROP_TITLE": "Ajustar foto",
+        "CROP_DESCRIPTION": "Recorte a imagem antes de salvar a foto do agente.",
+        "CROP_ZOOM": "Zoom",
+        "APPLY_CROP": "Aplicar recorte",
+        "CANCEL_CROP": "Cancelar",
+        "PROFILE": "Perfil",
+        "CREATE": "Criar agente",
+        "CREATED": "Agente criado com sucesso.",
+        "EDIT": "Editar",
+        "EDIT_TITLE": "Editar agente",
+        "EDIT_DESCRIPTION": "Atualize o nome, o e-mail, o perfil e, se necessário, gere uma nova senha temporária.",
+        "UPDATE": "Salvar alterações",
+        "UPDATED": "Agente atualizado com sucesso.",
+        "DELETE": "Apagar",
+        "DELETE_TITLE": "Apagar agente",
+        "DELETE_MESSAGE": "Tem certeza que deseja apagar {name}? O agente será removido desta conta.",
+        "DELETE_CONFIRM": "Sim, apagar agente",
+        "DELETED": "Agente apagado com sucesso.",
+        "PASSWORD_TITLE": "Senha temporária",
+        "PASSWORD_DESCRIPTION": "Esta senha de {name} será exibida apenas agora. Compartilhe por um canal seguro.",
+        "RESET_PASSWORD_TITLE": "Nova senha temporária",
+        "RESET_PASSWORD_DESCRIPTION": "Ao gerar uma nova senha, ela será exibida apenas neste modal. Compartilhe por um canal seguro.",
+        "GENERATE_PASSWORD": "Gerar nova senha",
+        "PASSWORD_REGENERATED": "Nova senha temporária gerada.",
+        "COPY_PASSWORD": "Copiar senha",
+        "PASSWORD_COPIED": "Senha copiada.",
+        "PASSWORD_COPY_ERROR": "Não foi possível copiar a senha.",
+        "AVAILABILITY": {
+          "LABEL": "Disponibilidade",
+          "ONLINE": "Online",
+          "BUSY": "Ocupado",
+          "OFFLINE": "Offline"
+        },
+        "AUTO_OFFLINE": {
+          "LABEL": "Marcar offline automaticamente",
+          "DESCRIPTION": "Quando ativado, o ChatHub marca o agente como offline quando não há presença ativa no painel."
+        },
+        "AVAILABILITY_UPDATED": "Status do agente atualizado.",
+        "LIST_TITLE": "Agentes da conta",
+        "LIST_DESCRIPTION": "Lista nativa de usuários vinculados a esta conta.",
+        "REFRESH": "Atualizar",
+        "EMPTY": "Nenhum agente encontrado.",
+        "CONFIRMED": "Confirmado",
+        "PENDING": "Pendente",
+        "PROFILES": {
+          "AGENT": "Agente",
+          "ADMINISTRATOR": "Administrador"
+        }
+      },
+      "ACCESS_CONTROL": {
+        "TITLE": "Perfis e permissões",
+        "DESCRIPTION": "Crie perfis próprios do ChatHub e defina quais recursos cada agente pode acessar.",
+        "NEW": "Adicionar perfil",
+        "CREATE_TITLE": "Criar perfil",
+        "EDIT_TITLE": "Editar perfil",
+        "NAME": "Nome do perfil",
+        "DESCRIPTION_FIELD": "Descrição",
+        "SAVE": "Salvar perfil",
+        "SAVED": "Perfil salvo com sucesso.",
+        "DELETED": "Perfil removido com sucesso.",
+        "EMPTY": "Nenhum perfil foi criado.",
+        "EDIT": "Editar perfil",
+        "DELETE": "Remover perfil",
+        "DELETE_TITLE": "Remover perfil",
+        "DELETE_MESSAGE": "Tem certeza que deseja remover este perfil? Os agentes vinculados a ele perderão essas permissões.",
+        "DELETE_CONFIRM": "Sim, remover perfil",
+        "USAGE": "{count} agente vinculado | {count} agentes vinculados",
+        "VIEW_AGENTS": "Ver agentes",
+        "MANAGE_AGENTS_TITLE": "Agentes em {profile}",
+        "MANAGE_AGENTS_DESCRIPTION": "Adicione ou remova agentes deste perfil. Se o agente já estiver em outro perfil, ele será movido para este.",
+        "ASSIGNMENTS_TITLE": "Agentes vinculados",
+        "ASSIGNMENTS_DESCRIPTION": "Escolha qual perfil cada agente deve usar nesta conta.",
+        "ASSIGNMENTS_EMPTY": "Nenhum agente possui perfil vinculado.",
+        "SELECT_USER": "Selecionar agente",
+        "SELECT_ROLE": "Selecionar perfil",
+        "ASSIGN": "Vincular perfil",
+        "ADD_AGENT": "Adicionar agente",
+        "UPDATE": "Atualizar",
+        "REMOVE_ASSIGNMENT": "Remover vínculo",
+        "USER_OPTION_WITH_PROFILE": "{name} · {email} · atual: {profile}",
+        "ASSIGNMENT_SAVED": "Perfil do agente atualizado com sucesso.",
+        "ASSIGNMENT_DELETED": "Vínculo removido com sucesso.",
+        "GROUPS": {
+          "CONVERSATION": "Conversas",
+          "WORKSPACE": "Recursos do workspace",
+          "IBSOFT": "Recursos ChatHub"
+        },
+        "PERMISSIONS": {
+          "CONVERSATION_MANAGE": "Gerenciar todas as conversas",
+          "CONVERSATION_UNASSIGNED_MANAGE": "Gerenciar conversas não atribuídas e atribuídas ao agente",
+          "CONVERSATION_PARTICIPATING_MANAGE": "Gerenciar conversas em que participa",
+          "CONTACT_MANAGE": "Gerenciar importação e exportação de contatos",
+          "REPORT_MANAGE": "Acessar relatórios",
+          "KNOWLEDGE_BASE_MANAGE": "Gerenciar base de conhecimento",
+          "IBSOFT_CONVERSATION_DISTRIBUTION_SUPERVISE": "Acessar supervisão de atendimentos",
+          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Gerenciar configurações do ChatHub"
+        }
+      },
+      "ERRORS": {
+        "LOAD": "Não foi possível carregar as configurações do ChatHub.",
+        "SAVE": "Não foi possível salvar as configurações do ChatHub.",
+        "POLICIES_LOAD": "Não foi possível carregar as políticas de distribuição.",
+        "POLICIES_SAVE": "Não foi possível salvar a política de distribuição.",
+        "POLICIES_DELETE": "Não foi possível remover a política de distribuição.",
+        "ACCESS_CONTROL_LOAD": "Não foi possível carregar perfis e permissões.",
+        "ACCESS_CONTROL_SAVE": "Não foi possível salvar o perfil.",
+        "ACCESS_CONTROL_DELETE": "Não foi possível remover o perfil.",
+        "ACCESS_CONTROL_ASSIGNMENT": "Não foi possível atualizar o vínculo do agente.",
+        "AGENT_PROVISIONING_LOAD": "Não foi possível carregar os agentes.",
+        "AGENT_PROVISIONING_CREATE": "Não foi possível criar o agente.",
+        "AGENT_PROVISIONING_UPDATE": "Não foi possível atualizar o agente.",
+        "AGENT_PROVISIONING_DELETE": "Não foi possível apagar o agente.",
+        "AGENT_PROVISIONING_PASSWORD_RESET": "Não foi possível gerar uma nova senha.",
+        "AGENT_PROVISIONING_AVAILABILITY_UPDATE": "Não foi possível atualizar o status do agente."
+      }
+    },
     "CONVERSATION_STATUS": {
       "PENDING_OPERATIONAL": "Automação"
     },
@@ -600,28 +809,236 @@
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversas aparecem aqui quando há novas mensagens, menções ou atribuições para você."
     },
+    "CHATHUB_ANALYTICS": {
+      "SIDEBAR": "Página inicial",
+      "EMPTY": "Sem dados para o período selecionado.",
+      "API_ERROR": "Não foi possível carregar os indicadores.",
+      "HOME": {
+        "TITLE": "Página inicial",
+        "AGENT_DESCRIPTION": "Acompanhe seus indicadores de atendimento e pontos operacionais que precisam de atenção.",
+        "SUPERVISOR_DESCRIPTION": "Acompanhe indicadores da equipe, tempo de resposta, redistribuições e gargalos operacionais.",
+        "SUPERVISION": "Supervisão"
+      },
+      "TABS": {
+        "AGENT": "Meu painel",
+        "SUPERVISOR": "Painel da equipe"
+      },
+      "FILTERS": {
+        "PERIOD": "Período",
+        "LAST_7_DAYS": "Últimos 7 dias",
+        "LAST_30_DAYS": "Últimos 30 dias",
+        "CUSTOM": "Período específico",
+        "SINCE": "De",
+        "UNTIL": "Até",
+        "INBOX": "Canal de comunicação",
+        "TEAM": "Departamento",
+        "ALL_INBOXES": "Todos os canais",
+        "ALL_TEAMS": "Todos os departamentos",
+        "APPLY": "Aplicar",
+        "REFRESH": "Atualizar"
+      },
+      "UNITS": {
+        "SECONDS": "{count}s",
+        "MINUTES": "{count} min",
+        "HOURS": "{count} h",
+        "CONVERSATION": {
+          "ONE": "{count} atendimento",
+          "OTHER": "{count} atendimentos"
+        },
+        "OPEN_CONVERSATION": {
+          "ONE": "{count} aberto",
+          "OTHER": "{count} abertos"
+        },
+        "CLOSED_CONVERSATION": {
+          "ONE": "{count} encerrado",
+          "OTHER": "{count} encerrados"
+        },
+        "UNASSIGNED_CONVERSATION": {
+          "ONE": "{count} sem agente",
+          "OTHER": "{count} sem agente"
+        },
+        "REDISTRIBUTION": {
+          "ONE": "{count} redistribuição",
+          "OTHER": "{count} redistribuições"
+        },
+        "FIRST_RESPONSE": {
+          "ONE": "{count} primeira resposta",
+          "OTHER": "{count} primeiras respostas"
+        },
+        "REDISTRIBUTION_RATIO": {
+          "VALUE": "{redistributions} / {handled} (média {average}x)",
+          "LOW_SAMPLE": "{redistributions} / {handled} • amostra insuficiente"
+        }
+      },
+      "AGENT": {
+        "BY_TEAM": "Tempo de resposta por departamento",
+        "RESPONSE_TREND": "Evolução do tempo de resposta",
+        "TEAM_CAPTION": "{resolved} • {redistributions}",
+        "CARDS": {
+          "OPEN_ASSIGNED": "Atendimentos comigo",
+          "AVG_REPLY": "Tempo médio de resposta",
+          "REDISTRIBUTIONS": "Redistribuídos por espera",
+          "RESOLVED": "Atendimentos encerrados"
+        }
+      },
+      "SUPERVISOR": {
+        "TOP_AGENTS": "Agentes com maior volume",
+        "REDISTRIBUTION_RANKING": "Agentes que mais deixaram redistribuições acontecerem",
+        "SLOW_RESPONSE": "Maiores tempos de primeira resposta",
+        "TEAM_HEALTH": "Saúde por departamento",
+        "DAILY_VOLUME": "Volume diário de atendimentos",
+        "HOURLY_HEATMAP": "Horários de maior entrada",
+        "TOP_AGENT_CAPTION": "{open} • {resolved}",
+        "RESPONSE_CAPTION": "{responses}",
+        "TEAM_CAPTION": "{open} • {unassigned} • {response} de resposta",
+        "CARDS": {
+          "OPEN": "Atendimentos abertos",
+          "UNASSIGNED": "Sem agente",
+          "AVG_FIRST_RESPONSE": "Tempo médio para a primeira resposta",
+          "REDISTRIBUTIONS": "Redistribuições"
+        }
+      },
+      "SUGGESTIONS": {
+        "TITLE": "Leituras operacionais",
+        "REDUCE_RESPONSE_TIME": {
+          "TITLE": "Tempo de resposta acima do ideal",
+          "DESCRIPTION": "Seu tempo médio está em {average_reply_duration}. Priorize conversas aguardando e reduza alternância entre departamentos."
+        },
+        "REVIEW_REDISTRIBUTIONS": {
+          "TITLE": "Há atendimentos redistribuídos por espera",
+          "DESCRIPTION": "{redistributions} saíram da sua fila no período. Revise horários de pico, pausas e volume assumido."
+        },
+        "PRIORITIZE_WAITING_CUSTOMERS": {
+          "TITLE": "Clientes aguardando atenção",
+          "DESCRIPTION": "{conversations} estão acima do limite operacional de espera."
+        },
+        "UNASSIGNED_BACKLOG": {
+          "TITLE": "Fila sem agente disponível",
+          "DESCRIPTION": "{conversations} estão abertos sem responsável. Verifique cobertura por departamento."
+        },
+        "REDISTRIBUTION_PRESSURE": {
+          "TITLE": "Redistribuições recorrentes",
+          "DESCRIPTION": "{redistributions} ocorreram no período. Avalie balanceamento, limites e capacidade dos agentes."
+        },
+        "SLOW_FIRST_RESPONSE": {
+          "TITLE": "Primeira resposta lenta",
+          "DESCRIPTION": "A primeira resposta média está em {duration}. Revise entrada do robô, horários e regra de distribuição."
+        },
+        "HEALTHY_OPERATION": {
+          "TITLE": "Operação dentro do esperado",
+          "DESCRIPTION": "Não há sinais relevantes de acúmulo ou redistribuição no período selecionado."
+        }
+      }
+    },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configurar distribuição",
       "ENABLED": {
         "TITLE": "Distribuição automática",
         "DESCRIPTION": "Ative esta política para controlar como atendimentos transferidos para humanos devem ser distribuídos."
       },
+      "ACTIVATION_ALERT": {
+        "TITLE": "Antes de ativar a distribuição Ibsoft",
+        "DESCRIPTION": "Desative as opções nativas de atribuição para evitar que o Chatwoot distribua o atendimento antes da política Ibsoft.",
+        "ITEMS": {
+          "CHANNEL_AUTO_ASSIGNMENT": "A atribuição automática do canal de comunicação ainda está ativa.",
+          "TEAM_AUTO_ASSIGNMENT": "A atribuição automática do time ainda está ativa.",
+          "ASSIGNMENT_POLICY": "Há uma política de atribuição nativa vinculada a este canal."
+        }
+      },
       "OVERRIDE": {
         "TITLE": "Sobrescrever regra do canal",
         "DESCRIPTION": "Use uma regra específica para este time. Quando desligado, o time segue a configuração geral do canal de comunicação."
       },
+      "POLICY_CATALOG": {
+        "SELECT": "Política de distribuição",
+        "NONE": "Sem política vinculada",
+        "NEW": "Criar nova política",
+        "NAME": "Nome da política",
+        "HELP": "A política é reutilizável. Alterações feitas aqui afetam todos os canais e times vinculados a ela.",
+        "LINK_HELP": "A regra desta tela vem da política vinculada. Edite a política nas Configurações do ChatHub.",
+        "EMPTY_LINK": "Sem política vinculada, a distribuição Ibsoft fica inativa para este vínculo.",
+        "SAVE_LINK": "Salvar vínculo",
+        "DEFAULT_CHANNEL_NAME": "Política do canal {inboxName}",
+        "DEFAULT_TEAM_NAME": "Política do time {teamName}"
+      },
       "DISTRIBUTION": {
-        "TITLE": "Entrada do agente",
-        "DESCRIPTION": "Defina como o agente recebe atendimentos pendentes quando fica disponível.",
-        "MIN_ON_LOGIN": "Mínimo obrigatório ao entrar",
+        "TITLE": "Rodadas de distribuição",
+        "DESCRIPTION": "Controle a ordem, a prioridade e os limites usados em cada ciclo automático de distribuição.",
         "MAX_PER_ROUND": "Máximo por rodada",
-        "SINGLE_AGENT": "Atribuir todos os atendimentos pendentes quando houver apenas um agente disponível no time"
+        "ROUND_LIMIT": {
+          "TITLE": "Limitar quantidade por rodada",
+          "DESCRIPTION": "Quando desligado, a distribuição não limita a quantidade total de atendimentos processados por rodada para esta política."
+        },
+        "ASSIGNMENT_ORDER": {
+          "TITLE": "Ordem de atribuição",
+          "ROUND_ROBIN": {
+            "LABEL": "Rodízio",
+            "DESCRIPTION": "Distribui os atendimentos em sequência entre os agentes disponíveis."
+          },
+          "BALANCED": {
+            "LABEL": "Equilibrado",
+            "DESCRIPTION": "Prioriza o agente disponível com menos atendimentos abertos neste canal e departamento."
+          }
+        },
+        "CONVERSATION_PRIORITY": {
+          "TITLE": "Prioridade de atribuição",
+          "LONGEST_WAITING": {
+            "LABEL": "Maior tempo de espera",
+            "DESCRIPTION": "O atendimento que está aguardando há mais tempo é distribuído primeiro."
+          },
+          "EARLIEST_CREATED": {
+            "LABEL": "Criado recentemente",
+            "DESCRIPTION": "O atendimento criado primeiro é distribuído primeiro."
+          }
+        },
+        "FAIR_DISTRIBUTION": {
+          "TITLE": "Limite por janela",
+          "DESCRIPTION": "Defina quantos atendimentos cada agente pode receber dentro de um período, evitando sobrecarga.",
+          "LIMIT_LABEL": "Máximo de atribuições",
+          "WINDOW_LABEL": "Janela de tempo"
+        },
+        "CAPACITY": {
+          "TITLE": "Capacidade do agente",
+          "DESCRIPTION": "Escolha como a política limita a entrada de novos atendimentos para cada agente.",
+          "OPEN_LIMIT_LABEL": "Máximo de atendimentos abertos ao mesmo tempo",
+          "ASSIGNMENT_LIMIT_MODE": {
+            "OPEN_CONVERSATIONS": {
+              "LABEL": "Atendimentos abertos ao mesmo tempo",
+              "DESCRIPTION": "Não entrega novos atendimentos para agentes que já chegaram ao limite de conversas abertas."
+            },
+            "ASSIGNMENT_WINDOW": {
+              "LABEL": "Novas atribuições por período",
+              "DESCRIPTION": "Limita quantos novos atendimentos cada agente pode receber dentro de uma janela de tempo."
+            }
+          },
+          "EXCLUSIONS": {
+            "TITLE": "Não contar na capacidade",
+            "DESCRIPTION": "Defina quais atendimentos abertos não devem ocupar a capacidade do agente.",
+            "LABELS": "Etiquetas ignoradas",
+            "LABELS_PLACEHOLDER": "Selecionar etiquetas",
+            "LABELS_SEARCH": "Buscar etiqueta",
+            "LABELS_EMPTY": "Nenhuma etiqueta encontrada",
+            "WAITING_CUSTOMER_TITLE": "Ignorar atendimentos aguardando cliente",
+            "WAITING_CUSTOMER_DESCRIPTION": "Quando a última mensagem pública foi do agente e o cliente não respondeu dentro do prazo, o atendimento deixa de ocupar capacidade.",
+            "WAITING_CUSTOMER_LIMIT": "Tempo aguardando resposta do cliente"
+          }
+        }
       },
       "REDISTRIBUTION": {
         "TITLE": "Redistribuição",
         "DESCRIPTION": "Regras para mover atendimentos quando o primeiro agente não responde ao cliente.",
         "ENABLE_TIMEOUT": "Redistribuir se o agente não responder dentro do prazo",
         "TIMEOUT": "Tempo sem primeira resposta"
+      },
+      "ASSIGNMENT_CONFIRMATION": {
+        "TITLE": "Confirmação de atendimento",
+        "DESCRIPTION": "Mensagem automática enviada quando a distribuição atribui o atendimento a um agente online.",
+        "ENABLED": "Enviar mensagem ao atribuir agente",
+        "ENABLED_DESCRIPTION": "Use esta opção para informar ao cliente que o atendimento foi direcionado para uma pessoa específica.",
+        "MESSAGE": "Mensagem automática ao cliente",
+        "DEFAULT_MESSAGE": "Seu atendimento foi direcionado para {{agent.name}}. Em instantes ele continuará com você.",
+        "ONLY_BEFORE_FIRST_REPLY": "Somente antes da primeira resposta humana",
+        "ONLY_BEFORE_FIRST_REPLY_DESCRIPTION": "Evita enviar a confirmação quando a conversa já recebeu uma resposta humana anteriormente."
       },
       "UNAVAILABLE": {
         "TITLE": "Sem atendente disponível",
@@ -632,7 +1049,15 @@
         "FALLBACK_TEAM": "Transferir para departamento de fallback",
         "FALLBACK_TEAM_LABEL": "Departamento de fallback",
         "SELECT_TEAM": "Selecionar departamento",
-        "MESSAGE": "Mensagem automática ao cliente"
+        "MESSAGE": "Mensagem automática ao cliente",
+        "NO_AVAILABLE_AGENT": {
+          "TITLE": "Quando não houver atendente disponível",
+          "DESCRIPTION": "Use esta regra quando o atendimento estiver dentro do horário, mas nenhum agente puder receber a conversa."
+        },
+        "OUTSIDE_BUSINESS_HOURS": {
+          "TITLE": "Quando estiver fora do horário",
+          "DESCRIPTION": "Use esta regra quando o atendimento chegar fora do horário definido para o canal ou para o departamento."
+        }
       },
       "BUSINESS_HOURS": {
         "TITLE": "Horário de funcionamento",
@@ -640,13 +1065,143 @@
         "MODE": "Regra de horário",
         "INHERIT_CHANNEL": "Seguir horário do canal",
         "CUSTOM": "Usar horário específico do time",
-        "ALWAYS_AVAILABLE": "Sempre disponível"
+        "ALWAYS_AVAILABLE": "Sempre disponível",
+        "TIMEZONE_LABEL": "Fuso horário",
+        "TIMEZONE_PLACEHOLDER": "Selecionar fuso horário",
+        "WEEKLY_TITLE": "Disponibilidade semanal do time",
+        "CLOSED": "Fechado"
       },
       "SUPERVISOR_ALERT": {
         "TITLE": "Alerta ao supervisor",
         "DESCRIPTION": "Registre atendimentos parados para acompanhamento por administradores ou supervisores.",
         "ENABLED": "Alertar supervisor quando o cliente ficar aguardando",
         "THRESHOLD": "Tempo limite para alerta"
+      },
+      "SUPERVISOR_DASHBOARD": {
+        "SIDEBAR": "Supervisão",
+        "TITLE": "Supervisão de atendimentos",
+        "DESCRIPTION": "Acompanhe atendimentos transferidos para humanos que ultrapassaram o tempo de espera configurado na política de distribuição.",
+        "REFRESH": "Atualizar",
+        "EMPTY": "Nenhum atendimento exige atenção no momento.",
+        "EMPTY_VALUE": "Não informado",
+        "UNKNOWN_CUSTOMER": "Cliente sem nome",
+        "API_ERROR": "Não foi possível carregar os alertas de supervisão.",
+        "OPEN_CONVERSATION": "Abrir",
+        "BACK_TO_HOME": "Painel",
+        "EVENT_LOGS": "Ver auditoria",
+        "CONVERSATION_ID": "#{id}",
+        "MINUTES": "{count} min",
+        "THRESHOLD": "limite {count} min",
+        "VISIBLE_ALERTS": "{count} alertas exibidos",
+        "SUMMARY": {
+          "ALERTS": "Alertas ativos",
+          "SCANNED": "Atendimentos analisados",
+          "CRITICAL": "Críticos",
+          "UPDATED": "Atualizado em"
+        },
+        "FILTERS": {
+          "REASON": "Motivo",
+          "SEVERITY": "Severidade",
+          "TEAM": "Departamento",
+          "INBOX": "Canal de comunicação",
+          "ALL_REASONS": "Todos os motivos",
+          "ALL_SEVERITIES": "Todas as severidades",
+          "ALL_TEAMS": "Todos os departamentos",
+          "ALL_INBOXES": "Todos os canais"
+        },
+        "TABLE": {
+          "CONVERSATION": "Atendimento",
+          "CUSTOMER": "Cliente",
+          "ROUTING": "Departamento",
+          "WAITING": "Espera",
+          "SEVERITY": "Severidade",
+          "REASON": "Motivo"
+        },
+        "REASONS": {
+          "UNASSIGNED": "Sem agente atribuído",
+          "ASSIGNED": "Sem primeira resposta"
+        },
+        "SEVERITY": {
+          "WARNING": "Atenção",
+          "CRITICAL": "Crítico"
+        }
+      },
+      "EVENT_LOGS": {
+        "TITLE": "Auditoria da distribuição",
+        "DESCRIPTION": "Consulte os eventos registrados pela distribuição Ibsoft para entender atribuições, redistribuições e bloqueios.",
+        "REFRESH": "Atualizar",
+        "BACK_TO_SUPERVISION": "Voltar para supervisão",
+        "EMPTY": "Nenhum evento encontrado para os filtros atuais.",
+        "EMPTY_VALUE": "Não informado",
+        "API_ERROR": "Não foi possível carregar a auditoria.",
+        "CONVERSATION_ID": "#{id}",
+        "SUMMARY": {
+          "TOTAL": "Eventos encontrados",
+          "PAGE": "Página atual",
+          "UPDATED": "Atualizado em"
+        },
+        "FILTERS": {
+          "EVENT_TYPE": "Tipo de evento",
+          "REASON": "Motivo",
+          "CONVERSATION": "ID da conversa",
+          "INBOX": "Canal de comunicação",
+          "TEAM": "Departamento",
+          "SINCE": "De",
+          "UNTIL": "Até",
+          "APPLY": "Aplicar",
+          "CLEAR": "Limpar",
+          "ALL_EVENT_TYPES": "Todos os tipos",
+          "ALL_REASONS": "Todos os motivos",
+          "ALL_INBOXES": "Todos os canais",
+          "ALL_TEAMS": "Todos os departamentos"
+        },
+        "TABLE": {
+          "CREATED_AT": "Data",
+          "EVENT_TYPE": "Evento",
+          "REASON": "Motivo",
+          "CONVERSATION": "Conversa",
+          "ROUTING": "Roteamento",
+          "ASSIGNEES": "Agentes"
+        },
+        "PAGINATION": {
+          "PREVIOUS": "Anterior",
+          "NEXT": "Próxima",
+          "PAGE": "Página {page} de {total}",
+          "RESULTS": "Exibindo {start} a {end} de {total} eventos"
+        },
+        "EVENT_TYPES": {
+          "ASSIGNMENT_COMPLETED": "Atribuição concluída",
+          "ASSIGNMENT_SKIPPED": "Atribuição ignorada",
+          "REDISTRIBUTION_COMPLETED": "Redistribuição concluída",
+          "REDISTRIBUTION_SKIPPED": "Redistribuição ignorada",
+          "AGENT_CLAIM_COMPLETED": "Assunção pelo agente concluída",
+          "AGENT_CLAIM_SKIPPED": "Assunção pelo agente ignorada"
+        },
+        "REASONS": {
+          "ELIGIBLE_FOR_ASSIGNMENT": "Elegível para atribuição",
+          "REAL_ASSIGNMENT_DISABLED": "Execução real desativada",
+          "NO_AVAILABLE_AGENT": "Sem agente disponível",
+          "CANDIDATE_ALREADY_CLAIMED": "Atendimento já assumido",
+          "CANDIDATE_ALREADY_CHANGED": "Atendimento alterado durante a rodada",
+          "NOT_AVAILABLE_FOR_AGENT": "Indisponível para este agente",
+          "FIRST_RESPONSE_TIMEOUT": "Tempo sem primeira resposta excedido",
+          "OUTSIDE_BUSINESS_HOURS": "Fora do horário de funcionamento",
+          "NOT_ELIGIBLE": "Não elegível",
+          "CONVERSATION_NOT_FOUND": "Conversa não encontrada",
+          "REQUIRED_ASSIGNMENTS_MISSING": "Atendimentos obrigatórios não foram selecionados"
+        }
+      },
+      "AGENT_ASSIGNMENT": {
+        "TITLE": "Atendimentos aguardando",
+        "DESCRIPTION": "Existem atendimentos transferidos para seus departamentos. Assuma os obrigatórios para iniciar sua fila.",
+        "UNKNOWN_CUSTOMER": "Cliente sem nome",
+        "WAITING_MINUTES": "{count} min aguardando",
+        "REQUIRED": "Obrigatório ao entrar",
+        "LATER": "Depois",
+        "CLAIM": "Assumir atendimentos",
+        "REQUIRED_NOTICE": "Assuma os atendimentos obrigatórios antes de fechar esta janela.",
+        "CLAIM_SUCCESS": "Atendimentos assumidos com sucesso.",
+        "CLAIM_ERROR": "Não foi possível assumir os atendimentos."
       },
       "ACTIONS": {
         "SAVE": "Salvar política"

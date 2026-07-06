@@ -38,10 +38,26 @@ RSpec.describe Ibsoft::ConversationDistribution::DryRunPreview do
 
     expect(candidate).to include(
       conversation_id: conversation.id,
-      source: 'manual_team_transfer',
-      source_confidence: 'inferred_team_queue',
+      source: nil,
+      source_confidence: 'unknown',
       eligible: false,
-      reasons: include('policy_disabled')
+      reasons: include('policy_disabled', 'missing_source')
+    )
+  end
+
+  it 'keeps unmarked team queues ineligible even when the policy is enabled' do
+    create(:ibsoft_distribution_channel_policy, account: account, inbox: inbox, enabled: true)
+    conversation = create(:conversation, account: account, inbox: inbox, team: team, waiting_since: 10.minutes.ago)
+
+    preview = described_class.new(account: account).perform
+    candidate = preview[:candidates].first
+
+    expect(candidate).to include(
+      conversation_id: conversation.id,
+      source: nil,
+      source_confidence: 'unknown',
+      eligible: false,
+      reasons: include('missing_source')
     )
   end
 
@@ -100,7 +116,11 @@ RSpec.describe Ibsoft::ConversationDistribution::DryRunPreview do
       enabled: true,
       override_channel_policy: true
     )
-    create(:conversation, account: account, inbox: inbox, team: team, waiting_since: 10.minutes.ago)
+    conversation = create(:conversation, account: account, inbox: inbox, team: team, waiting_since: 10.minutes.ago)
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: conversation,
+      source: 'manual_team_transfer'
+    ).perform
 
     preview = described_class.new(account: account).perform
     candidate = preview[:candidates].first
@@ -118,7 +138,11 @@ RSpec.describe Ibsoft::ConversationDistribution::DryRunPreview do
       enabled: false,
       override_channel_policy: true
     )
-    create(:conversation, account: account, inbox: inbox, team: team, waiting_since: 10.minutes.ago)
+    conversation = create(:conversation, account: account, inbox: inbox, team: team, waiting_since: 10.minutes.ago)
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: conversation,
+      source: 'manual_team_transfer'
+    ).perform
 
     preview = described_class.new(account: account).perform
     candidate = preview[:candidates].first

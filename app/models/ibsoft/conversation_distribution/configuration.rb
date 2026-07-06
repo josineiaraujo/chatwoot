@@ -1,36 +1,51 @@
 module Ibsoft::ConversationDistribution::Configuration
   extend ActiveSupport::Concern
 
-  FALLBACK_ACTIONS = %w[wait notify_customer fallback_team].freeze
-  BUSINESS_HOURS_MODES = %w[inherit_channel custom always_available].freeze
+  DEFAULT_UNAVAILABLE_CONFIG = { 'action' => 'wait', 'message' => nil, 'fallback_team_id' => nil }.freeze
+
+  DISTRIBUTION_CONFIG_KEYS = %w[
+    max_assignments_per_round_enabled max_assignments_per_round assignment_order
+    conversation_priority assignment_limit_mode open_conversation_limit
+    capacity_ignore_customer_waiting_enabled capacity_ignore_customer_waiting_minutes
+    capacity_excluded_labels fair_distribution_limit fair_distribution_window
+  ].freeze
 
   DEFAULT_CONFIG = {
     'eligible_sources' => %w[bot_handoff manual_team_transfer system_team_transfer],
     'distribution' => {
-      'strategy' => 'round_robin',
-      'min_assignments_on_login' => 1,
+      'max_assignments_per_round_enabled' => true,
       'max_assignments_per_round' => 5,
-      'assign_all_when_single_agent' => false,
-      'capacity_limit' => nil
+      'assignment_order' => 'round_robin',
+      'conversation_priority' => 'longest_waiting',
+      'assignment_limit_mode' => 'open_conversations',
+      'open_conversation_limit' => 5,
+      'capacity_ignore_customer_waiting_enabled' => false,
+      'capacity_ignore_customer_waiting_minutes' => 1440,
+      'capacity_excluded_labels' => [],
+      'fair_distribution_limit' => 100,
+      'fair_distribution_window' => 3600
     },
-    'redistribution' => {
-      'enabled' => false,
-      'first_response_timeout_minutes' => 15
+    'redistribution' => { 'enabled' => false, 'first_response_timeout_minutes' => 15 },
+    'assignment_confirmation' => {
+      'enabled' => false, 'message' => nil, 'only_before_first_reply' => true
     },
-    'unavailable' => {
-      'action' => 'wait',
-      'message' => nil,
-      'fallback_team_id' => nil
+    'unavailable' => DEFAULT_UNAVAILABLE_CONFIG,
+    'unavailability' => {
+      'no_available_agent' => DEFAULT_UNAVAILABLE_CONFIG,
+      'outside_business_hours' => DEFAULT_UNAVAILABLE_CONFIG
     },
-    'business_hours' => {
-      'mode' => 'inherit_channel',
-      'timezone' => nil,
-      'schedule' => []
-    },
-    'supervisor_alert' => {
-      'enabled' => false,
-      'threshold_minutes' => 30
-    }
+    'business_hours' => { 'mode' => 'inherit_channel', 'timezone' => nil, 'schedule' => [], 'breaks' => [] },
+    'supervisor_alert' => { 'enabled' => false, 'threshold_minutes' => 30 }
+  }.freeze
+
+  CONFIG_SECTIONS = {
+    'distribution' => DISTRIBUTION_CONFIG_KEYS,
+    'redistribution' => %w[enabled first_response_timeout_minutes],
+    'assignment_confirmation' => %w[enabled message only_before_first_reply],
+    'unavailable' => %w[action message fallback_team_id],
+    'unavailability' => %w[no_available_agent outside_business_hours],
+    'business_hours' => %w[mode timezone schedule breaks],
+    'supervisor_alert' => %w[enabled threshold_minutes]
   }.freeze
 
   included do
@@ -45,7 +60,7 @@ module Ibsoft::ConversationDistribution::Configuration
   end
 
   def effective_config
-    self.class.default_config.deep_merge(config || {})
+    normalize_unavailability_config(self.class.default_config.deep_merge(sanitized_config(config || {})), config || {})
   end
 
   def payload
@@ -62,37 +77,29 @@ module Ibsoft::ConversationDistribution::Configuration
   private
 
   def normalize_distribution_config
-    self.config = self.class.default_config.deep_merge((config || {}).deep_stringify_keys)
+    raw_config = config || {}
+    self.config = normalize_unavailability_config(self.class.default_config.deep_merge(sanitized_config(raw_config)), raw_config)
   end
 
   def validate_distribution_config
-    validate_unavailable_action
-    validate_business_hours_mode
-    validate_positive_integer('distribution', 'min_assignments_on_login')
-    validate_positive_integer('distribution', 'max_assignments_per_round')
-    validate_positive_integer('redistribution', 'first_response_timeout_minutes')
-    validate_positive_integer('supervisor_alert', 'threshold_minutes')
+    Ibsoft::ConversationDistribution::ConfigurationValidator.new(self).validate
   end
 
-  def validate_unavailable_action
-    action = config.dig('unavailable', 'action')
-    return if FALLBACK_ACTIONS.include?(action)
+  def sanitized_config(raw_config)
+    config_hash = (raw_config || {}).deep_stringify_keys
+    sanitized = config_hash.slice('eligible_sources')
 
-    errors.add(:config, 'has invalid unavailable action')
+    CONFIG_SECTIONS.each_with_object(sanitized) do |(section, keys), memo|
+      section_config = config_hash.fetch(section, {}).slice(*keys)
+      memo[section] = section_config if section_config.present?
+    end
   end
 
-  def validate_business_hours_mode
-    mode = config.dig('business_hours', 'mode')
-    return if BUSINESS_HOURS_MODES.include?(mode)
-
-    errors.add(:config, 'has invalid business hours mode')
-  end
-
-  def validate_positive_integer(section, key)
-    value = config.dig(section, key)
-    return if value.blank?
-    return if value.is_a?(Integer) && value.positive?
-
-    errors.add(:config, "#{section}.#{key} must be a positive integer")
+  def normalize_unavailability_config(normalized_config, raw_config)
+    Ibsoft::ConversationDistribution::UnavailabilityConfigNormalizer.normalize(
+      normalized_config: normalized_config,
+      raw_config: raw_config,
+      default_unavailable: self.class.default_config['unavailable']
+    )
   end
 end

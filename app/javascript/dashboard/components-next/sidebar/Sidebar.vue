@@ -47,6 +47,13 @@ const store = useStore();
 const searchShortcut = useKbd([`$mod`, 'k']);
 const { t } = useI18n();
 
+const IBSOFT_HIDDEN_NATIVE_SETTINGS_ITEMS = new Set([
+  'Settings Account Settings',
+  'Settings Agents',
+  'Settings Teams',
+  'Settings Inboxes',
+]);
+
 const isACustomBrandedInstance = useMapGetter(
   'globalConfig/isACustomBrandedInstance'
 );
@@ -57,6 +64,7 @@ const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
 const currentUserId = useMapGetter('getCurrentUserID');
+const currentUser = useMapGetter('getCurrentUser');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -243,6 +251,19 @@ const getSidebarSectionSort = useMapGetter(
   'sidebarSortPreferences/getSectionSort'
 );
 
+const activeAccount = computed(() =>
+  currentUser.value?.accounts?.find(
+    account => account.id === Number(accountId.value)
+  )
+);
+
+const canManageChathubSettings = computed(() => {
+  return (
+    activeAccount.value?.role === 'administrator' ||
+    activeAccount.value?.permissions?.includes('ibsoft_chathub_settings_manage')
+  );
+});
+
 onMounted(() => {
   store.dispatch('labels/get');
   store.dispatch('inboxes/get');
@@ -351,6 +372,13 @@ const reportRoutes = computed(() => newReportRoutes());
 
 const menuItems = computed(() => {
   return [
+    {
+      name: 'Ibsoft Chathub Home',
+      label: t('IBSOFT_THEME.CHATHUB_ANALYTICS.SIDEBAR'),
+      icon: 'i-lucide-house',
+      to: accountScopedRoute('ibsoft_chathub_home'),
+      activeOn: ['ibsoft_chathub_home', 'ibsoft_chathub_analytics'],
+    },
     {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
@@ -890,8 +918,19 @@ const menuItems = computed(() => {
           icon: 'i-lucide-credit-card',
           to: accountScopedRoute('billing_settings_index'),
         },
-      ],
+      ].filter(item => !IBSOFT_HIDDEN_NATIVE_SETTINGS_ITEMS.has(item.name)),
     },
+    ...(canManageChathubSettings.value
+      ? [
+          {
+            name: 'Ibsoft Chathub Settings',
+            label: t('IBSOFT_THEME.CHATHUB_SETTINGS.SIDEBAR'),
+            icon: 'i-lucide-sliders-horizontal',
+            to: accountScopedRoute('ibsoft_chathub_settings'),
+            activeOn: ['ibsoft_chathub_settings'],
+          },
+        ]
+      : []),
   ];
 });
 </script>

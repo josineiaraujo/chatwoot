@@ -51,16 +51,29 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     )
   end
 
+  it 'does not create duplicate skipped logs for the same conversation and reason inside the dedupe window' do
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
+
+    expect { described_class.new(account: account).perform }.to change(Ibsoft::ConversationDistribution::EventLog, :count).by(1)
+    expect { described_class.new(account: account).perform }.not_to change(Ibsoft::ConversationDistribution::EventLog, :count)
+  end
+
   it 'assigns an eligible conversation to an online team agent when real assignment is enabled' do
+    account.update!(locale: 'pt_BR')
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
 
-    result = described_class.new(account: account).perform
+    result = nil
+    perform_enqueued_jobs(only: Conversations::ActivityMessageJob) do
+      result = described_class.new(account: account).perform
+    end
 
     expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
     expect(conversation.reload.assignee).to eq(agent)
+    activity_content = "Atendimento atribuído automaticamente para #{agent.name} pela distribuição automática."
+    expect(conversation.messages.activity.where(content: activity_content)).to exist
 
     event = Ibsoft::ConversationDistribution::EventLog.last
     expect(event).to have_attributes(
@@ -70,7 +83,35 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
       new_assignee_id: agent.id
     )
     expect(event.metadata['real_assignment_enabled']).to be(true)
+    expect(event.metadata.dig('activity_message', 'status')).to eq('enqueued')
     expect(event.metadata.dig('candidate', 'source')).to eq('manual_team_transfer')
+  end
+
+  it 'sends assignment confirmation when the policy enables it' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       assignment_confirmation: {
+                                                         enabled: true,
+                                                         message: 'Seu atendimento foi direcionado para {{agent.name}}.',
+                                                         only_before_first_reply: true
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    message = conversation.reload.messages.template.last
+    event = Ibsoft::ConversationDistribution::EventLog.last
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(message.content).to eq("Seu atendimento foi direcionado para #{agent.name}.")
+    expect(event.metadata.dig('assignment_confirmation', 'status')).to eq('message_sent')
+    expect(conversation.first_reply_created_at).to be_nil
   end
 
   it 'assigns with the Ibsoft executor even when Assignment V2 is disabled' do
@@ -88,7 +129,9 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
   end
 
   it 'assigns when a team override enables distribution over a disabled channel policy' do
-    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).update!(enabled: false)
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(enabled: false)
     create(
       :ibsoft_distribution_team_policy,
       account: account,
@@ -152,6 +195,51 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     )
   end
 
+  it 'respects the ChatHub post-login stabilization window for recently returned agents' do
+    create(
+      :ibsoft_chathub_account_setting,
+      account: account,
+      config: {
+        login_stabilization: {
+          enabled: true,
+          offline_threshold_minutes: 60,
+          window_minutes: 10,
+          max_assignments_during_window: 1,
+          minimum_online_agents_to_disable: 2
+        }
+      }
+    )
+    create(
+      :ibsoft_chathub_agent_presence_state,
+      account: account,
+      user: agent,
+      current_status: 'online',
+      last_offline_at: 2.hours.ago,
+      last_online_at: 5.minutes.ago,
+      last_status_changed_at: 5.minutes.ago
+    )
+    create(
+      :ibsoft_distribution_event_log,
+      account: account,
+      inbox: inbox,
+      team: team,
+      conversation: conversation,
+      new_assignee: agent,
+      event_type: 'assignment_completed',
+      created_at: 4.minutes.ago
+    )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 0, skipped: 1)
+    expect(result[:summary][:by_reason]).to include('no_available_agent' => 1)
+    expect(conversation.reload.assignee).to be_nil
+  end
+
   it 'does not assign outside the effective business hours' do
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
@@ -179,9 +267,12 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
   end
 
   it 'sends the configured unavailable message when the decision is notify_customer' do
-    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).update!(
-      config: { unavailable: { action: 'notify_customer', message: 'Aguarde um atendente ficar disponivel.' } }
-    )
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: { unavailable: { action: 'notify_customer',
+                                                                              message: 'Aguarde um atendente ficar disponivel.' } }
+                                                   )
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return({})
@@ -197,17 +288,95 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(conversation.assignee).to be_nil
   end
 
-  it 'does not send unavailable messages while real execution is disabled' do
-    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).update!(
-      config: {
-        business_hours: {
-          mode: 'custom',
-          timezone: 'America/Sao_Paulo',
-          schedule: [{ day_of_week: 3, closed_all_day: true }]
-        },
-        unavailable: { action: 'notify_customer', message: 'Aguarde um atendente ficar disponivel.' }
-      }
+  it 'sends the no available agent message when agents cannot receive the conversation' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       unavailability: {
+                                                         no_available_agent: {
+                                                           action: 'notify_customer',
+                                                           message: 'Todos os atendentes estao ocupados.'
+                                                         },
+                                                         outside_business_hours: {
+                                                           action: 'notify_customer',
+                                                           message: 'Estamos fora do horario.'
+                                                         }
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return({})
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    message = conversation.reload.messages.outgoing.last
+    expect(result[:summary]).to include(scanned: 1, assigned: 0, skipped: 1)
+    expect(result.dig(:results, 0, :decision)).to include(
+      action: 'notify_customer',
+      reason: 'no_available_agent',
+      action_applied: true
     )
+    expect(message.content).to eq('Todos os atendentes estao ocupados.')
+    expect(conversation.assignee).to be_nil
+  end
+
+  it 'sends the outside business hours message when the policy schedule is closed' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       business_hours: {
+                                                         mode: 'custom',
+                                                         timezone: 'America/Sao_Paulo',
+                                                         schedule: [{ day_of_week: 3, closed_all_day: true }]
+                                                       },
+                                                       unavailability: {
+                                                         no_available_agent: {
+                                                           action: 'notify_customer',
+                                                           message: 'Todos os atendentes estao ocupados.'
+                                                         },
+                                                         outside_business_hours: {
+                                                           action: 'notify_customer',
+                                                           message: 'Estamos fora do horario.'
+                                                         }
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    travel_to ActiveSupport::TimeZone['America/Sao_Paulo'].parse('2026-07-01 10:00:00') do
+      result = described_class.new(account: account).perform
+
+      message = conversation.reload.messages.outgoing.last
+      expect(result[:summary]).to include(scanned: 1, assigned: 0, skipped: 1)
+      expect(result.dig(:results, 0, :decision)).to include(
+        action: 'notify_customer',
+        reason: 'outside_business_hours',
+        action_applied: true
+      )
+      expect(message.content).to eq('Estamos fora do horario.')
+      expect(conversation.assignee).to be_nil
+    end
+  end
+
+  it 'does not send unavailable messages while real execution is disabled' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       business_hours: {
+                                                         mode: 'custom',
+                                                         timezone: 'America/Sao_Paulo',
+                                                         schedule: [{ day_of_week: 3, closed_all_day: true }]
+                                                       },
+                                                       unavailable: { action: 'notify_customer', message: 'Aguarde um atendente ficar disponivel.' }
+                                                     }
+                                                   )
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
@@ -224,9 +393,11 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
 
   it 'moves the conversation to the configured fallback team when no agent is available' do
     fallback_team = create(:team, account: account)
-    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).update!(
-      config: { unavailable: { action: 'fallback_team', fallback_team_id: fallback_team.id } }
-    )
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: { unavailable: { action: 'fallback_team', fallback_team_id: fallback_team.id } }
+                                                   )
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return({})
@@ -258,7 +429,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(conversation.reload.assignee).to be_nil
   end
 
-  it 'does not assign when the target team disabled auto assignment' do
+  it 'assigns with the Ibsoft executor when the target team disabled native auto assignment' do
     team.update!(allow_auto_assign: false)
     create(:inbox_member, inbox: inbox, user: agent)
     create(:team_member, team: team, user: agent)
@@ -267,9 +438,8 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
 
     result = described_class.new(account: account).perform
 
-    expect(result[:summary]).to include(scanned: 1, assigned: 0, skipped: 1)
-    expect(result[:summary][:by_reason]).to include('no_available_agent' => 1)
-    expect(conversation.reload.assignee).to be_nil
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(agent)
   end
 
   it 'does not overwrite a conversation claimed after the dry-run preview' do
@@ -317,6 +487,161 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(result.dig(:results, 0, :conversation_id)).to eq(older_conversation.id)
     expect(older_conversation.reload.assignee).to eq(agent)
     expect(conversation.reload.assignee).to be_nil
+  end
+
+  it 'assigns the earliest created conversation when the policy priority is earliest_created' do
+    newer_waiting_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      created_at: 10.minutes.ago,
+      waiting_since: 1.hour.ago
+    )
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: newer_waiting_conversation,
+      source: 'manual_team_transfer'
+    ).perform
+    conversation.update!(created_at: 2.hours.ago, waiting_since: 5.minutes.ago)
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: { distribution: { conversation_priority: 'earliest_created' } }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account, limit: 1).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(result.dig(:results, 0, :conversation_id)).to eq(conversation.id)
+    expect(conversation.reload.assignee).to eq(agent)
+    expect(newer_waiting_conversation.reload.assignee).to be_nil
+  end
+
+  it 'limits automatic assignments by the effective policy per inbox and team round' do
+    second_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      waiting_since: 20.minutes.ago
+    )
+    third_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      waiting_since: 30.minutes.ago
+    )
+    [second_conversation, third_conversation].each do |item|
+      Ibsoft::ConversationDistribution::SourceMarker.new(
+        conversation: item,
+        source: 'manual_team_transfer'
+      ).perform
+    end
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: { distribution: { max_assignments_per_round: 1 } }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 3, assigned: 1, skipped: 0, ignored: 2)
+    expect(result[:summary][:by_reason]).to include('assigned_to_agent' => 1, 'round_limit_reached' => 2)
+    expect(result[:results].count { |item| item[:status] == 'assigned' }).to eq(1)
+    expect([conversation, second_conversation, third_conversation].count { |item| item.reload.assignee == agent }).to eq(1)
+  end
+
+  it 'ignores the per-round limit when the effective policy disables it' do
+    second_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      waiting_since: 20.minutes.ago
+    )
+    third_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      waiting_since: 30.minutes.ago
+    )
+    [second_conversation, third_conversation].each do |item|
+      Ibsoft::ConversationDistribution::SourceMarker.new(
+        conversation: item,
+        source: 'manual_team_transfer'
+      ).perform
+    end
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       distribution: {
+                                                         max_assignments_per_round_enabled: false,
+                                                         max_assignments_per_round: 1
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 3, assigned: 3, skipped: 0, ignored: 0)
+    expect(result[:summary][:by_reason]).not_to include('round_limit_reached')
+    expect([conversation, second_conversation, third_conversation].count { |item| item.reload.assignee == agent }).to eq(3)
+  end
+
+  it 'processes a larger eligible batch when the per-round limit is disabled' do
+    extra_conversations = Array.new(11) do |index|
+      create(
+        :conversation,
+        account: account,
+        inbox: inbox,
+        team: team,
+        waiting_since: (index + 20).minutes.ago
+      )
+    end
+    extra_conversations.each do |item|
+      Ibsoft::ConversationDistribution::SourceMarker.new(
+        conversation: item,
+        source: 'manual_team_transfer'
+      ).perform
+    end
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       distribution: {
+                                                         max_assignments_per_round_enabled: false,
+                                                         max_assignments_per_round: 1,
+                                                         assignment_limit_mode: 'assignment_window',
+                                                         fair_distribution_limit: 20
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account, limit: 12).perform
+
+    all_conversations = [conversation, *extra_conversations]
+    expect(result[:summary]).to include(scanned: 12, assigned: 12, skipped: 0, ignored: 0)
+    expect(result[:summary][:by_reason]).not_to include('round_limit_reached')
+    expect(all_conversations.count { |item| item.reload.assignee == agent }).to eq(12)
   end
 
   it 'processes other eligible conversations when one candidate is ineligible' do
@@ -376,6 +701,95 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     assigned_users = [conversation.reload.assignee, second_conversation.reload.assignee]
     expect(result[:summary]).to include(scanned: 2, assigned: 2, skipped: 0)
     expect(assigned_users).to contain_exactly(agent, secondary_agent)
+  end
+
+  it 'uses balanced assignment to prefer the agent with fewer open conversations' do
+    create(:conversation, account: account, inbox: inbox, team: team).update!(assignee: agent)
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: { distribution: { assignment_order: 'balanced' } }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:inbox_member, inbox: inbox, user: secondary_agent)
+    create(:team_member, team: team, user: agent)
+    create(:team_member, team: team, user: secondary_agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      agent.id.to_s => 'online',
+      secondary_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(secondary_agent)
+  end
+
+  it 'skips agents that reached the simultaneous open conversation capacity' do
+    create(:conversation, account: account, inbox: inbox, team: team).update!(assignee: agent)
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       distribution: {
+                                                         assignment_limit_mode: 'open_conversations',
+                                                         open_conversation_limit: 1
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:inbox_member, inbox: inbox, user: secondary_agent)
+    create(:team_member, team: team, user: agent)
+    create(:team_member, team: team, user: secondary_agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      agent.id.to_s => 'online',
+      secondary_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(secondary_agent)
+  end
+
+  it 'skips assignment when every available agent reached the policy window limit' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       distribution: {
+                                                         assignment_limit_mode: 'assignment_window',
+                                                         fair_distribution_limit: 1,
+                                                         fair_distribution_window: 3600
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+    Ibsoft::ConversationDistribution::AssignmentRateLimiter.new(
+      account: account,
+      conversation: conversation,
+      agent: agent,
+      policy: {
+        config: {
+          'distribution' => {
+            'assignment_limit_mode' => 'assignment_window',
+            'fair_distribution_limit' => 1,
+            'fair_distribution_window' => 3600
+          }
+        }
+      }
+    ).track_assignment
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 0, skipped: 1)
+    expect(result[:summary][:by_reason]).to include('no_available_agent' => 1)
+    expect(conversation.reload.assignee).to be_nil
   end
 
   it 'respects inbox capacity limits on the legacy capacity path' do

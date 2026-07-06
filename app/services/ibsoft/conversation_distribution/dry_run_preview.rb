@@ -10,13 +10,16 @@ class Ibsoft::ConversationDistribution::DryRunPreview
   def perform
     conversations = candidate_finder.perform.to_a
     evaluated_candidates = evaluate_conversations(conversations)
+    prioritized_candidates = Ibsoft::ConversationDistribution::CandidatePrioritizer.new(
+      candidates: evaluated_candidates
+    ).perform.first(safe_limit)
 
     {
       generated_at: Time.current.iso8601,
       filters: filters_payload,
-      limit: candidate_finder.safe_limit,
-      summary: summary_payload(evaluated_candidates),
-      candidates: evaluated_candidates
+      limit: safe_limit,
+      summary: summary_payload(prioritized_candidates),
+      candidates: prioritized_candidates
     }
   end
 
@@ -29,8 +32,15 @@ class Ibsoft::ConversationDistribution::DryRunPreview
       account: account,
       inbox_id: inbox_id,
       team_id: team_id,
-      limit: limit
+      limit: Ibsoft::ConversationDistribution::CandidateFinder::MAX_LIMIT
     )
+  end
+
+  def safe_limit
+    requested_limit = limit.to_i
+    requested_limit = Ibsoft::ConversationDistribution::CandidateFinder::DEFAULT_LIMIT unless requested_limit.positive?
+
+    [requested_limit, Ibsoft::ConversationDistribution::CandidateFinder::MAX_LIMIT].min
   end
 
   def evaluate_conversations(conversations)
@@ -79,6 +89,7 @@ class Ibsoft::ConversationDistribution::DryRunPreview
       team_id: conversation.team_id,
       team_name: conversation.team&.name,
       status: conversation.status,
+      created_at: conversation.created_at&.iso8601,
       waiting_since: conversation.waiting_since&.iso8601,
       last_activity_at: conversation.last_activity_at&.iso8601,
       first_reply_created_at: conversation.first_reply_created_at&.iso8601,
@@ -97,8 +108,32 @@ class Ibsoft::ConversationDistribution::DryRunPreview
       policy_type: policy[:policy_type],
       enabled: policy[:enabled],
       eligible_sources: Array(policy.dig(:config, 'eligible_sources')),
-      unavailable_action: policy.dig(:config, 'unavailable', 'action'),
+      unavailable_action: unavailability_action(policy, 'no_available_agent'),
+      no_available_agent_action: unavailability_action(policy, 'no_available_agent'),
+      outside_business_hours_action: unavailability_action(policy, 'outside_business_hours'),
       business_hours_mode: policy.dig(:config, 'business_hours', 'mode')
+    }.merge(distribution_policy_payload(policy))
+  end
+
+  def unavailability_action(policy, reason)
+    Ibsoft::ConversationDistribution::UnavailabilityConfig.for(policy[:config], reason)['action']
+  end
+
+  def distribution_policy_payload(policy)
+    distribution = policy.dig(:config, 'distribution') || {}
+
+    {
+      max_assignments_per_round_enabled: distribution['max_assignments_per_round_enabled'],
+      max_assignments_per_round: distribution['max_assignments_per_round'],
+      assignment_order: distribution['assignment_order'],
+      conversation_priority: distribution['conversation_priority'],
+      assignment_limit_mode: distribution['assignment_limit_mode'],
+      open_conversation_limit: distribution['open_conversation_limit'],
+      capacity_ignore_customer_waiting_enabled: distribution['capacity_ignore_customer_waiting_enabled'],
+      capacity_ignore_customer_waiting_minutes: distribution['capacity_ignore_customer_waiting_minutes'],
+      capacity_excluded_labels: Array(distribution['capacity_excluded_labels']),
+      fair_distribution_limit: distribution['fair_distribution_limit'],
+      fair_distribution_window: distribution['fair_distribution_window']
     }
   end
 

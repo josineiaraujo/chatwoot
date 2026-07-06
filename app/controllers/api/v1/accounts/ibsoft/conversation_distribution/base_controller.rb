@@ -17,9 +17,10 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::BaseController < Api:
     @optional_policy_inbox ||= Current.account.inboxes.find(params[:policy_inbox_id])
   end
 
-  def assign_policy_attributes(policy)
-    policy.enabled = boolean_param(:enabled) if params.key?(:enabled)
-    policy.config = distribution_config if params.key?(:config)
+  def assign_distribution_policy(policy)
+    return unless params.key?(:distribution_policy_id)
+
+    policy.distribution_policy = distribution_policy_from_param
   end
 
   def boolean_param(key)
@@ -32,5 +33,11 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::BaseController < Api:
     return raw_config.to_unsafe_h if raw_config.respond_to?(:to_unsafe_h)
 
     raw_config.to_h
+  end
+
+  def distribution_policy_from_param
+    return if params[:distribution_policy_id].blank?
+
+    Ibsoft::ConversationDistribution::Policy.find_by!(account: Current.account, id: params[:distribution_policy_id])
   end
 end

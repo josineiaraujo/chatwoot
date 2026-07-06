@@ -6,6 +6,7 @@ pt_BR:
         resolved_with_reason: 'A conversa foi marcada como encerrada por %{user_name} (%{reason})'
         resolved_by_tool: 'A conversa foi marcada como encerrada por %{user_name}: %{reason}'
       status:
+        open: 'Conversa foi aberta por %{user_name}'
         resolved: 'Conversa foi marcada como encerrada por %{user_name}'
         contact_resolved: 'A conversa foi encerrada por %{contact_name}'
         auto_resolved_days: 'A conversa foi marcada como encerrada pelo sistema por ter %{count} dias de inatividade'
