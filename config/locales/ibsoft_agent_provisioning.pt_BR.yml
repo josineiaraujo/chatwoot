@@ -1,0 +1,13 @@
+pt_BR:
+  ibsoft:
+    agent_provisioning:
+      errors:
+        email_taken: 'Já existe um usuário com este e-mail. Use recuperação de senha ou um fluxo de vínculo para usuários existentes.'
+        email_required: 'Informe o e-mail do agente.'
+        invalid_email: 'Informe um e-mail válido.'
+        invalid_profile: 'Perfil inválido para esta conta.'
+        invalid_role: 'Tipo de agente inválido.'
+        external_provider: 'Este usuário usa um provedor externo. Use o fluxo de senha compatível com o provedor.'
+        limit_reached: 'O limite de agentes da conta foi atingido.'
+        name_required: 'Informe o nome do agente.'
+        saml_enabled: 'Esta conta usa SAML. Use o fluxo de cadastro compatível com SSO.'

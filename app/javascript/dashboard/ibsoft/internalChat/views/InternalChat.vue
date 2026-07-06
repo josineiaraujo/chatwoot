@@ -17,9 +17,9 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import ResizableEditorWrapper from 'dashboard/components/widgets/conversation/ResizableEditorWrapper.vue';
-import AudioChip from 'next/message/chips/Audio.vue';
 import MessageFormatter from 'shared/helpers/MessageFormatter.js';
 import InternalChatComposer from '../components/InternalChatComposer.vue';
+import InternalChatAudioChip from '../components/InternalChatAudioChip.vue';
 import MediaPreviewModal from '../components/MediaPreviewModal.vue';
 import InternalChatAPI from '../api/internalChat';
 import {
@@ -324,10 +324,6 @@ const warmAttachmentMedia = messageList => {
 
       if (attachment.file_type === 'video' && attachment.preview_url) {
         fetchAttachmentObjectUrl(attachment, 'preview');
-      }
-
-      if (attachment.file_type === 'audio') {
-        fetchAttachmentObjectUrl(attachment);
       }
     });
   });
@@ -1500,21 +1496,13 @@ if (import.meta.hot) {
                       v-else-if="attachment.file_type === 'audio'"
                       class="w-80 max-w-full"
                     >
-                      <AudioChip
-                        v-if="attachmentSourceUrl(attachment)"
+                      <InternalChatAudioChip
                         :attachment="audioChipAttachment(attachment)"
-                        :show-transcribed-text="false"
+                        :load-source="
+                          () => fetchAttachmentObjectUrl(attachment)
+                        "
                         class="p-2 text-n-slate-12 skip-context-menu"
                       />
-                      <div
-                        v-else
-                        class="flex min-w-0 items-center gap-2 rounded-lg bg-n-alpha-3 px-3 py-2 text-sm text-n-slate-12"
-                      >
-                        <span class="i-lucide-volume-2 size-4" />
-                        <span class="min-w-0 truncate">
-                          {{ attachment.file_name }}
-                        </span>
-                      </div>
                     </div>
                     <button
                       v-else-if="attachment.file_type === 'video'"

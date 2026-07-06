@@ -321,13 +321,37 @@ Rails.application.routes.draw do
             end
 
             namespace :conversation_distribution do
+              resources :policies, only: [:index, :show, :create, :update, :destroy]
               resources :inbox_policies, only: [:show, :update], param: :inbox_id
-              resources :team_policies, only: [:show, :update], param: :team_id do
-                post :copy, on: :collection
-              end
+              resources :team_policies, only: [:show, :update], param: :team_id
               resources :dry_runs, only: [:index]
               resources :executions, only: [:create]
+              resources :supervisor_alerts, only: [:index]
+              resources :event_logs, only: [:index]
+              resources :agent_assignments, only: [:index] do
+                post :claim, on: :collection
+              end
               get :effective_policy, to: 'effective_policies#show'
+            end
+
+            namespace :chathub_settings do
+              resource :setting, only: [:show, :update], controller: :settings
+            end
+
+            namespace :access_control do
+              resources :roles, only: [:index, :show, :create, :update, :destroy]
+              resources :role_assignments, only: [:index, :create, :destroy]
+            end
+
+            namespace :agent_provisioning do
+              resources :agents, only: [:index, :create, :update] do
+                post :reset_temporary_password, on: :member
+              end
+            end
+
+            namespace :chathub_analytics do
+              get :agent_dashboard, to: 'dashboards#agent'
+              get :supervisor_dashboard, to: 'dashboards#supervisor'
             end
           end
 

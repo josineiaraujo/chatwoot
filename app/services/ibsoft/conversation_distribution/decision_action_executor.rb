@@ -18,10 +18,18 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
   def perform
     return decision unless actionable?
 
-    conversation.reload
+    return perform_notify_customer_action if decision[:action] == Ibsoft::ConversationDistribution::DecisionResolver::ACTION_NOTIFY_CUSTOMER
+
+    perform_locked_action
+  end
+
+  private
+
+  attr_reader :conversation, :decision, :candidate
+
+  def perform_locked_action
     result = nil
-    conversation.with_lock do
-      conversation.reload
+    with_reloaded_lock do
       result = if action_already_applied?
                  already_applied_decision
                else
@@ -33,9 +41,16 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
     result
   end
 
-  private
+  def perform_notify_customer_action
+    return already_applied_decision unless reserve_action_record
 
-  attr_reader :conversation, :decision, :candidate
+    action_result = notify_customer
+    persist_action_record_with_lock(action_result)
+    decision.merge(action_applied: action_result[:applied], action_result: action_result)
+  rescue StandardError
+    remove_action_record_with_lock
+    raise
+  end
 
   def actionable?
     ACTIONS_WITH_EFFECTS.include?(decision[:action])
@@ -98,7 +113,8 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
   end
 
   def unavailable_message
-    @unavailable_message ||= policy_config.dig('unavailable', 'message').to_s
+    @unavailable_message ||= Ibsoft::ConversationDistribution::UnavailabilityConfig
+                             .for(policy_config, decision[:reason])['message'].to_s
   end
 
   def policy_config
@@ -122,6 +138,32 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
 
   def action_already_applied?
     action_records.key?(action_key)
+  end
+
+  def reserve_action_record
+    reserved = false
+    with_reloaded_lock do
+      next if action_already_applied?
+
+      persist_action_record(action_result(false, 'processing'))
+      reserved = true
+    end
+    reserved
+  end
+
+  def persist_action_record_with_lock(action_result)
+    with_reloaded_lock do
+      persist_action_record(action_result)
+    end
+  end
+
+  def remove_action_record_with_lock
+    with_reloaded_lock do
+      attributes = additional_attributes
+      records = action_records
+      records.delete(action_key)
+      conversation.update!(additional_attributes: attributes.merge(ACTION_RECORDS_KEY => records))
+    end
   end
 
   def persist_action_record(action_result)
@@ -161,9 +203,11 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
   end
 
   def action_result(applied, status, metadata = {})
-    {
-      applied: applied,
-      status: status
-    }.merge(metadata)
+    { applied: applied, status: status }.merge(metadata)
+  end
+
+  def with_reloaded_lock(&)
+    conversation.reload
+    conversation.with_lock(&)
   end
 end

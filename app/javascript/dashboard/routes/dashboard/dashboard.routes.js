@@ -6,6 +6,9 @@ import { routes as companyRoutes } from './companies/routes';
 import { routes as notificationRoutes } from './notifications/routes';
 import { routes as inboxRoutes } from './inbox/routes';
 import { routes as internalChatRoutes } from 'dashboard/ibsoft/internalChat/routes';
+import { routes as ibsoftConversationDistributionRoutes } from 'dashboard/ibsoft/conversationDistribution/routes';
+import { routes as ibsoftChathubSettingsRoutes } from 'dashboard/ibsoft/chathubSettings/routes';
+import { routes as ibsoftChathubAnalyticsRoutes } from 'dashboard/ibsoft/chathubAnalytics/routes';
 import { frontendURL } from '../../helper/URLHelper';
 import helpcenterRoutes from './helpcenter/helpcenter.routes';
 import campaignsRoutes from './campaigns/campaigns.routes';
@@ -24,6 +27,9 @@ export default {
       children: [
         ...captainRoutes,
         ...internalChatRoutes,
+        ...ibsoftConversationDistributionRoutes,
+        ...ibsoftChathubSettingsRoutes,
+        ...ibsoftChathubAnalyticsRoutes,
         ...inboxRoutes,
         ...conversation.routes,
         ...settings.routes,

@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength
 class Ibsoft::ConversationDistribution::RedistributionExecutor
   EVENT_COMPLETED = 'redistribution_completed'.freeze
   EVENT_SKIPPED = 'redistribution_skipped'.freeze
@@ -54,13 +55,23 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
 
   def redistribute_event(event, policy, decision)
     conversation = event.conversation
-    assignee = find_assignee(conversation, excluding_agent_id: event.new_assignee_id)
+    assignee = find_assignee(conversation, policy, excluding_agent_id: event.new_assignee_id)
 
     return skipped_result(event, policy, 'no_available_agent', decision: decision) if assignee.blank?
 
     redistribution = claim_and_redistribute(conversation, event, assignee)
     return skipped_result(event, policy, 'candidate_already_changed', decision: decision) if redistribution.blank?
 
+    track_redistribution_rate(redistribution, assignee, policy)
+    cleanup_previous_assignee_participation(redistribution, assignee)
+    sync_attention_notifications(redistribution, assignee)
+    activity_message = activity_message_result(redistribution, assignee)
+    log_redistribution_completed(event, redistribution.merge(new_assignee: assignee), policy, decision, activity_message)
+
+    result_payload(event, policy, status: 'redistributed', reason: REASON_TIMEOUT, assignee: assignee, decision: decision)
+  end
+
+  def log_redistribution_completed(event, redistribution, policy, decision, activity_message)
     log_event(
       event: event,
       conversation: redistribution[:conversation],
@@ -69,27 +80,36 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
       reason: REASON_TIMEOUT,
       assignment: {
         previous_assignee: redistribution[:previous_assignee],
-        new_assignee: assignee
+        new_assignee: redistribution[:new_assignee]
       },
-      decision: decision
+      decision: decision,
+      activity_message: activity_message
     )
-
-    result_payload(event, policy, status: 'redistributed', reason: REASON_TIMEOUT, assignee: assignee, decision: decision)
   end
 
-  def find_assignee(conversation, excluding_agent_id:)
+  def activity_message_result(redistribution, assignee)
+    Ibsoft::ConversationDistribution::ActivityMessageNotifier.new(
+      conversation: redistribution[:conversation],
+      action: :redistribution_completed,
+      assignee: assignee,
+      previous_assignee: redistribution[:previous_assignee]
+    ).perform
+  end
+
+  def find_assignee(conversation, policy, excluding_agent_id:)
     allowed_agent_ids = allowed_agent_ids_for(conversation) - [excluding_agent_id]
     return if allowed_agent_ids.blank?
 
-    AutoAssignment::AgentAssignmentService.new(
+    Ibsoft::ConversationDistribution::AssignmentAgentSelector.new(
+      account: account,
       conversation: conversation,
-      allowed_agent_ids: allowed_agent_ids
-    ).find_assignee
+      allowed_agent_ids: allowed_agent_ids,
+      policy: Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_policy(policy)
+    ).perform
   end
 
   def allowed_agent_ids_for(conversation)
     return [] if conversation.team.blank?
-    return [] if conversation.team.allow_auto_assign.blank?
 
     conversation.inbox.member_ids_with_assignment_capacity & conversation.team.members.ids
   end
@@ -143,6 +163,19 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
   end
 
   def log_event(context)
+    event_logger.log(
+      conversation: context[:conversation],
+      event_type: context[:event_type],
+      reason: context[:reason],
+      payload: {
+        assignment: context[:assignment] || {},
+        metadata: event_metadata(context),
+        options: { dedupe: context[:event_type] == EVENT_SKIPPED }
+      }
+    )
+  end
+
+  def event_metadata(context)
     event = context[:event]
     policy = context[:policy]
     metadata = {
@@ -154,14 +187,9 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
       real_assignment_enabled: real_assignment_enabled?
     }
     metadata[:decision] = context[:decision] if context[:decision].present?
+    metadata[:activity_message] = context[:activity_message] if context[:activity_message].present?
 
-    event_logger.log(
-      conversation: context[:conversation],
-      event_type: context[:event_type],
-      reason: context[:reason],
-      assignment: context[:assignment] || {},
-      metadata: metadata
-    )
+    metadata
   end
 
   def result_payload(event, policy, outcome)
@@ -202,4 +230,32 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
   def event_logger
     @event_logger ||= Ibsoft::ConversationDistribution::EventLogger.new(account: account)
   end
+
+  def track_redistribution_rate(redistribution, assignee, policy)
+    Ibsoft::ConversationDistribution::AssignmentRateTracker.track(
+      account: account,
+      conversation: redistribution[:conversation],
+      agent: assignee,
+      policy: Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_policy(policy)
+    )
+  end
+
+  def sync_attention_notifications(redistribution, assignee)
+    Ibsoft::ConversationDistribution::AttentionNotificationSync.new(
+      account: account,
+      conversation: redistribution[:conversation],
+      previous_assignee: redistribution[:previous_assignee],
+      new_assignee: assignee
+    ).perform
+  end
+
+  def cleanup_previous_assignee_participation(redistribution, assignee)
+    Ibsoft::ConversationDistribution::PreviousAssigneeParticipationCleanup.new(
+      account: account,
+      conversation: redistribution[:conversation],
+      previous_assignee: redistribution[:previous_assignee],
+      new_assignee: assignee
+    ).perform
+  end
 end
+# rubocop:enable Metrics/ClassLength

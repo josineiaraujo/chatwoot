@@ -19,13 +19,21 @@ class Ibsoft::ConversationDistribution::DecisionResolver
   end
 
   def unavailable_decision(reason = 'no_available_agent')
-    case unavailable_action
+    unavailable_config = unavailable_config_for(reason)
+    action = unavailable_action(unavailable_config)
+
+    case action
     when 'notify_customer'
-      decision(ACTION_NOTIFY_CUSTOMER, reason, unavailable_payload.merge(message_present: unavailable_message.present?))
+      decision(
+        ACTION_NOTIFY_CUSTOMER,
+        reason,
+        unavailable_payload(unavailable_config).merge(message_present: unavailable_message(unavailable_config).present?)
+      )
     when 'fallback_team'
-      fallback_team_id.present? ? fallback_team_decision(reason) : decision(ACTION_WAIT, reason, unavailable_payload)
+      fallback_team_id = fallback_team_id(unavailable_config)
+      fallback_team_id.present? ? fallback_team_decision(reason, unavailable_config) : wait_decision(reason, unavailable_config)
     else
-      decision(ACTION_WAIT, reason, unavailable_payload)
+      wait_decision(reason, unavailable_config)
     end
   end
 
@@ -58,15 +66,19 @@ class Ibsoft::ConversationDistribution::DecisionResolver
     { within_business_hours: @within_business_hours }
   end
 
-  def unavailable_payload
+  def unavailable_payload(unavailable_config)
     {
-      unavailable_action: unavailable_action,
-      fallback_team_id: fallback_team_id
+      unavailable_action: unavailable_action(unavailable_config),
+      fallback_team_id: fallback_team_id(unavailable_config)
     }
   end
 
-  def fallback_team_decision(reason)
-    decision(ACTION_FALLBACK_TEAM, reason, unavailable_payload.merge(fallback_team_configured: true))
+  def fallback_team_decision(reason, unavailable_config)
+    decision(ACTION_FALLBACK_TEAM, reason, unavailable_payload(unavailable_config).merge(fallback_team_configured: true))
+  end
+
+  def wait_decision(reason, unavailable_config)
+    decision(ACTION_WAIT, reason, unavailable_payload(unavailable_config))
   end
 
   def within_business_hours?
@@ -89,12 +101,28 @@ class Ibsoft::ConversationDistribution::DecisionResolver
   def custom_schedule_open?
     return true if custom_schedule.blank?
 
-    working_day = custom_schedule.find { |item| item['day_of_week'].to_i == local_now.wday }
+    working_day = custom_schedule_day
     return true if working_day.blank?
-    return false if ActiveModel::Type::Boolean.new.cast(working_day['closed_all_day'])
-    return true if ActiveModel::Type::Boolean.new.cast(working_day['open_all_day'])
+    return false if working_day_closed?(working_day)
+    return !inside_custom_break? if working_day_open_all_day?(working_day)
     return true unless working_day_values_present?(working_day)
 
+    inside_working_day_window?(working_day) && !inside_custom_break?
+  end
+
+  def custom_schedule_day
+    custom_schedule.find { |item| item['day_of_week'].to_i == local_now.wday }
+  end
+
+  def working_day_closed?(working_day)
+    ActiveModel::Type::Boolean.new.cast(working_day['closed_all_day'])
+  end
+
+  def working_day_open_all_day?(working_day)
+    ActiveModel::Type::Boolean.new.cast(working_day['open_all_day'])
+  end
+
+  def inside_working_day_window?(working_day)
     local_now.between?(day_time(working_day['open_hour'], working_day['open_minutes']),
                        day_time(working_day['close_hour'], working_day['close_minutes']))
   end
@@ -119,6 +147,29 @@ class Ibsoft::ConversationDistribution::DecisionResolver
     Array(business_hours_config['schedule']).map(&:stringify_keys)
   end
 
+  def inside_custom_break?
+    custom_breaks
+      .select { |item| item['day_of_week'].to_i == local_now.wday }
+      .any? { |item| custom_break_contains?(item) }
+  end
+
+  def custom_break_contains?(break_config)
+    current_minutes = (local_now.hour * 60) + local_now.min
+    current_minutes >= break_start_minutes(break_config) && current_minutes < break_end_minutes(break_config)
+  end
+
+  def break_start_minutes(break_config)
+    (break_config['start_hour'].to_i * 60) + break_config['start_minutes'].to_i
+  end
+
+  def break_end_minutes(break_config)
+    (break_config['end_hour'].to_i * 60) + break_config['end_minutes'].to_i
+  end
+
+  def custom_breaks
+    Array(business_hours_config['breaks']).map(&:stringify_keys)
+  end
+
   def business_hours_mode
     business_hours_config['mode']
   end
@@ -127,20 +178,20 @@ class Ibsoft::ConversationDistribution::DecisionResolver
     policy_config['business_hours'] || {}
   end
 
-  def unavailable_action
+  def unavailable_action(unavailable_config)
     unavailable_config['action'].presence || 'wait'
   end
 
-  def fallback_team_id
+  def fallback_team_id(unavailable_config)
     unavailable_config['fallback_team_id'].presence
   end
 
-  def unavailable_message
+  def unavailable_message(unavailable_config)
     unavailable_config['message']
   end
 
-  def unavailable_config
-    policy_config['unavailable'] || {}
+  def unavailable_config_for(reason)
+    Ibsoft::ConversationDistribution::UnavailabilityConfig.for(policy_config, reason)
   end
 
   def policy_config

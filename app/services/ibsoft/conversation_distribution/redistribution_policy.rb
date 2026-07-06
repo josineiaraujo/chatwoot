@@ -15,6 +15,10 @@ class Ibsoft::ConversationDistribution::RedistributionPolicy
     redistribution_config['first_response_timeout_minutes'].to_i
   end
 
+  def raw_policy
+    policy
+  end
+
   def payload
     {
       id: value(:id),

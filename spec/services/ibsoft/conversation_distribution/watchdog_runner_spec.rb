@@ -22,6 +22,10 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
   before do
     Ibsoft::ConversationDistribution::ChannelPolicy.delete_all
     Ibsoft::ConversationDistribution::TeamPolicy.delete_all
+    allow(SecureRandom).to receive(:uuid).and_return('watchdog-token')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:watchdog_lock_ttl).and_return(300)
+    allow(Redis::Alfred).to receive(:set).and_return(true)
+    allow(Redis::Alfred).to receive(:delete_if_equals).and_return(true)
   end
 
   it 'does not scan accounts when the watchdog job flag is disabled' do
@@ -33,6 +37,20 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     result = described_class.new.perform
 
     expect(result).to include(enabled: false)
+    expect(result[:summary]).to include(accounts: 0, scanned: 0, assigned: 0, redistributed: 0, skipped: 0)
+  end
+
+  it 'skips the round when another watchdog execution is still running' do
+    create(:ibsoft_distribution_channel_policy, account: account, inbox: inbox, enabled: true)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
+    allow(Redis::Alfred).to receive(:set).and_return(false)
+
+    expect(Ibsoft::ConversationDistribution::AssignmentExecutor).not_to receive(:new)
+    expect(Ibsoft::ConversationDistribution::RedistributionExecutor).not_to receive(:new)
+
+    result = described_class.new.perform
+
+    expect(result).to include(enabled: true, locked: true, limit: 50)
     expect(result[:summary]).to include(accounts: 0, scanned: 0, assigned: 0, redistributed: 0, skipped: 0)
   end
 
@@ -64,6 +82,35 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     expect(result[:summary]).to include(accounts: 1, scanned: 3, assigned: 1, redistributed: 1, skipped: 1)
     expect(result[:summary][:by_reason]).to include('assigned_to_agent' => 1, 'no_available_agent' => 1)
     expect(result[:summary][:by_reason]).to include('first_response_timeout' => 1)
+  end
+
+  it 'does not sync account presence when login stabilization is disabled' do
+    create(:ibsoft_distribution_channel_policy, account: account, inbox: inbox, enabled: true)
+    executor = instance_double(Ibsoft::ConversationDistribution::AssignmentExecutor, perform: executor_result)
+    redistribution_executor = instance_double(Ibsoft::ConversationDistribution::RedistributionExecutor, perform: redistribution_result)
+
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AssignmentExecutor).to receive(:new).and_return(executor)
+    allow(Ibsoft::ConversationDistribution::RedistributionExecutor).to receive(:new).and_return(redistribution_executor)
+
+    expect(Ibsoft::ChathubSettings::AgentPresenceTracker).not_to receive(:sync_account!)
+
+    described_class.new.perform
+  end
+
+  it 'syncs account presence when login stabilization is enabled' do
+    create(:ibsoft_distribution_channel_policy, account: account, inbox: inbox, enabled: true)
+    create(:ibsoft_chathub_account_setting, account: account, config: { login_stabilization: { enabled: true } })
+    executor = instance_double(Ibsoft::ConversationDistribution::AssignmentExecutor, perform: executor_result)
+    redistribution_executor = instance_double(Ibsoft::ConversationDistribution::RedistributionExecutor, perform: redistribution_result)
+
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AssignmentExecutor).to receive(:new).and_return(executor)
+    allow(Ibsoft::ConversationDistribution::RedistributionExecutor).to receive(:new).and_return(redistribution_executor)
+
+    expect(Ibsoft::ChathubSettings::AgentPresenceTracker).to receive(:sync_account!).with(account)
+
+    described_class.new.perform
   end
 
   it 'allows a specific account run even before that account has an active policy' do

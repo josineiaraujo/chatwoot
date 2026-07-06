@@ -40,6 +40,34 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
   end
 
   it 'redistributes an unanswered conversation assigned by the Ibsoft executor to another online team agent' do
+    account.update!(locale: 'pt_BR')
+    attention_notifications = create_previous_assignee_attention_notifications
+    previous_participant = create(:conversation_participant, account: account, conversation: conversation, user: current_agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      current_agent.id.to_s => 'online',
+      next_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = nil
+    perform_enqueued_jobs(only: [EventDispatcherJob, Conversations::ActivityMessageJob]) do
+      result = described_class.new(account: account).perform
+    end
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 1, skipped: 0)
+    expect(result[:summary][:by_reason]).to include('first_response_timeout' => 1)
+    expect(conversation.reload.assignee).to eq(next_agent)
+    expect(ConversationParticipant.exists?(previous_participant.id)).to be(false)
+    expect_previous_assignee_attention_synced(attention_notifications)
+    expect_new_assignee_attention_created
+    expect_redistribution_activity_created
+
+    event = Ibsoft::ConversationDistribution::EventLog.order(:created_at).last
+    expect_redistribution_event_logged(event)
+  end
+
+  it 'redistributes when the target team disabled native auto assignment' do
+    team.update!(allow_auto_assign: false)
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
       current_agent.id.to_s => 'online',
       next_agent.id.to_s => 'online'
@@ -49,18 +77,7 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
     result = described_class.new(account: account).perform
 
     expect(result[:summary]).to include(scanned: 1, redistributed: 1, skipped: 0)
-    expect(result[:summary][:by_reason]).to include('first_response_timeout' => 1)
     expect(conversation.reload.assignee).to eq(next_agent)
-
-    event = Ibsoft::ConversationDistribution::EventLog.order(:created_at).last
-    expect(event).to have_attributes(
-      conversation_id: conversation.id,
-      event_type: 'redistribution_completed',
-      reason: 'first_response_timeout',
-      previous_assignee_id: current_agent.id,
-      new_assignee_id: next_agent.id
-    )
-    expect(event.metadata['trigger_event_id']).to eq(assignment_event.id)
   end
 
   it 'does not redistribute while real execution is disabled' do
@@ -79,6 +96,14 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
       event_type: 'redistribution_skipped',
       reason: 'real_assignment_disabled'
     )
+  end
+
+  it 'does not create duplicate skipped logs for the same conversation and reason inside the dedupe window' do
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(next_agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
+
+    expect { described_class.new(account: account).perform }.to change(Ibsoft::ConversationDistribution::EventLog, :count).by(1)
+    expect { described_class.new(account: account).perform }.not_to change(Ibsoft::ConversationDistribution::EventLog, :count)
   end
 
   it 'keeps the conversation with the current agent when no other eligible agent is online' do
@@ -166,5 +191,62 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
       created_at: created_at,
       updated_at: created_at
     )
+  end
+
+  def create_previous_assignee_attention_notifications
+    {
+      stale_assignment: create_previous_assignee_notification('conversation_assignment'),
+      stale_new_message: create_previous_assignee_notification('assigned_conversation_new_message'),
+      stale_participating_message: create_previous_assignee_notification('participating_conversation_new_message'),
+      mention: create_previous_assignee_notification('conversation_mention')
+    }
+  end
+
+  def create_previous_assignee_notification(notification_type)
+    create(
+      :notification,
+      account: account,
+      user: current_agent,
+      primary_actor: conversation,
+      notification_type: notification_type,
+      read_at: nil
+    )
+  end
+
+  def expect_previous_assignee_attention_synced(notifications)
+    expect(Notification.exists?(notifications.fetch(:stale_assignment).id)).to be(false)
+    expect(Notification.exists?(notifications.fetch(:stale_new_message).id)).to be(false)
+    expect(Notification.exists?(notifications.fetch(:stale_participating_message).id)).to be(false)
+    expect(Notification.exists?(notifications.fetch(:mention).id)).to be(true)
+  end
+
+  def expect_new_assignee_attention_created
+    expect(
+      next_agent.notifications.where(
+        account: account,
+        primary_actor: conversation,
+        notification_type: 'conversation_assignment',
+        read_at: nil
+      )
+    ).to exist
+  end
+
+  def expect_redistribution_activity_created
+    content = "Atendimento redistribuído automaticamente de #{current_agent.name} para #{next_agent.name} " \
+              'pela redistribuição automática por exceder o tempo de espera.'
+
+    expect(conversation.messages.activity.where(content: content)).to exist
+  end
+
+  def expect_redistribution_event_logged(event)
+    expect(event).to have_attributes(
+      conversation_id: conversation.id,
+      event_type: 'redistribution_completed',
+      reason: 'first_response_timeout',
+      previous_assignee_id: current_agent.id,
+      new_assignee_id: next_agent.id
+    )
+    expect(event.metadata['trigger_event_id']).to eq(assignment_event.id)
+    expect(event.metadata.dig('activity_message', 'status')).to eq('enqueued')
   end
 end

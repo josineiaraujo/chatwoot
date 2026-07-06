@@ -35,7 +35,284 @@ registrado aqui no mesmo commit da mudanca.
 
 ## Modulos e patches privados
 
-### 0. Distribuicao de atendimentos Ibsoft
+### Componentes frontend compartilhados Ibsoft
+
+Objetivo:
+
+- Reunir pequenos componentes visuais reutilizaveis entre modulos privados,
+  mantendo o acoplamento fora dos componentes nativos do Chatwoot.
+
+Arquivos privados:
+
+- `app/javascript/dashboard/ibsoft/components/IbsoftSelect.vue`: wrapper para
+  selects usados nas telas Ibsoft. Remove o caret nativo do navegador e usa
+  icone do design system, evitando que o icone apareca cortado em telas com o
+  tema personalizado.
+
+Uso atual:
+
+- Configuracoes globais ChatHub:
+  `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`.
+- Distribuicao de atendimentos:
+  `app/javascript/dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue`,
+  `InboxDistributionSettings.vue`, `TeamDistributionSettingsModal.vue`,
+  `views/SupervisorDashboard.vue` e `views/EventLogsDashboard.vue`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- Nenhum. O componente fica em `dashboard/ibsoft` e e consumido apenas por
+  telas privadas Ibsoft.
+
+### 0. Configuracoes globais ChatHub
+
+Documento detalhado: `IBSOFT_CHATHUB_SETTINGS.md`.
+
+Objetivo:
+
+- Centralizar configuracoes globais do ChatHub que nao pertencem a canal ou
+  time especifico.
+- Expor, dentro do menu ChatHub, uma visualizacao propria em cards para canais
+  de comunicacao e atalhos integrados para as telas nativas de times e conta,
+  sem editar os componentes nativos.
+- Manter o item `Configuracoes do ChatHub` no final do menu principal e usar
+  essa tela como entrada operacional para conta, agentes, times e canais de
+  comunicacao.
+- Controlar o modal pos-login dos agentes por percentual da fila total
+  disponivel, com minimo obrigatorio e sem limite manual para o agente assumir
+  mais atendimentos.
+- Controlar a janela de estabilizacao pos-login para evitar concentrar muitas
+  atribuicoes no primeiro agente que volta online.
+- Conceder permissao privada `ibsoft_chathub_settings_manage` para usuarios nao
+  administradores acessarem a tela.
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/chathub_settings/`
+- `app/services/ibsoft/chathub_settings/`
+- `app/controllers/api/v1/accounts/ibsoft/chathub_settings/`
+- `app/javascript/dashboard/ibsoft/chathubSettings/`
+- `spec/**/ibsoft/chathub_settings/`
+
+Banco de dados:
+
+- `db/migrate/20260702110000_create_ibsoft_chathub_settings.rb`
+- tabelas `ibsoft_chathub_settings` e
+  `ibsoft_chathub_agent_presence_states`.
+- `db/migrate/20260705004000_drop_legacy_ibsoft_access_tables.rb` remove a
+  tabela legada `ibsoft_chathub_settings_managers`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra rotas API do namespace
+  `/api/v1/accounts/:account_id/ibsoft/chathub_settings`.
+- `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
+  rota frontend da tela de configuracoes ChatHub.
+- `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adiciona item
+  de menu quando o usuario e admin ou possui
+  `ibsoft_chathub_settings_manage`, posicionado no final do menu principal.
+  Tambem oculta visualmente os itens nativos de configuracao `Conta`,
+  `Agente`, `Times` e `Canais de comunicacao` do menu padrao. As rotas nativas
+  continuam existindo e sao acessadas pela tela privada ChatHub quando o
+  usuario possui permissao.
+- `app/views/api/v1/models/_user.json.jbuilder`: expande permissoes via
+  `Ibsoft::PermissionRegistry`.
+- `app/javascript/dashboard/ibsoft/chathubSettings/settingsSections.js`:
+  declara imports assincronos para as secoes integradas.
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`:
+  renderiza canais de comunicacao em cards usando stores e rotas nativas de
+  canais, sem editar o componente original.
+- `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`:
+  preserva a secao ativa via query `section`, evitando que o usuario volte para
+  outra secao apos abrir configuracoes nativas de canal, time ou conta.
+- `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`: textos da tela.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/chathub_settings spec/services/ibsoft/chathub_settings spec/requests/api/v1/accounts/ibsoft/chathub_settings`
+- `bundle exec rspec spec/services/ibsoft/conversation_distribution/agent_entry_assignment_policy_spec.rb spec/services/ibsoft/conversation_distribution/agent_assignment_preview_spec.rb spec/services/ibsoft/conversation_distribution/agent_assignment_claimer_spec.rb spec/services/ibsoft/conversation_distribution/assignment_executor_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/chathubSettings/specs/defaults.spec.js app/javascript/dashboard/ibsoft/chathubSettings/specs/settingsSections.spec.js`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/chathubSettings`
+
+### 0.1. Perfis e permissoes Ibsoft
+
+Objetivo:
+
+- Reproduzir funcionalmente o comportamento de perfis personalizados sem
+  copiar ou depender do modulo Enterprise `custom_roles`.
+- Manter perfis nomeados por conta, cada um com lista de permissoes, e permitir
+  vincular um perfil a cada agente.
+- Permitir que um futuro ambiente sem Enterprise continue controlando acesso a
+  conversas, relatorios, contatos, base de conhecimento e telas privadas
+  ChatHub.
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/access_control/`
+- `app/services/ibsoft/access_control/`
+- `app/controllers/api/v1/accounts/ibsoft/access_control/`
+- `app/javascript/dashboard/ibsoft/accessControl/`
+- `spec/**/ibsoft/access_control/`
+
+Banco de dados:
+
+- `db/migrate/20260704100000_create_ibsoft_access_control.rb`
+- tabela `ibsoft_access_control_roles`: perfis por conta, nome, descricao e
+  array de permissoes.
+- tabela `ibsoft_access_control_role_assignments`: vinculo unico de perfil por
+  agente dentro da conta.
+
+Comportamento:
+
+- A tela user-facing chama o modulo de `Perfis e permissoes`.
+- A tela principal lista apenas perfis, permissoes, contagem de agentes e acoes
+  de perfil. O gerenciamento de agentes vinculados abre em modal contextual do
+  perfil selecionado.
+- Remover um agente no modal deixa o usuario sem perfil. Adicionar um agente ao
+  perfil move automaticamente o usuario do perfil anterior, pois o vinculo e
+  unico por agente dentro da conta.
+- O namespace tecnico e `Ibsoft::AccessControl`.
+- O catalogo de permissoes fica em
+  `Ibsoft::AccessControl::PermissionCatalog`.
+- O resolver de permissoes fica em
+  `Ibsoft::AccessControl::PermissionResolver` e injeta as permissoes do perfil
+  via `Ibsoft::PermissionRegistry`.
+- Um agente com perfil Ibsoft recebe os marcadores `ibsoft_access_role` e
+  `custom_role` no payload de permissoes para manter compatibilidade com
+  filtros e rotas do dashboard que ja reconhecem perfis customizados.
+- O modulo nao usa `custom_roles`, `custom_role_id` nem classes dentro de
+  `enterprise/`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra rotas API do namespace
+  `/api/v1/accounts/:account_id/ibsoft/access_control`.
+- `config/initializers/ibsoft_access_control_policy_extensions.rb`: registra
+  extensoes pequenas para policies e services nativos que precisam respeitar
+  perfis Ibsoft:
+  `ConversationPolicy`, `ContactPolicy`, `ReportPolicy`, `PortalPolicy`,
+  `ArticlePolicy`, `CategoryPolicy`,
+  `Conversations::PermissionFilterService` e
+  `Conversations::UnreadCounts::Counter`.
+- `app/services/ibsoft/permission_registry.rb`: adiciona
+  `Ibsoft::AccessControl::PermissionResolver` como provider.
+- `app/services/ibsoft/conversation_distribution/supervisor_permission.rb`:
+  aceita a permissao `ibsoft_conversation_distribution_supervise` quando vier
+  de perfil Ibsoft.
+- `app/services/ibsoft/chathub_settings/permission.rb`: aceita a permissao
+  `ibsoft_chathub_settings_manage` quando vier de perfil Ibsoft.
+- `app/javascript/dashboard/helper/permissionsHelper.js`: trata
+  `ibsoft_access_role` como perfil customizado no filtro visual de conversas.
+- `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`: adiciona a
+  secao administrativa `Perfis e permissoes`.
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
+  `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: textos da UI.
+- `db/schema.rb`: atualizado pela migration.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/access_control spec/services/ibsoft/access_control spec/requests/api/v1/accounts/ibsoft/access_control`
+- `bundle exec rspec spec/services/ibsoft/conversation_distribution/supervisor_permission_spec.rb spec/services/ibsoft/chathub_settings/permission_spec.rb`
+- `bundle exec rubocop app/models/ibsoft/access_control app/services/ibsoft/access_control app/controllers/api/v1/accounts/ibsoft/access_control config/initializers/ibsoft_access_control_policy_extensions.rb`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/accessControl app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue app/javascript/dashboard/helper/permissionsHelper.js`
+
+### 0.2. Provisionamento de agentes Ibsoft
+
+Objetivo:
+
+- Criar agentes pelo fluxo operacional do ChatHub sem depender do e-mail de
+  confirmacao do Devise.
+- Continuar usando as tabelas nativas `users` e `account_users`, para preservar
+  compatibilidade com conversas, times, canais, presenca online, relatorios e
+  permissoes do Chatwoot.
+- Gerar uma senha temporaria forte e exibi-la apenas uma vez na resposta de
+  criacao, sem persistir senha em texto puro.
+- Permitir gerar nova senha temporaria para agentes existentes dentro do modal
+  de edicao, exibindo a senha apenas na resposta da acao.
+- Permitir foto de perfil no cadastro e na edicao de agentes, com crop circular,
+  zoom e deslocamento manual da imagem antes do envio.
+- Permitir editar nome e e-mail do agente pelo endpoint privado, mantendo o
+  `uid` sincronizado quando o provider for `email` e pulando a reconfirmacao
+  administrativa para preservar o fluxo operacional sem e-mail de confirmacao.
+- Exibir a disponibilidade atual do agente e permitir alterar manualmente entre
+  online, ocupado e offline usando `account_users.availability` nativo do
+  Chatwoot, preservando a politica nativa de offline automatico.
+- Permitir definir, no cadastro e na edicao do agente, se o ChatHub deve marcar
+  o agente como offline automaticamente quando nao houver presenca ativa no
+  painel.
+
+Arquivos privados principais:
+
+- `app/services/ibsoft/agent_provisioning/create_agent.rb`
+- `app/services/ibsoft/agent_provisioning/avatar_attacher.rb`
+- `app/services/ibsoft/agent_provisioning/availability_normalizer.rb`
+- `app/services/ibsoft/agent_provisioning/temporary_password_generator.rb`
+- `app/controllers/api/v1/accounts/ibsoft/agent_provisioning/`
+- `app/javascript/dashboard/ibsoft/agentProvisioning/`
+- `config/locales/ibsoft_agent_provisioning.*.yml`
+- `spec/**/ibsoft/agent_provisioning/`
+
+Comportamento:
+
+- O modulo fica disponivel em Configuracoes do ChatHub, secao `Agentes`, apenas
+  para administradores da conta. A tela principal lista os agentes e o cadastro
+  rapido abre em modal.
+- A lista de agentes mostra o avatar nativo do usuario, usando foto quando
+  existir e fallback por iniciais quando nao existir, com indicador de status
+  nativo do Chatwoot.
+- A alteracao manual de disponibilidade atualiza apenas o `availability` do
+  `AccountUser`. O modulo nao altera `auto_offline`, permitindo que o Chatwoot
+  continue exibindo o agente como offline quando nao houver presenca ativa.
+- Para coerencia visual e operacional, quando `auto_offline=true` e o status
+  efetivo fica offline por ausencia de presenca, o modulo normaliza o
+  `availability` salvo para `offline`. Assim o select da tela de agentes e o
+  indicador do avatar nao exibem estados conflitantes.
+- Novos agentes nascem com `auto_offline=true`, salvo quando o operador
+  desativa explicitamente essa opcao no cadastro. A edicao permite ligar ou
+  desligar essa mesma opcao no `AccountUser` da conta.
+- A senha temporaria gerada no cadastro aparece dentro do proprio modal de
+  criacao. Ao fechar o modal, a senha sai do estado do frontend.
+- O cadastro e a edicao usam endpoint privado Ibsoft para aceitar multipart com
+  avatar, sem alterar o controller nativo de agentes. O anexo e salvo no
+  `has_one_attached :avatar` nativo do `User`.
+- A remocao do agente continua usando a API nativa de agentes do Chatwoot,
+  preservando o contrato original de `users` e `account_users`.
+- Ao remover um agente que possui perfil privado do ChatHub, o frontend remove
+  primeiro o vinculo em `ibsoft_access_control_role_assignments` para evitar
+  vinculo privado inconsistente apos a remocao nativa da conta.
+- A criacao chama `skip_confirmation!` no usuario novo antes de salvar, portanto
+  o agente nasce confirmado e pode autenticar com a senha temporaria.
+- O campo user-facing de permissao chama-se `Perfil`. Ele combina os papeis
+  nativos `Administrador` e `Agente` com os perfis criados na area
+  `Perfis e permissoes`.
+- Quando um perfil criado na area `Perfis e permissoes` e escolhido, o usuario
+  e criado com `account_users.role = agent` e o modulo grava automaticamente o
+  vinculo em `ibsoft_access_control_role_assignments` dentro da mesma transacao.
+- O fluxo rejeita e-mails ja existentes. Isso evita a falsa expectativa de
+  revelar uma senha que o sistema nao conhece. Para usuarios existentes, usar
+  recuperacao de senha ou um fluxo futuro de vinculo.
+- O fluxo rejeita contas SAML para nao criar atalho local de senha em contas que
+  deveriam autenticar por SSO.
+- A gestao de perfis e permissoes continua separada na secao
+  `Perfis e permissoes`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra rotas API do namespace
+  `/api/v1/accounts/:account_id/ibsoft/agent_provisioning/agents`, incluindo
+  `create`, `update` e a action member `reset_temporary_password`.
+- `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`: adiciona a
+  secao administrativa `Agentes` dentro da tela privada ChatHub.
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
+  `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: textos da UI.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/services/ibsoft/agent_provisioning spec/requests/api/v1/accounts/ibsoft/agent_provisioning`
+- `bundle exec rubocop app/services/ibsoft/agent_provisioning app/controllers/api/v1/accounts/ibsoft/agent_provisioning spec/services/ibsoft/agent_provisioning spec/requests/api/v1/accounts/ibsoft/agent_provisioning`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/agentProvisioning/specs/AgentProvisioningPanel.spec.js`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/agentProvisioning app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`
+
+### 1. Distribuicao de atendimentos Ibsoft
 
 Documento detalhado: `IBSOFT_CONVERSATION_DISTRIBUTION.md`.
 
@@ -54,6 +331,7 @@ Arquivos privados principais:
 - `app/jobs/ibsoft/conversation_distribution/`
 - `app/controllers/api/v1/accounts/ibsoft/conversation_distribution/`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/`
+- `config/locales/ibsoft_conversation_distribution.*.yml`
 - `spec/**/ibsoft/conversation_distribution/`
 
 Banco de dados:
@@ -62,6 +340,41 @@ Banco de dados:
 - tabelas `ibsoft_conversation_distribution_channel_policies`,
   `ibsoft_conversation_distribution_team_policies` e
   `ibsoft_conversation_distribution_event_logs`.
+- `db/migrate/20260702123000_create_ibsoft_conversation_distribution_policies.rb`
+- `db/migrate/20260703123000_add_ibsoft_distribution_event_log_performance_indexes.rb`
+- tabela `ibsoft_conversation_distribution_policies`, catalogo de politicas
+  nomeadas reutilizaveis. Canais e times devem vincular uma politica por
+  `distribution_policy_id` em vez de copiar regras diretamente.
+- `db/migrate/20260703120000_remove_legacy_ibsoft_distribution_link_config.rb`
+  remove `enabled` e `config` das tabelas de vinculo por canal/time. A migration
+  preserva configuracoes antigas convertendo cada vinculo legado em politica
+  nomeada antes de derrubar as colunas.
+- Politicas Ibsoft possuem capacidades equivalentes ao Assignment V2 para a
+  operacao privada: ordem por rodizio/equilibrada, prioridade por maior espera
+  ou criacao, limite opcional por rodada e limite de capacidade por agente. O
+  limite pode operar por atendimentos abertos simultaneos ou por novas
+  atribuicoes dentro de uma janela.
+- O bloco `assignment_confirmation` permite enviar mensagem automatica
+  opcional quando o motor Ibsoft atribui a conversa a um agente online. O envio
+  e feito por `AssignmentConfirmationNotifier` como mensagem `template`, sem
+  remetente humano, preservando a metrica de primeira resposta.
+- `ActivityMessageNotifier` cria mensagens internas `activity` para registrar
+  atribuicao automatica, aceite manual pelo agente no modal pos-login e
+  redistribuicao automatica por timeout. Os textos ficam em Rails i18n proprio
+  do modulo.
+- A indisponibilidade operacional e separada por motivo no bloco
+  `unavailability`: `no_available_agent` controla acoes quando nao ha atendente
+  disponivel dentro do horario, e `outside_business_hours` controla acoes fora
+  do horario. O campo legado `unavailable` segue aceito e e normalizado para os
+  dois motivos quando a politica ainda nao usa o novo formato.
+- A tela de cadastro/edicao das politicas fica em Configuracoes do ChatHub.
+  O fluxo deve seguir o Assignment V2: listar politicas em cards de largura
+  total, editar em modal, remover pelo card e criar novas politicas apenas pelo
+  botao de adicionar. Configuracoes de canal e time devem apenas selecionar o
+  vinculo com uma politica existente.
+- `db/migrate/20260705004000_drop_legacy_ibsoft_access_tables.rb` remove a
+  tabela legada `ibsoft_conversation_distribution_supervisors`. A permissao de
+  supervisao agora e concedida por perfis e permissoes Ibsoft.
 
 Pontos de acoplamento no Chatwoot original:
 
@@ -73,9 +386,22 @@ Pontos de acoplamento no Chatwoot original:
   registra a secao de distribuicao de atendimentos na configuracao do canal.
 - `app/javascript/dashboard/routes/dashboard/settings/teams/Index.vue`: registra
   o botao de configuracao de distribuicao por time.
+- `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
+  rota frontend do painel de supervisao Ibsoft.
+- `app/javascript/dashboard/routes/dashboard/Dashboard.vue`: monta o prompt
+  privado de assuncao de fila do agente quando o usuario fica online.
+- `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: registra a
+  Home do ChatHub no menu lateral. O acesso visual ao painel de supervisao fica
+  dentro da Home e e exibido somente para administradores ou usuarios com
+  permissao `ibsoft_conversation_distribution_supervise`.
+- `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`:
+  adiciona o retorno para `ibsoft_chathub_home` no cabecalho da supervisao.
 - `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
   `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: registram
   textos da UI do modulo.
+- `app/views/api/v1/models/_user.json.jbuilder`: adiciona a permissao privada
+  `ibsoft_conversation_distribution_supervise` ao payload de contas do usuario
+  quando ele estiver registrado como supervisor Ibsoft.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
   marca origem Ibsoft quando uma conversa e atribuida a time via API/UI.
 - `app/services/action_service.rb`: marca origem Ibsoft quando uma acao,
@@ -90,21 +416,86 @@ Estado atual:
 - Endpoint administrativo `POST /executions` para executar a atribuicao com
   auditoria. Por padrao, a execucao real fica bloqueada pela env
   `IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=false`.
+- Endpoint administrativo `GET /supervisor_alerts` e rota frontend privada para
+  listar atendimentos que passaram do limite configurado em `supervisor_alert`,
+  com severidade calculada e filtros visuais por motivo, severidade, time e
+  canal, sem alterar conversas. Administradores e supervisores Ibsoft podem
+  acessar esta rota.
+- Endpoint `GET /event_logs` e tela privada de auditoria para
+  consultar `ibsoft_conversation_distribution_event_logs` com filtros,
+  paginacao e dados de conversa, contato, time, canal e agentes. O filtro de
+  conversa aceita o ID visivel exibido na UI do Chatwoot, inclusive com prefixo
+  `#`, e preserva fallback para o ID interno gravado no evento. O ID da conversa
+  abre o atendimento em nova aba. A interface mostra os tipos de evento apenas
+  com rotulos traduzidos e nao exibe JSON bruto nem coluna de detalhes na
+  tabela; `metadata` permanece disponivel na API para auditoria tecnica futura.
+  Os filtros de canal e departamento usam seletores alimentados pelas stores
+  nativas do Chatwoot. Administradores e supervisores Ibsoft podem acessar esta
+  rota.
+- A permissao privada `ibsoft_conversation_distribution_supervise` e gerenciada
+  pela tela `Perfis e permissoes`, sem endpoints dedicados de supervisores.
+- Endpoints de agente `GET /agent_assignments` e
+  `POST /agent_assignments/claim`, usados pelo prompt privado que aparece ao
+  agente online para assumir conversas aguardando nos seus departamentos.
+- O prompt e o backend aplicam obrigatoriedade calculada pela configuracao
+  global ChatHub, usando percentual da fila disponivel com minimo/maximo. A
+  validacao final fica em
+  `Ibsoft::ConversationDistribution::AgentAssignmentRequestGuard`, evitando que
+  chamadas diretas para a API assumam conversas acima do limite ou ignorem
+  conversas obrigatorias.
+- Politicas de time podem gravar horario de funcionamento proprio
+  (`business_hours.mode=custom`) com grade semanal, fuso horario e intervalos em
+  `business_hours.breaks`, sem alterar a tela nativa de horario do canal.
+- `ConfigurationValidator` valida fallback, mensagem automatica, timezone,
+  grade semanal, intervalos e limites numericos antes de salvar politicas.
+- Telas de politica Ibsoft exibem alerta quando autoatribuicao nativa do canal,
+  autoatribuicao nativa do time ou politica nativa vinculada ainda podem
+  concorrer com a distribuicao Ibsoft.
 - Job automatico `Ibsoft::ConversationDistribution::WatchdogJob` registrado no
   cron, mas inerte por padrao pela env
   `IBSOFT_CONVERSATION_DISTRIBUTION_JOB_ENABLED=false`.
 - Service `DecisionResolver` centraliza a decisao antes da atribuicao,
-  considerando elegibilidade, politica efetiva, horario e acao configurada para
-  indisponibilidade.
+  considerando elegibilidade, politica efetiva, horario, intervalos e acao
+  configurada para indisponibilidade.
+- Service `AssignmentRoundLimiter` aplica o limite operacional da politica
+  efetiva (`distribution.max_assignments_per_round`) por par canal/time no
+  watchdog automatico. A env `IBSOFT_CONVERSATION_DISTRIBUTION_JOB_LIMIT`
+  permanece apenas como teto tecnico de varredura por execucao.
+- Service `AssignmentRateLimiter` usa sorted set em Redis por agente/janela
+  para aplicar `fair_distribution_limit`, evitando varredura de chaves Redis em
+  cada candidato quando a politica usa `assignment_limit_mode=assignment_window`.
+- Service `AgentCapacityEvaluator` aplica
+  `assignment_limit_mode=open_conversations`, contando apenas conversas abertas
+  atribuidas ao agente na conta e ignorando etiquetas configuradas ou conversas
+  aguardando resposta do cliente acima do prazo definido na politica.
+- `WatchdogRunner` usa lock distribuido em Redis por escopo
+  (`IBSOFT_CONVERSATION_DISTRIBUTION_WATCHDOG_LOCK_TTL_SECONDS`, padrao 300s)
+  para evitar rodadas concorrentes.
+- O watchdog sincroniza `ibsoft_chathub_agent_presence_states` apenas quando
+  `login_stabilization.enabled=true`, evitando varrer todos os usuarios da
+  conta em politicas que nao usam janela pos-login.
 - Service `DecisionActionExecutor` executa `notify_customer` e `fallback_team`
   com idempotencia, mantendo os efeitos colaterais protegidos pela flag de
-  execucao real.
+  execucao real. O envio de mensagem automatica reserva a acao dentro do lock,
+  cria a mensagem fora do lock da conversa e depois grava o resultado.
 - Services `RedistributionCandidateFinder` e `RedistributionExecutor` executam a
   redistribuicao de conversas atribuidas pelo modulo Ibsoft quando o agente nao
   deu primeira resposta dentro do timeout configurado.
+- Service `PreviousAssigneeParticipationCleanup` remove o agente anterior de
+  `conversation_participants` apos uma redistribuicao real do modulo Ibsoft,
+  evitando que ele continue recebendo notificacoes como participante. O fluxo
+  nativo de transferencias manuais nao e alterado.
 - Marcacao explicita da origem de transferencia para time em
   `additional_attributes.ibsoft_distribution_source`, sem executar atribuicao
-  automatica.
+  automatica. Nao ha mais inferencia ampla de transferencia manual apenas por a
+  conversa estar aberta, sem agente e com time; conversas sem origem explicita
+  ficam inelegiveis por seguranca.
+- Eventos repetidos de `assignment_skipped` e `redistribution_skipped` sao
+  deduplicados por janela configuravel via
+  `IBSOFT_CONVERSATION_DISTRIBUTION_EVENT_DEDUPE_WINDOW_SECONDS`, com padrao de
+  15 minutos.
+- Logs de auditoria possuem indices compostos para deduplicacao recente, busca
+  do ultimo evento por conversa e filtros do dashboard de logs.
 - Nenhum comportamento automatico de conversa fica ativo sem flag explicita.
 - Nenhum callback de conversa, presenca de agente ou Assignment V2 foi alterado.
 - A cobertura automatizada valida que o executor Ibsoft continua atribuindo
@@ -119,6 +510,12 @@ Estado atual:
   reatribuicoes manuais e conversas ja respondidas, exclui o agente atual da
   rodada, respeita a flag de execucao real e usa o ultimo evento Ibsoft como
   novo marco de timeout.
+- `Ibsoft::ConversationDistribution::AttentionNotificationSync` remove
+  notificacoes nao lidas de responsabilidade do agente anterior depois de uma
+  redistribuicao real, incluindo notificacoes de participante e preservando
+  mencoes e historico lido. Isso evita que a conversa permaneca em "Atencao"
+  para quem deixou de ser responsavel sem tocar no listener nativo de
+  notificacoes do Chatwoot.
 
 Validacao recomendada:
 
@@ -127,7 +524,63 @@ Validacao recomendada:
 - `bundle exec rspec spec/controllers/api/v1/accounts/conversations/assignments_controller_spec.rb spec/services/action_service_spec.rb`
 - `pnpm exec eslint app/javascript/dashboard/ibsoft/conversationDistribution app/javascript/dashboard/routes/dashboard/settings/teams/Index.vue app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CollaboratorsPage.vue`
 
-### 1. Chat interno Ibsoft
+### 1.1 Analytics ChatHub Ibsoft
+
+Documento detalhado: `IBSOFT_CHATHUB_ANALYTICS.md`.
+
+Objetivo:
+
+- Criar dashboards operacionais para agentes, supervisores e administradores.
+- Exibir indicadores de tempo medio de resposta, primeira resposta, resolucao,
+  backlog, redistribuicoes, saude por departamento, volume diario e distribuicao
+  por horario.
+- Consumir dados ja existentes do Chatwoot e do modulo de distribuicao Ibsoft
+  sem alterar conversas, atribuicoes ou politicas.
+- Servir como `Pagina inicial` do ChatHub. A mesma tela escolhe
+  automaticamente entre dashboard de supervisao e dashboard do agente conforme
+  as permissoes da conta atual.
+- Para usuarios com permissao de supervisao, abrir o `Painel da equipe` por
+  padrao, mas permitir alternar para `Meu painel` dentro da propria Home.
+- Exibir o botao `Supervisao` dentro da Home apenas para administradores ou
+  usuarios com permissao `ibsoft_conversation_distribution_supervise`.
+
+Arquivos privados principais:
+
+- `app/controllers/api/v1/accounts/ibsoft/chathub_analytics/`
+- `app/services/ibsoft/chathub_analytics/`
+- `app/javascript/dashboard/ibsoft/chathubAnalytics/`
+- `config/locales/ibsoft_chathub_analytics.en.yml`
+- `config/locales/ibsoft_chathub_analytics.pt_BR.yml`
+- `spec/**/ibsoft/chathub_analytics/`
+
+Banco de dados:
+
+- Nao cria tabelas novas.
+- Usa `conversations`, `reporting_events` e
+  `ibsoft_conversation_distribution_event_logs`.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra rotas API do namespace
+  `/api/v1/accounts/:account_id/ibsoft/chathub_analytics`.
+- `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
+  rota frontend `ibsoft_chathub_home` e mantem
+  `ibsoft_chathub_analytics` como redirecionamento de compatibilidade.
+- `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adiciona item
+  de menu `Pagina inicial` do ChatHub como primeiro item, imediatamente antes
+  de `Atencao`. O item direto de supervisao nao fica mais no menu principal.
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
+  `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: registram
+  textos da UI.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/services/ibsoft/chathub_analytics spec/requests/api/v1/accounts/ibsoft/chathub_analytics/dashboards_spec.rb`
+- `bundle exec rubocop app/services/ibsoft/chathub_analytics app/controllers/api/v1/accounts/ibsoft/chathub_analytics spec/services/ibsoft/chathub_analytics spec/requests/api/v1/accounts/ibsoft/chathub_analytics/dashboards_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/chathubAnalytics/specs/Index.spec.js`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/chathubAnalytics app/javascript/dashboard/routes/dashboard/dashboard.routes.js app/javascript/dashboard/components-next/sidebar/Sidebar.vue`
+
+### 2. Chat interno Ibsoft
 
 Documento detalhado: `IBSOFT_INTERNAL_CHAT.md`.
 
@@ -138,6 +591,9 @@ Objetivo:
   `Message` do atendimento a clientes.
 - Suportar texto, imagens, videos, audios, arquivos, leitura, contador de nao
   lidos, eventos realtime e permissao por participante.
+- Reproduzir audios por `blob:` local gerado sob demanda via endpoint
+  protegido, apenas ao clicar em tocar/baixar, sem expor URL direta do
+  ActiveStorage e sem aplicar cache-buster que invalide o objeto no navegador.
 
 Arquivos privados principais:
 
@@ -146,6 +602,8 @@ Arquivos privados principais:
 - `app/policies/ibsoft/internal_chat/`
 - `app/services/ibsoft/internal_chat/`
 - `app/javascript/dashboard/ibsoft/internalChat/`
+- `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatAudioChip.vue`
+- `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentUrls.js`
 - `config/locales/ibsoft_internal_chat.en.yml`
 - `config/locales/ibsoft_internal_chat.pt_BR.yml`
 - `spec/**/ibsoft/internal_chat/`
@@ -179,7 +637,7 @@ Validacao recomendada:
 - abrir dashboard, criar sala, criar chat direto, enviar texto/anexo, remover
   membro, apagar sala e conferir contador realtime.
 
-### 2. Conversas: automacao, protocolo e encerramento
+### 3. Conversas: automacao, protocolo e encerramento
 
 Documento detalhado:
 `app/javascript/dashboard/ibsoft/conversation/README.md`.
@@ -194,6 +652,9 @@ Objetivo:
 - Permitir pesquisar/filtrar conversas por protocolo sem criar coluna nova no
   banco.
 - Apresentar `resolved` como `Encerrar atendimento` nos fluxos operacionais.
+- Apresentar mensagens de atividade de abertura como
+  `Conversa foi aberta por %{user_name}`, evitando o termo `reaberta` sem
+  alterar o locale original do Chatwoot.
 - Manter a contagem da aba `Automacoes` sincronizada quando uma conversa entra
   ou sai de `pending` por acoes locais de status.
 - Forcar conversas iniciadas manualmente por agente pela tela de nova mensagem
@@ -207,6 +668,7 @@ Arquivos privados principais:
 - `app/services/ibsoft/conversation/protocol_filter_payload.rb`
 - `app/services/ibsoft/conversation/protocol_search.rb`
 - `app/services/ibsoft/conversation/force_open_on_agent_created_conversation.rb`
+- `app/services/ibsoft/conversation/resolved_attention_notification_cleanup.rb`
 - `config/locales/zz_ibsoft_conversation.en.yml`
 - `config/locales/zz_ibsoft_conversation.pt_BR.yml`
 
@@ -215,6 +677,12 @@ Pontos de acoplamento no Chatwoot original:
 - `app/models/conversation.rb`: chama o service Ibsoft durante
   `determine_conversation_status`, antes da regra padrao que envia caixas com
   bot ativo para `pending`.
+- `app/models/conversation.rb`: chama
+  `Ibsoft::Conversation::ResolvedAttentionNotificationCleanup` no fluxo de
+  encerramento da conversa. Este acoplamento e intencional e pequeno: remove
+  notificacoes vinculadas a conversa encerrada para que ela saia imediatamente
+  da tela `Atencao`, inclusive quando filtros de notificacoes lidas estiverem
+  ativos, sem alterar a regra nativa de status.
 - `app/javascript/dashboard/components-next/NewConversation/helpers/composeConversationHelper.js`:
   marca conversas criadas manualmente por agente com
   `ibsoft_force_open_on_create`.
@@ -271,6 +739,7 @@ Pontos de acoplamento no Chatwoot original:
 Specs relacionadas:
 
 - `spec/models/conversation_spec.rb`
+- `spec/services/ibsoft/conversation/resolved_attention_notification_cleanup_spec.rb`
 - `app/javascript/dashboard/components-next/NewConversation/helpers/specs/composeConversationHelper.spec.js`
 - `app/javascript/dashboard/store/modules/specs/contactConversations/actions.spec.js`
 - `spec/controllers/api/v1/accounts/search_controller_spec.rb`
@@ -283,7 +752,7 @@ Risco principal:
   upstream, revisar primeiro os arquivos de lista, filtro, busca, command bar e
   status de conversa.
 
-### 3. Tema visual Ibsoft / ChatHub
+### 4. Tema visual Ibsoft / ChatHub
 
 Documento detalhado: `app/javascript/dashboard/ibsoft/theme/README.md`.
 
@@ -340,7 +809,7 @@ Risco principal:
   markup do upstream mudar. Apos atualizar o Chatwoot, validar visualmente
   idioma, build, ID da conta, empty states, sidebar e listas.
 
-### 4. Overrides de i18n Ibsoft
+### 5. Overrides de i18n Ibsoft
 
 Objetivo:
 
@@ -372,7 +841,7 @@ Risco principal:
 - Se o upstream alterar a montagem dos locales, revisar estes dois arquivos e
   preservar o merge Ibsoft como ultimo passo.
 
-### 5. Datas, horarios e tempos relativos localizados
+### 6. Datas, horarios e tempos relativos localizados
 
 Documentos detalhados:
 
@@ -452,7 +921,7 @@ Risco principal:
 - Se o upstream alterar o widget ou o modelo `working_hours`, validar que
   `ibsoft_working_hour_breaks` continua sendo aplicado no backend e no widget.
 
-### 6. Imagem Docker privada
+### 7. Imagem Docker privada
 
 Documento detalhado: `docs/ibsoft-docker-image.md`.
 
@@ -486,6 +955,7 @@ quando o upstream alterar a mesma area.
 - `config/routes.rb`
 - `config/schedule.yml`
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`
+- `app/views/api/v1/models/_user.json.jbuilder`
 - `app/finders/conversation_finder.rb`
 - `app/services/action_service.rb`
 - `app/services/search_service.rb`

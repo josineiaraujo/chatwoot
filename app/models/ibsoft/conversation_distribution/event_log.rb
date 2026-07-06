@@ -17,6 +17,9 @@
 #
 # Indexes
 #
+#  idx_ibsoft_dist_events_dedupe                                  (account_id,conversation_id,event_type,reason,created_at DESC,id DESC)
+#  idx_ibsoft_dist_events_filters                                 (account_id,event_type,reason,created_at DESC,id DESC)
+#  idx_ibsoft_dist_events_latest_assignment                       (account_id,event_type,conversation_id,created_at DESC,id DESC)
 #  idx_ibsoft_distribution_events_account_created                 (account_id,created_at)
 #  idx_ibsoft_distribution_events_conversation_created            (conversation_id,created_at)
 #  idx_on_account_id_f411ea7c53                                   (account_id)

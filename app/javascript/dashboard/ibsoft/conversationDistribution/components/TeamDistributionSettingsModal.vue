@@ -3,10 +3,10 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useAlert } from 'dashboard/composables';
-import NextButton from 'dashboard/components-next/button/Button.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
+import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
+import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
 import conversationDistributionAPI from '../api';
-import { normalizePolicyConfig } from '../policyDefaults';
-import DistributionPolicyForm from './DistributionPolicyForm.vue';
 
 const props = defineProps({
   show: {
@@ -17,32 +17,36 @@ const props = defineProps({
     type: Object,
     default: null,
   },
-  teams: {
-    type: Array,
-    default: () => [],
-  },
 });
 
 const emit = defineEmits(['update:show']);
 
 const { t } = useI18n();
 
-const enabled = ref(false);
 const overrideChannelPolicy = ref(false);
-const config = ref(normalizePolicyConfig({}));
-const sourceTeamId = ref(null);
+const nativeAssignment = ref({});
+const policies = ref([]);
+const distributionPolicyId = ref(null);
 const isFetching = ref(false);
 const isSaving = ref(false);
-const isCopying = ref(false);
 
 const showProxy = computed({
   get: () => props.show,
   set: value => emit('update:show', value),
 });
 
-const availableSourceTeams = computed(() =>
-  props.teams.filter(team => team.id !== props.team?.id)
-);
+const activationWarnings = computed(() => {
+  if (!nativeAssignment.value?.team_auto_assignment_enabled) {
+    return [];
+  }
+
+  return ['TEAM_AUTO_ASSIGNMENT'];
+});
+const activationWarningLabels = computed(() => ({
+  TEAM_AUTO_ASSIGNMENT: t(
+    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.ACTIVATION_ALERT.ITEMS.TEAM_AUTO_ASSIGNMENT'
+  ),
+}));
 
 const close = () => {
   showProxy.value = false;
@@ -53,16 +57,25 @@ const fetchPolicy = async () => {
 
   try {
     isFetching.value = true;
-    const { data } = await conversationDistributionAPI.getTeamPolicy(
-      props.team.id
-    );
-    enabled.value = data.enabled;
+    const [{ data }, policyResponse] = await Promise.all([
+      conversationDistributionAPI.getTeamPolicy(props.team.id),
+      conversationDistributionAPI.getPolicies(),
+    ]);
+    policies.value = policyResponse.data.policies || [];
     overrideChannelPolicy.value = data.override_channel_policy;
-    config.value = normalizePolicyConfig(data.config);
+    distributionPolicyId.value = data.distribution_policy_id || null;
+    nativeAssignment.value = data.native_assignment || {};
   } finally {
     isFetching.value = false;
   }
 };
+
+const selectedPolicy = computed(
+  () =>
+    policies.value.find(
+      policy => policy.id === Number(distributionPolicyId.value)
+    ) || null
+);
 
 const savePolicy = async () => {
   try {
@@ -70,39 +83,19 @@ const savePolicy = async () => {
     const { data } = await conversationDistributionAPI.updateTeamPolicy(
       props.team.id,
       {
-        enabled: enabled.value,
         override_channel_policy: overrideChannelPolicy.value,
-        config: config.value,
+        distribution_policy_id: distributionPolicyId.value,
       }
     );
-    enabled.value = data.enabled;
+    distributionPolicyId.value = data.distribution_policy_id || null;
     overrideChannelPolicy.value = data.override_channel_policy;
-    config.value = normalizePolicyConfig(data.config);
+    nativeAssignment.value = data.native_assignment || {};
     useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.SAVE_SUCCESS'));
+    close();
   } catch (error) {
     useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.SAVE_ERROR'));
   } finally {
     isSaving.value = false;
-  }
-};
-
-const copyPolicy = async () => {
-  if (!sourceTeamId.value || !props.team?.id) return;
-
-  try {
-    isCopying.value = true;
-    const { data } = await conversationDistributionAPI.copyTeamPolicy({
-      source_team_id: sourceTeamId.value,
-      target_team_id: props.team.id,
-    });
-    enabled.value = data.enabled;
-    overrideChannelPolicy.value = data.override_channel_policy;
-    config.value = normalizePolicyConfig(data.config);
-    useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.COPY_SUCCESS'));
-  } catch (error) {
-    useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.COPY_ERROR'));
-  } finally {
-    isCopying.value = false;
   }
 };
 
@@ -128,58 +121,91 @@ watch(
       />
 
       <div class="overflow-y-auto px-6 pb-6">
-        <div class="mb-5 rounded-xl border border-n-weak px-4 py-3">
-          <label class="flex flex-col gap-1">
-            <span class="text-label-small text-n-slate-11">
-              {{ t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.COPY.LABEL') }}
-            </span>
-            <div class="flex flex-col gap-2 md:flex-row">
-              <select
-                v-model.number="sourceTeamId"
-                class="min-w-0 flex-1 rounded-lg border border-n-weak bg-n-alpha-1 px-3 py-2 text-n-slate-12"
-              >
-                <option :value="null">
-                  {{
-                    t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.COPY.PLACEHOLDER')
-                  }}
-                </option>
-                <option
-                  v-for="sourceTeam in availableSourceTeams"
-                  :key="sourceTeam.id"
-                  :value="sourceTeam.id"
-                >
-                  {{ sourceTeam.name }}
-                </option>
-              </select>
-              <NextButton
-                :label="t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.COPY.BUTTON')"
-                icon="i-lucide-copy"
-                slate
-                faded
-                :disabled="!sourceTeamId"
-                :is-loading="isCopying"
-                @click="copyPolicy"
-              />
-            </div>
-          </label>
-        </div>
-
         <div
           v-if="isFetching"
           class="rounded-xl border border-n-weak px-4 py-6 text-body-main text-n-slate-11"
         >
           {{ t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.LOADING') }}
         </div>
-        <DistributionPolicyForm
-          v-else
-          v-model:enabled="enabled"
-          v-model:override-channel-policy="overrideChannelPolicy"
-          v-model="config"
-          is-team-policy
-          :teams="teams"
-          :is-loading="isSaving"
-          @save="savePolicy"
-        />
+        <div v-else class="space-y-4 rounded-xl border border-n-weak px-4 py-3">
+          <div
+            class="flex items-center justify-between gap-4 rounded-lg border border-n-weak px-3 py-2"
+          >
+            <div class="min-w-0">
+              <h4 class="mb-0.5 text-heading-3 text-n-slate-12">
+                {{ t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.OVERRIDE.TITLE') }}
+              </h4>
+              <p class="mb-0 text-body-main text-n-slate-11">
+                {{
+                  t(
+                    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.OVERRIDE.DESCRIPTION'
+                  )
+                }}
+              </p>
+            </div>
+            <ToggleSwitch v-model="overrideChannelPolicy" />
+          </div>
+
+          <label v-if="overrideChannelPolicy" class="grid gap-1">
+            <span class="text-label-small text-n-slate-11">
+              {{
+                t(
+                  'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.POLICY_CATALOG.SELECT'
+                )
+              }}
+            </span>
+            <IbsoftSelect v-model="distributionPolicyId">
+              <option :value="null">
+                {{
+                  t(
+                    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.POLICY_CATALOG.NONE'
+                  )
+                }}
+              </option>
+              <option
+                v-for="policy in policies"
+                :key="policy.id"
+                :value="policy.id"
+              >
+                {{ policy.name }}
+              </option>
+            </IbsoftSelect>
+          </label>
+
+          <p class="mb-0 text-body-small text-n-slate-11">
+            {{
+              selectedPolicy
+                ? t(
+                    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.POLICY_CATALOG.LINK_HELP'
+                  )
+                : t(
+                    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.POLICY_CATALOG.EMPTY_LINK'
+                  )
+            }}
+          </p>
+
+          <ul
+            v-if="activationWarnings.length"
+            class="mb-0 list-disc rounded-lg border border-n-weak px-6 py-3 text-body-small text-n-slate-11"
+          >
+            <li v-for="warning in activationWarnings" :key="warning">
+              {{ activationWarningLabels[warning] || warning }}
+            </li>
+          </ul>
+
+          <div class="flex justify-end">
+            <Button
+              :label="
+                t(
+                  'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.POLICY_CATALOG.SAVE_LINK'
+                )
+              "
+              icon="i-lucide-link"
+              :is-loading="isSaving"
+              @click="savePolicy"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </woot-modal>

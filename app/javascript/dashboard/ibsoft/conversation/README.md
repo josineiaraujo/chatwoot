@@ -80,6 +80,8 @@ padrao do Chatwoot.
 - Traducoes ficam em `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`.
 - Mensagens Rails de atividade ficam em `config/locales/zz_ibsoft_conversation.*.yml`
   para sobrescrever traducoes sem editar os arquivos originais do Chatwoot.
+- A chave `conversations.activity.status.open` em pt-BR e sobrescrita para
+  `Conversa foi aberta por %{user_name}`, evitando o termo `reaberta`.
 
 ## Regras de manutencao
 

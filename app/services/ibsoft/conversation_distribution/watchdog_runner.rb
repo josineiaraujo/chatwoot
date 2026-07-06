@@ -1,5 +1,8 @@
+require 'securerandom'
+
 class Ibsoft::ConversationDistribution::WatchdogRunner
   DEFAULT_ACCOUNT_BATCH_SIZE = 100
+  LOCK_KEY = 'IBSOFT_CONVERSATION_DISTRIBUTION::WATCHDOG::%<scope>s'.freeze
   SUMMARY_COUNTER_KEYS = %i[scanned assigned redistributed skipped ignored].freeze
 
   def initialize(account_id: nil, inbox_id: nil, team_id: nil, limit: Ibsoft::ConversationDistribution::ExecutionConfig.job_limit)
@@ -11,6 +14,7 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
 
   def perform
     return disabled_payload unless Ibsoft::ConversationDistribution::ExecutionConfig.job_enabled?
+    return locked_payload unless acquire_lock
 
     account_results = []
     account_scope.find_each(batch_size: account_batch_size) do |account|
@@ -18,6 +22,8 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     end
 
     result_payload(account_results)
+  ensure
+    release_lock if @lock_token.present?
   end
 
   private
@@ -27,7 +33,19 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   def disabled_payload
     {
       enabled: false,
+      locked: false,
       generated_at: Time.current.iso8601,
+      summary: empty_summary,
+      accounts: []
+    }
+  end
+
+  def locked_payload
+    {
+      enabled: true,
+      locked: true,
+      generated_at: Time.current.iso8601,
+      limit: safe_limit,
       summary: empty_summary,
       accounts: []
     }
@@ -36,6 +54,7 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   def result_payload(account_results)
     {
       enabled: true,
+      locked: false,
       generated_at: Time.current.iso8601,
       limit: safe_limit,
       summary: summary_payload(account_results),
@@ -44,6 +63,8 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   end
 
   def run_account(account)
+    sync_presence_if_needed(account)
+
     assignment_result = assignment_executor(account).perform
     redistribution_result = redistribution_executor(account).perform
 
@@ -117,10 +138,25 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   end
 
   def policy_account_scope
-    channel_accounts = Ibsoft::ConversationDistribution::ChannelPolicy.where(enabled: true).select(:account_id)
-    team_accounts = Ibsoft::ConversationDistribution::TeamPolicy.where(enabled: true, override_channel_policy: true).select(:account_id)
+    Account.where(id: active_channel_account_ids)
+           .or(Account.where(id: active_team_account_ids))
+           .distinct
+  end
 
-    Account.where(id: channel_accounts).or(Account.where(id: team_accounts)).distinct
+  def active_channel_account_ids
+    distribution_link_scope(Ibsoft::ConversationDistribution::ChannelPolicy)
+      .select(:account_id)
+  end
+
+  def active_team_account_ids
+    distribution_link_scope(Ibsoft::ConversationDistribution::TeamPolicy)
+      .where(override_channel_policy: true)
+      .select(:account_id)
+  end
+
+  def distribution_link_scope(model)
+    model.joins(:distribution_policy)
+         .where(ibsoft_conversation_distribution_policies: { enabled: true })
   end
 
   def safe_limit
@@ -134,5 +170,34 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
 
   def account_batch_size
     DEFAULT_ACCOUNT_BATCH_SIZE
+  end
+
+  def sync_presence_if_needed(account)
+    return unless login_stabilization_enabled?(account)
+
+    Ibsoft::ChathubSettings::AgentPresenceTracker.sync_account!(account)
+  end
+
+  def login_stabilization_enabled?(account)
+    ActiveModel::Type::Boolean.new.cast(
+      Ibsoft::ChathubSettings::SettingsResolver
+        .config_for(account)
+        .dig('login_stabilization', 'enabled')
+    )
+  end
+
+  def acquire_lock
+    @lock_token = SecureRandom.uuid
+    Redis::Alfred.set(lock_key, @lock_token, nx: true, ex: Ibsoft::ConversationDistribution::ExecutionConfig.watchdog_lock_ttl).present?
+  end
+
+  def release_lock
+    Redis::Alfred.delete_if_equals(lock_key, @lock_token)
+  ensure
+    @lock_token = nil
+  end
+
+  def lock_key
+    format(LOCK_KEY, scope: [account_id || 'all', inbox_id || 'all', team_id || 'all'].join(':'))
   end
 end
