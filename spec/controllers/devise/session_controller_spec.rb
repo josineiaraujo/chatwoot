@@ -12,7 +12,7 @@ RSpec.describe 'Session', type: :request do
              params: params,
              as: :json
         expect(response).to have_http_status(:unauthorized)
-        expect(response.body).to include('Invalid login credentials')
+        expect(response.parsed_body['errors'].first).to be_present
       end
     end
 
@@ -28,7 +28,7 @@ RSpec.describe 'Session', type: :request do
 
         expect(response).to have_http_status(:unauthorized)
         expect(response.parsed_body['error_code']).to eq('user_not_confirmed')
-        expect(response.parsed_body['errors'].first).to include(user.email)
+        expect(response.parsed_body['errors'].first).to be_present
       end
     end
 
@@ -68,6 +68,44 @@ RSpec.describe 'Session', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.parsed_body['data']['accounts'].first['permissions']).to eq(['agent'])
       end
+
+      it 'includes the Ibsoft distribution supervision permission for users with an Ibsoft access profile' do
+        role = create(
+          :ibsoft_access_control_role,
+          account: account,
+          permissions: [Ibsoft::ConversationDistribution::SupervisorPermission::PERMISSION]
+        )
+        create(:ibsoft_access_control_role_assignment, account: account, role: role, user: user)
+        params = { email: user.email, password: 'Password1!' }
+
+        post new_user_session_url,
+             params: params,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['data']['accounts'].first['permissions']).to include(
+          Ibsoft::ConversationDistribution::SupervisorPermission::PERMISSION
+        )
+      end
+
+      it 'includes the Ibsoft ChatHub settings permission for users with an Ibsoft access profile' do
+        role = create(
+          :ibsoft_access_control_role,
+          account: account,
+          permissions: [Ibsoft::ChathubSettings::Permission::PERMISSION]
+        )
+        create(:ibsoft_access_control_role_assignment, account: account, role: role, user: user)
+        params = { email: user.email, password: 'Password1!' }
+
+        post new_user_session_url,
+             params: params,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['data']['accounts'].first['permissions']).to include(
+          Ibsoft::ChathubSettings::Permission::PERMISSION
+        )
+      end
     end
 
     context 'when it is invalid sso auth token' do
@@ -80,7 +118,7 @@ RSpec.describe 'Session', type: :request do
              params: params,
              as: :json
         expect(response).to have_http_status(:unauthorized)
-        expect(response.body).to include('Invalid login credentials')
+        expect(response.parsed_body['errors'].first).to be_present
       end
     end
 

@@ -272,6 +272,30 @@ RSpec.describe Conversation do
         .with(conversation2, { account_id: conversation2.account_id, inbox_id: conversation2.inbox_id, message_type: :activity,
                                content: system_resolved_message })
     end
+
+    it 'removes attention notifications when the conversation is resolved' do
+      unread_notification = create(
+        :notification,
+        account: account,
+        user: old_assignee,
+        primary_actor: conversation,
+        notification_type: 'conversation_assignment',
+        read_at: nil
+      )
+      read_notification = create(
+        :notification,
+        account: account,
+        user: old_assignee,
+        primary_actor: conversation,
+        notification_type: 'assigned_conversation_new_message',
+        read_at: 1.hour.ago
+      )
+
+      conversation.update!(status: :resolved)
+
+      expect(Notification.exists?(unread_notification.id)).to be(false)
+      expect(Notification.exists?(read_notification.id)).to be(false)
+    end
   end
 
   describe '#update_labels' do

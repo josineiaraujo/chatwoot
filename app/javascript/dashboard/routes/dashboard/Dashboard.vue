@@ -22,6 +22,7 @@ const FloatingCallWidget = defineAsyncComponent(
 
 import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.vue';
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
+import AgentAssignmentPrompt from 'dashboard/ibsoft/conversationDistribution/components/AgentAssignmentPrompt.vue';
 
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
@@ -35,6 +36,7 @@ export default {
     UpgradePage,
     CopilotLauncher,
     CopilotContainer,
+    AgentAssignmentPrompt,
     FloatingCallWidget,
     MobileSidebarLauncher,
   },
@@ -157,6 +159,7 @@ export default {
         <router-view />
         <CommandBar />
         <CopilotLauncher />
+        <AgentAssignmentPrompt />
         <MobileSidebarLauncher
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"

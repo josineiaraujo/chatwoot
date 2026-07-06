@@ -7,7 +7,7 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::InboxPoliciesControll
   end
 
   def update
-    assign_policy_attributes(policy)
+    assign_distribution_policy(policy)
     policy.save!
 
     render json: policy.payload

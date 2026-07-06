@@ -35,9 +35,7 @@ export const buildConversationProtocol = ({
 
 export const parseConversationProtocol = protocol => {
   const normalizedProtocol = String(protocol || '').trim();
-  const match = normalizedProtocol.match(
-    /^(\d{4})(\d{2})(\d{2})-(\d+)-(\d+)$/
-  );
+  const match = normalizedProtocol.match(/^(\d{4})(\d{2})(\d{2})-(\d+)-(\d+)$/);
 
   if (!match) {
     return null;

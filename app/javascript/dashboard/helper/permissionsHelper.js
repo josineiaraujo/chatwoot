@@ -18,7 +18,10 @@ export const getUserPermissions = (user, accountId) => {
 
 export const getUserRole = (user, accountId) => {
   const currentAccount = getCurrentAccount(user, accountId) || {};
-  if (currentAccount.custom_role_id) {
+  if (
+    currentAccount.custom_role_id ||
+    currentAccount.permissions?.includes('ibsoft_access_role')
+  ) {
     return 'custom_role';
   }
 

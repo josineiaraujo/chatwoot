@@ -1,0 +1,8 @@
+pt_BR:
+  ibsoft:
+    conversation_distribution:
+      activity:
+        assignment_completed: 'Atendimento atribuído automaticamente para %{assignee_name} pela distribuição automática.'
+        agent_claim_completed: 'Atendimento assumido por %{assignee_name} a partir da fila de distribuição.'
+        redistribution_completed: 'Atendimento redistribuído automaticamente de %{previous_assignee_name} para %{assignee_name} pela redistribuição automática por exceder o tempo de espera.'
+        unknown_assignee: 'Não informado'

@@ -1,0 +1,8 @@
+en:
+  ibsoft:
+    conversation_distribution:
+      activity:
+        assignment_completed: 'Conversation automatically assigned to %{assignee_name} by automatic distribution.'
+        agent_claim_completed: 'Conversation claimed by %{assignee_name} from the distribution queue.'
+        redistribution_completed: 'Conversation automatically redistributed from %{previous_assignee_name} to %{assignee_name} by automatic redistribution after exceeding the waiting time.'
+        unknown_assignee: 'Not informed'

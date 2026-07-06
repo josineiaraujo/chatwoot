@@ -1,7 +1,7 @@
+# rubocop:disable Metrics/ClassLength
 class Ibsoft::ConversationDistribution::AssignmentExecutor
   EVENT_COMPLETED = 'assignment_completed'.freeze
   EVENT_SKIPPED = 'assignment_skipped'.freeze
-
   def initialize(account:, inbox_id: nil, team_id: nil, limit: Ibsoft::ConversationDistribution::CandidateFinder::DEFAULT_LIMIT)
     @account = account
     @inbox_id = inbox_id
@@ -11,14 +11,14 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
 
   def perform
     preview = dry_run_preview.perform
-    results = preview[:candidates].map { |candidate| process_candidate(candidate) }
+    results = results_for(preview[:candidates])
 
     {
       generated_at: Time.current.iso8601,
       real_assignment_enabled: real_assignment_enabled?,
       filters: preview[:filters],
       limit: preview[:limit],
-      summary: summary_payload(results),
+      summary: Ibsoft::ConversationDistribution::AssignmentSummaryBuilder.build(results),
       results: results
     }
   end
@@ -26,6 +26,16 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
   private
 
   attr_reader :account, :inbox_id, :team_id, :limit
+
+  def results_for(candidates)
+    round_limiter = Ibsoft::ConversationDistribution::AssignmentRoundLimiter.new(candidates: candidates)
+
+    candidates.map do |candidate|
+      next process_candidate(candidate) if round_limiter.processable?(candidate)
+
+      result_payload(candidate, 'ignored', 'round_limit_reached')
+    end
+  end
 
   def dry_run_preview
     @dry_run_preview ||= Ibsoft::ConversationDistribution::DryRunPreview.new(
@@ -52,7 +62,7 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
   end
 
   def assign_candidate(conversation, candidate, decision)
-    assignee = find_assignee(conversation)
+    assignee = find_assignee(conversation, candidate)
     if assignee.blank?
       unavailable_decision = decision_for(conversation, candidate).unavailable_decision('no_available_agent')
       unavailable_decision = decision_with_optional_action(conversation, candidate, unavailable_decision)
@@ -62,12 +72,26 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
     assignment = claim_and_assign(conversation, assignee)
     return skipped_result(conversation, candidate, 'candidate_already_claimed', decision: decision) if assignment.blank?
 
-    log_assignment_completed(assignment, candidate, assignee, decision)
+    notifications = post_assignment_actions(assignment, candidate, assignee)
+    log_assignment_completed(assignment, candidate, assignee, decision, notifications)
 
     result_payload(candidate, 'assigned', 'assigned_to_agent', assignee, decision)
   end
 
-  def log_assignment_completed(assignment, candidate, assignee, decision)
+  def post_assignment_actions(assignment, candidate, assignee)
+    Ibsoft::ConversationDistribution::AssignmentRateTracker.track(
+      account: account,
+      conversation: assignment[:conversation],
+      agent: assignee,
+      policy: Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_candidate(candidate)
+    )
+    {
+      activity_message: activity_message_result(:assignment_completed, assignment[:conversation], assignee),
+      assignment_confirmation: assignment_confirmation_result(assignment[:conversation], assignee)
+    }
+  end
+
+  def log_assignment_completed(assignment, candidate, assignee, decision, notifications)
     log_event(
       conversation: assignment[:conversation],
       candidate: candidate,
@@ -78,26 +102,50 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
         assignment: {
           previous_assignee: assignment[:previous_assignee],
           new_assignee: assignee
-        }
+        },
+        assignment_confirmation: notifications[:assignment_confirmation],
+        activity_message: notifications[:activity_message]
       }
     )
   end
 
-  def find_assignee(conversation)
+  def activity_message_result(action, conversation, assignee)
+    Ibsoft::ConversationDistribution::ActivityMessageNotifier.new(
+      conversation: conversation,
+      action: action,
+      assignee: assignee
+    ).perform
+  end
+
+  def assignment_confirmation_result(conversation, assignee)
+    Ibsoft::ConversationDistribution::AssignmentConfirmationNotifier.new(
+      conversation: conversation,
+      assignee: assignee
+    ).perform
+  rescue StandardError => e
+    Rails.logger.error("[Ibsoft::ConversationDistribution] assignment confirmation failed: #{e.class} - #{e.message}")
+    { applied: false, status: 'error', error: e.class.name }
+  end
+
+  def find_assignee(conversation, candidate)
     allowed_agent_ids = allowed_agent_ids_for(conversation)
     return if allowed_agent_ids.blank?
 
-    AutoAssignment::AgentAssignmentService.new(
+    Ibsoft::ConversationDistribution::AssignmentAgentSelector.new(
+      account: account,
       conversation: conversation,
-      allowed_agent_ids: allowed_agent_ids
-    ).find_assignee
+      allowed_agent_ids: allowed_agent_ids,
+      policy: Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_candidate(candidate)
+    ).perform
   end
 
   def allowed_agent_ids_for(conversation)
     return [] if conversation.team.blank?
-    return [] if conversation.team.allow_auto_assign.blank?
 
-    conversation.inbox.member_ids_with_assignment_capacity & conversation.team.members.ids
+    allowed_agent_ids = conversation.inbox.member_ids_with_assignment_capacity & conversation.team.members.ids
+    Ibsoft::ConversationDistribution::AgentStabilizationFilter
+      .new(account: account, allowed_agent_ids: allowed_agent_ids)
+      .perform
   end
 
   def claim_and_assign(conversation, assignee)
@@ -137,13 +185,18 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
     }
     decision = context[:decision]
     metadata[:decision] = decision if decision.present?
+    metadata[:assignment_confirmation] = context[:assignment_confirmation] if context[:assignment_confirmation].present?
+    metadata[:activity_message] = context[:activity_message] if context[:activity_message].present?
 
     event_logger.log(
       conversation: conversation,
       event_type: event_type,
       reason: reason,
-      assignment: context[:assignment] || {},
-      metadata: metadata
+      payload: {
+        assignment: context[:assignment] || {},
+        metadata: metadata,
+        options: { dedupe: event_type == EVENT_SKIPPED }
+      }
     )
   end
 
@@ -164,18 +217,7 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
     end
   end
 
-  def summary_payload(results)
-    {
-      scanned: results.length,
-      assigned: results.count { |result| result[:status] == 'assigned' },
-      skipped: results.count { |result| result[:status] == 'skipped' },
-      by_reason: results.pluck(:reason).tally
-    }
-  end
-
-  def real_assignment_enabled?
-    Ibsoft::ConversationDistribution::ExecutionConfig.real_assignment_enabled?
-  end
+  def real_assignment_enabled? = Ibsoft::ConversationDistribution::ExecutionConfig.real_assignment_enabled?
 
   def decision_for(conversation, candidate)
     Ibsoft::ConversationDistribution::DecisionResolver.new(
@@ -205,3 +247,4 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
     @event_logger ||= Ibsoft::ConversationDistribution::EventLogger.new(account: account)
   end
 end
+# rubocop:enable Metrics/ClassLength

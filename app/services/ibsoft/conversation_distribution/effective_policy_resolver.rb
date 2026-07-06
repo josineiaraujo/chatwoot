@@ -27,7 +27,7 @@ class Ibsoft::ConversationDistribution::EffectivePolicyResolver
       enabled: false,
       policy_type: 'default',
       source: 'default',
-      config: Ibsoft::ConversationDistribution::ChannelPolicy.default_config,
+      config: Ibsoft::ConversationDistribution::Policy.default_config,
       created_at: nil,
       updated_at: nil
     }

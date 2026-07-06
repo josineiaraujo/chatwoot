@@ -1,0 +1,13 @@
+en:
+  ibsoft:
+    agent_provisioning:
+      errors:
+        email_taken: 'A user with this email already exists. Use password recovery or a linking flow for existing users.'
+        email_required: 'Enter the agent email.'
+        invalid_email: 'Enter a valid email.'
+        invalid_profile: 'Invalid profile for this account.'
+        invalid_role: 'Invalid agent type.'
+        external_provider: 'This user uses an external provider. Use the provider-compatible password flow.'
+        limit_reached: 'The account agent limit has been reached.'
+        name_required: 'Enter the agent name.'
+        saml_enabled: 'This account uses SAML. Use the SSO-compatible provisioning flow.'

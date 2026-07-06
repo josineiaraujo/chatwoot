@@ -29,6 +29,225 @@
     }
   },
   "IBSOFT_THEME": {
+    "CHATHUB_SETTINGS": {
+      "SIDEBAR": "ChatHub settings",
+      "TITLE": "ChatHub settings",
+      "DESCRIPTION": "Global operational settings applied across channels and teams.",
+      "SAVE": "Save settings",
+      "SAVED": "Settings saved successfully.",
+      "USER_OPTION": "{name} · {email}",
+      "MENU": {
+        "CHANNELS": "Communication channels",
+        "TEAMS": "Teams",
+        "ACCOUNT": "Account",
+        "ATTENDANCE": "Attendance",
+        "POLICIES": "Policies",
+        "AGENTS": "Agents",
+        "ACCESS_CONTROL": "Profiles and permissions"
+      },
+      "CHANNELS": {
+        "TITLE": "Communication channels",
+        "DESCRIPTION": "Manage the entry points customers use to reach your team.",
+        "COUNT_ONE": "{count} channel",
+        "COUNT_MANY": "{count} channels",
+        "NEW": "New channel",
+        "SEARCH_PLACEHOLDER": "Search channels",
+        "EMPTY": "No communication channels have been created.",
+        "NO_RESULTS": "No channels found for this search.",
+        "SETTINGS": "Configure",
+        "DELETE": "Delete channel",
+        "DELETE_TITLE": "Delete channel",
+        "DELETE_MESSAGE": "Are you sure you want to delete {name}?",
+        "DELETE_PLACEHOLDER": "Type {name} to confirm",
+        "DELETE_CONFIRM": "Yes, delete channel",
+        "DELETE_CANCEL": "Cancel",
+        "DELETE_SUCCESS": "Channel deleted successfully.",
+        "DELETE_ERROR": "Could not delete the channel."
+      },
+      "POLICIES": {
+        "TITLE": "Distribution policies",
+        "DESCRIPTION": "Create and maintain reusable policies to link to communication channels and teams.",
+        "SELECT": "Select policy",
+        "NEW": "New policy",
+        "NEW_OPTION": "Create new policy",
+        "CREATE_TITLE": "Create distribution policy",
+        "EDIT_TITLE": "Edit distribution policy",
+        "NEW_NAME": "New policy",
+        "NAME": "Policy name",
+        "CARD_DESCRIPTION": "Controls distribution, redistribution, business hours, and operational alerts.",
+        "EDIT": "Edit",
+        "ENABLED": "Enabled",
+        "DISABLED": "Disabled",
+        "ORDER": "Order",
+        "PRIORITY": "Priority",
+        "USAGE": "Linked to {channels} channels and {teams} teams.",
+        "SAVED": "Policy saved successfully.",
+        "DELETED": "Policy deleted successfully.",
+        "EMPTY": "No policies have been created.",
+        "SELECT_EMPTY": "Select a policy to edit or click New policy.",
+        "DELETE": "Delete policy",
+        "DELETE_TITLE": "Delete policy",
+        "DELETE_MESSAGE": "Are you sure you want to delete this policy?",
+        "DELETE_CONFIRM": "Yes, delete policy",
+        "DELETE_CANCEL": "Cancel"
+      },
+      "ATTENDANCE": {
+        "AGENT_ENTRY": {
+          "TITLE": "Post-login prompt",
+          "DESCRIPTION": "Define how many conversations agents must claim on entry, based on their total available queue.",
+          "PERCENTAGE": "Required queue percentage",
+          "MINIMUM": "Required minimum",
+          "BLOCK_CLOSE": "Block closing while required items exist"
+        },
+        "STABILIZATION": {
+          "TITLE": "Gradual distribution after login",
+          "DESCRIPTION": "Avoid overloading the first agent who comes back online by temporarily limiting automatically assigned conversations.",
+          "OFFLINE_THRESHOLD": "Apply when the agent was offline for at least",
+          "WINDOW": "Keep the limit for the first",
+          "MAX_DURING_WINDOW": "Maximum automatic conversations during this period",
+          "MIN_ONLINE": "Disable the limit when there are at least",
+          "UNITS": {
+            "MINUTES": "minutes",
+            "CONVERSATIONS": "conversations",
+            "ONLINE_AGENTS": "online agents"
+          }
+        }
+      },
+      "ACCESS": {
+        "TITLE": "Settings access",
+        "DESCRIPTION": "Administrators can grant access to users responsible for ChatHub settings.",
+        "SELECT_USER": "Select user",
+        "ADD": "Add access",
+        "REMOVE": "Remove access",
+        "EMPTY": "No additional users have access."
+      },
+      "AGENT_PROVISIONING": {
+        "TITLE": "Quick agent provisioning",
+        "DESCRIPTION": "Create confirmed agents using the native Chatwoot data model without relying on confirmation email.",
+        "NAME": "Name",
+        "NAME_PLACEHOLDER": "Agent name",
+        "EMAIL": "Email",
+        "EMAIL_PLACEHOLDER": "agent@company.com",
+        "PICTURE": "Agent photo",
+        "AVATAR_FALLBACK": "Agent",
+        "CROP_TITLE": "Adjust photo",
+        "CROP_DESCRIPTION": "Crop the image before saving the agent photo.",
+        "CROP_ZOOM": "Zoom",
+        "APPLY_CROP": "Apply crop",
+        "CANCEL_CROP": "Cancel",
+        "PROFILE": "Profile",
+        "CREATE": "Create agent",
+        "CREATED": "Agent created successfully.",
+        "EDIT": "Edit",
+        "EDIT_TITLE": "Edit agent",
+        "EDIT_DESCRIPTION": "Update the name, email, profile, and generate a new temporary password if needed.",
+        "UPDATE": "Save changes",
+        "UPDATED": "Agent updated successfully.",
+        "DELETE": "Delete",
+        "DELETE_TITLE": "Delete agent",
+        "DELETE_MESSAGE": "Are you sure you want to delete {name}? The agent will be removed from this account.",
+        "DELETE_CONFIRM": "Yes, delete agent",
+        "DELETED": "Agent deleted successfully.",
+        "PASSWORD_TITLE": "Temporary password",
+        "PASSWORD_DESCRIPTION": "This password for {name} will only be shown now. Share it through a secure channel.",
+        "RESET_PASSWORD_TITLE": "New temporary password",
+        "RESET_PASSWORD_DESCRIPTION": "When a new password is generated, it will only be shown in this modal. Share it through a secure channel.",
+        "GENERATE_PASSWORD": "Generate new password",
+        "PASSWORD_REGENERATED": "New temporary password generated.",
+        "COPY_PASSWORD": "Copy password",
+        "PASSWORD_COPIED": "Password copied.",
+        "PASSWORD_COPY_ERROR": "Could not copy the password.",
+        "AVAILABILITY": {
+          "LABEL": "Availability",
+          "ONLINE": "Online",
+          "BUSY": "Busy",
+          "OFFLINE": "Offline"
+        },
+        "AUTO_OFFLINE": {
+          "LABEL": "Mark offline automatically",
+          "DESCRIPTION": "When enabled, ChatHub marks the agent offline when there is no active dashboard presence."
+        },
+        "AVAILABILITY_UPDATED": "Agent status updated.",
+        "LIST_TITLE": "Account agents",
+        "LIST_DESCRIPTION": "Native list of users linked to this account.",
+        "REFRESH": "Refresh",
+        "EMPTY": "No agents found.",
+        "CONFIRMED": "Confirmed",
+        "PENDING": "Pending",
+        "PROFILES": {
+          "AGENT": "Agent",
+          "ADMINISTRATOR": "Administrator"
+        }
+      },
+      "ACCESS_CONTROL": {
+        "TITLE": "Profiles and permissions",
+        "DESCRIPTION": "Create ChatHub profiles and define which resources each agent can access.",
+        "NEW": "Add profile",
+        "CREATE_TITLE": "Create profile",
+        "EDIT_TITLE": "Edit profile",
+        "NAME": "Profile name",
+        "DESCRIPTION_FIELD": "Description",
+        "SAVE": "Save profile",
+        "SAVED": "Profile saved successfully.",
+        "DELETED": "Profile deleted successfully.",
+        "EMPTY": "No profiles have been created.",
+        "EDIT": "Edit profile",
+        "DELETE": "Delete profile",
+        "DELETE_TITLE": "Delete profile",
+        "DELETE_MESSAGE": "Are you sure you want to delete this profile? Agents linked to it will lose these permissions.",
+        "DELETE_CONFIRM": "Yes, delete profile",
+        "USAGE": "{count} linked agent | {count} linked agents",
+        "VIEW_AGENTS": "View agents",
+        "MANAGE_AGENTS_TITLE": "Agents in {profile}",
+        "MANAGE_AGENTS_DESCRIPTION": "Add or remove agents from this profile. If an agent is already in another profile, they will be moved here.",
+        "ASSIGNMENTS_TITLE": "Linked agents",
+        "ASSIGNMENTS_DESCRIPTION": "Choose which profile each agent should use in this account.",
+        "ASSIGNMENTS_EMPTY": "No agent has a linked profile.",
+        "SELECT_USER": "Select agent",
+        "SELECT_ROLE": "Select profile",
+        "ASSIGN": "Link profile",
+        "ADD_AGENT": "Add agent",
+        "UPDATE": "Update",
+        "REMOVE_ASSIGNMENT": "Remove link",
+        "USER_OPTION_WITH_PROFILE": "{name} · {email} · current: {profile}",
+        "ASSIGNMENT_SAVED": "Agent profile updated successfully.",
+        "ASSIGNMENT_DELETED": "Link removed successfully.",
+        "GROUPS": {
+          "CONVERSATION": "Conversations",
+          "WORKSPACE": "Workspace resources",
+          "IBSOFT": "ChatHub resources"
+        },
+        "PERMISSIONS": {
+          "CONVERSATION_MANAGE": "Manage all conversations",
+          "CONVERSATION_UNASSIGNED_MANAGE": "Manage unassigned conversations and conversations assigned to the agent",
+          "CONVERSATION_PARTICIPATING_MANAGE": "Manage conversations they participate in",
+          "CONTACT_MANAGE": "Manage contact import and export",
+          "REPORT_MANAGE": "Access reports",
+          "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base",
+          "IBSOFT_CONVERSATION_DISTRIBUTION_SUPERVISE": "Access conversation supervision",
+          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Manage ChatHub settings"
+        }
+      },
+      "ERRORS": {
+        "LOAD": "Could not load ChatHub settings.",
+        "SAVE": "Could not save ChatHub settings.",
+        "MANAGERS_LOAD": "Could not load ChatHub access.",
+        "MANAGERS_SAVE": "Could not update ChatHub access.",
+        "POLICIES_LOAD": "Could not load distribution policies.",
+        "POLICIES_SAVE": "Could not save distribution policy.",
+        "POLICIES_DELETE": "Could not delete distribution policy.",
+        "ACCESS_CONTROL_LOAD": "Could not load profiles and permissions.",
+        "ACCESS_CONTROL_SAVE": "Could not save profile.",
+        "ACCESS_CONTROL_DELETE": "Could not delete profile.",
+        "ACCESS_CONTROL_ASSIGNMENT": "Could not update agent link.",
+        "AGENT_PROVISIONING_LOAD": "Could not load agents.",
+        "AGENT_PROVISIONING_CREATE": "Could not create agent.",
+        "AGENT_PROVISIONING_UPDATE": "Could not update agent.",
+        "AGENT_PROVISIONING_DELETE": "Could not delete agent.",
+        "AGENT_PROVISIONING_PASSWORD_RESET": "Could not generate a new password.",
+        "AGENT_PROVISIONING_AVAILABILITY_UPDATE": "Could not update the agent status."
+      }
+    },
     "CONVERSATION_STATUS": {
       "PENDING_OPERATIONAL": "Automation"
     },
@@ -60,28 +279,236 @@
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversations appear here when there are new messages, mentions, or assignments for you."
     },
+    "CHATHUB_ANALYTICS": {
+      "SIDEBAR": "Home",
+      "EMPTY": "No data for the selected period.",
+      "API_ERROR": "Could not load analytics.",
+      "HOME": {
+        "TITLE": "Home",
+        "AGENT_DESCRIPTION": "Track your attendance indicators and pending operational attention points.",
+        "SUPERVISOR_DESCRIPTION": "Track team indicators, response time, redistribution, and operational bottlenecks.",
+        "SUPERVISION": "Supervision"
+      },
+      "TABS": {
+        "AGENT": "My dashboard",
+        "SUPERVISOR": "Team dashboard"
+      },
+      "FILTERS": {
+        "PERIOD": "Period",
+        "LAST_7_DAYS": "Last 7 days",
+        "LAST_30_DAYS": "Last 30 days",
+        "CUSTOM": "Specific period",
+        "SINCE": "From",
+        "UNTIL": "Until",
+        "INBOX": "Communication channel",
+        "TEAM": "Department",
+        "ALL_INBOXES": "All channels",
+        "ALL_TEAMS": "All departments",
+        "APPLY": "Apply",
+        "REFRESH": "Refresh"
+      },
+      "UNITS": {
+        "SECONDS": "{count}s",
+        "MINUTES": "{count} min",
+        "HOURS": "{count} h",
+        "CONVERSATION": {
+          "ONE": "{count} conversation",
+          "OTHER": "{count} conversations"
+        },
+        "OPEN_CONVERSATION": {
+          "ONE": "{count} open",
+          "OTHER": "{count} open"
+        },
+        "CLOSED_CONVERSATION": {
+          "ONE": "{count} closed",
+          "OTHER": "{count} closed"
+        },
+        "UNASSIGNED_CONVERSATION": {
+          "ONE": "{count} unassigned",
+          "OTHER": "{count} unassigned"
+        },
+        "REDISTRIBUTION": {
+          "ONE": "{count} redistribution",
+          "OTHER": "{count} redistributions"
+        },
+        "FIRST_RESPONSE": {
+          "ONE": "{count} first response",
+          "OTHER": "{count} first responses"
+        },
+        "REDISTRIBUTION_RATIO": {
+          "VALUE": "{redistributions} / {handled} ({average}x average)",
+          "LOW_SAMPLE": "{redistributions} / {handled} • insufficient sample"
+        }
+      },
+      "AGENT": {
+        "BY_TEAM": "Response time by department",
+        "RESPONSE_TREND": "Response time trend",
+        "TEAM_CAPTION": "{resolved} • {redistributions}",
+        "CARDS": {
+          "OPEN_ASSIGNED": "Assigned to me",
+          "AVG_REPLY": "Average response time",
+          "REDISTRIBUTIONS": "Redistributed by wait",
+          "RESOLVED": "Closed conversations"
+        }
+      },
+      "SUPERVISOR": {
+        "TOP_AGENTS": "Highest volume agents",
+        "REDISTRIBUTION_RANKING": "Agents with the most redistributions from their queue",
+        "SLOW_RESPONSE": "Highest first response times",
+        "TEAM_HEALTH": "Department health",
+        "DAILY_VOLUME": "Daily conversation volume",
+        "HOURLY_HEATMAP": "Busiest entry hours",
+        "TOP_AGENT_CAPTION": "{open} • {resolved}",
+        "RESPONSE_CAPTION": "{responses}",
+        "TEAM_CAPTION": "{open} • {unassigned} • {response} response",
+        "CARDS": {
+          "OPEN": "Open conversations",
+          "UNASSIGNED": "Unassigned",
+          "AVG_FIRST_RESPONSE": "Average time to first response",
+          "REDISTRIBUTIONS": "Redistributions"
+        }
+      },
+      "SUGGESTIONS": {
+        "TITLE": "Operational readings",
+        "REDUCE_RESPONSE_TIME": {
+          "TITLE": "Response time above target",
+          "DESCRIPTION": "Your average time is {average_reply_duration}. Prioritize waiting conversations and reduce department switching."
+        },
+        "REVIEW_REDISTRIBUTIONS": {
+          "TITLE": "Conversations redistributed by wait",
+          "DESCRIPTION": "{redistributions} left your queue in the period. Review peak hours, breaks, and assumed volume."
+        },
+        "PRIORITIZE_WAITING_CUSTOMERS": {
+          "TITLE": "Customers waiting for attention",
+          "DESCRIPTION": "{conversations} are above the operational waiting limit."
+        },
+        "UNASSIGNED_BACKLOG": {
+          "TITLE": "Queue without available agent",
+          "DESCRIPTION": "{conversations} are open without an owner. Check department coverage."
+        },
+        "REDISTRIBUTION_PRESSURE": {
+          "TITLE": "Recurring redistributions",
+          "DESCRIPTION": "{redistributions} occurred in the period. Review balancing, limits, and agent capacity."
+        },
+        "SLOW_FIRST_RESPONSE": {
+          "TITLE": "Slow first response",
+          "DESCRIPTION": "Average first response is {duration}. Review bot entry, working hours, and distribution rules."
+        },
+        "HEALTHY_OPERATION": {
+          "TITLE": "Operation within expected range",
+          "DESCRIPTION": "There are no relevant backlog or redistribution signals in the selected period."
+        }
+      }
+    },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configure distribution",
       "ENABLED": {
         "TITLE": "Automatic distribution",
         "DESCRIPTION": "Enable this policy to control how conversations transferred to humans should be distributed."
       },
+      "ACTIVATION_ALERT": {
+        "TITLE": "Before enabling Ibsoft distribution",
+        "DESCRIPTION": "Disable native assignment options to prevent Chatwoot from assigning the conversation before the Ibsoft policy runs.",
+        "ITEMS": {
+          "CHANNEL_AUTO_ASSIGNMENT": "The communication channel auto assignment is still active.",
+          "TEAM_AUTO_ASSIGNMENT": "The team auto assignment is still active.",
+          "ASSIGNMENT_POLICY": "A native assignment policy is linked to this channel."
+        }
+      },
       "OVERRIDE": {
         "TITLE": "Override channel rule",
         "DESCRIPTION": "Use a specific rule for this team. When disabled, the team follows the channel-wide configuration."
       },
+      "POLICY_CATALOG": {
+        "SELECT": "Distribution policy",
+        "NONE": "No linked policy",
+        "NEW": "Create new policy",
+        "NAME": "Policy name",
+        "HELP": "Policies are reusable. Changes made here affect every channel and team linked to this policy.",
+        "LINK_HELP": "This screen uses the linked policy rules. Edit the policy in ChatHub Settings.",
+        "EMPTY_LINK": "Without a linked policy, Ibsoft distribution is inactive for this link.",
+        "SAVE_LINK": "Save link",
+        "DEFAULT_CHANNEL_NAME": "Channel policy {inboxName}",
+        "DEFAULT_TEAM_NAME": "Team policy {teamName}"
+      },
       "DISTRIBUTION": {
-        "TITLE": "Agent login",
-        "DESCRIPTION": "Define how the agent receives waiting conversations when they become available.",
-        "MIN_ON_LOGIN": "Required minimum on login",
+        "TITLE": "Distribution rounds",
+        "DESCRIPTION": "Control the order, priority, and limits used in each automatic distribution cycle.",
         "MAX_PER_ROUND": "Maximum per round",
-        "SINGLE_AGENT": "Assign every waiting conversation when there is only one available agent in the team"
+        "ROUND_LIMIT": {
+          "TITLE": "Limit amount per round",
+          "DESCRIPTION": "When disabled, distribution does not limit the total conversations processed per round for this policy."
+        },
+        "ASSIGNMENT_ORDER": {
+          "TITLE": "Assignment order",
+          "ROUND_ROBIN": {
+            "LABEL": "Round robin",
+            "DESCRIPTION": "Assigns conversations sequentially across available agents."
+          },
+          "BALANCED": {
+            "LABEL": "Balanced",
+            "DESCRIPTION": "Prioritizes the available agent with fewer open conversations in this channel and department."
+          }
+        },
+        "CONVERSATION_PRIORITY": {
+          "TITLE": "Assignment priority",
+          "LONGEST_WAITING": {
+            "LABEL": "Longest waiting",
+            "DESCRIPTION": "The conversation waiting the longest is assigned first."
+          },
+          "EARLIEST_CREATED": {
+            "LABEL": "Earliest created",
+            "DESCRIPTION": "The conversation that was created first is assigned first."
+          }
+        },
+        "FAIR_DISTRIBUTION": {
+          "TITLE": "Window limit",
+          "DESCRIPTION": "Define how many conversations each agent can receive inside a period to avoid overload.",
+          "LIMIT_LABEL": "Maximum assignments",
+          "WINDOW_LABEL": "Time window"
+        },
+        "CAPACITY": {
+          "TITLE": "Agent capacity",
+          "DESCRIPTION": "Choose how this policy limits new conversations for each agent.",
+          "OPEN_LIMIT_LABEL": "Maximum open conversations at the same time",
+          "ASSIGNMENT_LIMIT_MODE": {
+            "OPEN_CONVERSATIONS": {
+              "LABEL": "Open conversations at the same time",
+              "DESCRIPTION": "Does not assign new conversations to agents who already reached their open conversation limit."
+            },
+            "ASSIGNMENT_WINDOW": {
+              "LABEL": "New assignments per period",
+              "DESCRIPTION": "Limits how many new conversations each agent can receive inside a time window."
+            }
+          },
+          "EXCLUSIONS": {
+            "TITLE": "Do not count in capacity",
+            "DESCRIPTION": "Define which open conversations should not consume agent capacity.",
+            "LABELS": "Ignored labels",
+            "LABELS_PLACEHOLDER": "Select labels",
+            "LABELS_SEARCH": "Search label",
+            "LABELS_EMPTY": "No labels found",
+            "WAITING_CUSTOMER_TITLE": "Ignore conversations waiting on customer",
+            "WAITING_CUSTOMER_DESCRIPTION": "When the last public message was sent by the agent and the customer does not answer within the configured time, the conversation stops consuming capacity.",
+            "WAITING_CUSTOMER_LIMIT": "Time waiting for customer response"
+          }
+        }
       },
       "REDISTRIBUTION": {
         "TITLE": "Redistribution",
         "DESCRIPTION": "Rules to move conversations when the first agent does not answer the customer.",
         "ENABLE_TIMEOUT": "Redistribute if the agent does not answer within the configured time",
         "TIMEOUT": "First response timeout"
+      },
+      "ASSIGNMENT_CONFIRMATION": {
+        "TITLE": "Assignment confirmation",
+        "DESCRIPTION": "Automatic message sent when distribution assigns the conversation to an online agent.",
+        "ENABLED": "Send message when assigning an agent",
+        "ENABLED_DESCRIPTION": "Use this option to tell the customer that the conversation was routed to a specific person.",
+        "MESSAGE": "Automatic message to customer",
+        "DEFAULT_MESSAGE": "Your conversation was routed to {{agent.name}}. They will continue with you shortly.",
+        "ONLY_BEFORE_FIRST_REPLY": "Only before the first human reply",
+        "ONLY_BEFORE_FIRST_REPLY_DESCRIPTION": "Avoids sending the confirmation when the conversation already received a human reply."
       },
       "UNAVAILABLE": {
         "TITLE": "No available agent",
@@ -92,7 +519,15 @@
         "FALLBACK_TEAM": "Transfer to fallback department",
         "FALLBACK_TEAM_LABEL": "Fallback department",
         "SELECT_TEAM": "Select department",
-        "MESSAGE": "Automatic message to customer"
+        "MESSAGE": "Automatic message to customer",
+        "NO_AVAILABLE_AGENT": {
+          "TITLE": "When no agent is available",
+          "DESCRIPTION": "Use this rule when the conversation is inside business hours, but no agent can receive it."
+        },
+        "OUTSIDE_BUSINESS_HOURS": {
+          "TITLE": "When outside business hours",
+          "DESCRIPTION": "Use this rule when the conversation arrives outside the channel or department schedule."
+        }
       },
       "BUSINESS_HOURS": {
         "TITLE": "Business hours",
@@ -100,13 +535,143 @@
         "MODE": "Schedule rule",
         "INHERIT_CHANNEL": "Follow channel schedule",
         "CUSTOM": "Use team-specific schedule",
-        "ALWAYS_AVAILABLE": "Always available"
+        "ALWAYS_AVAILABLE": "Always available",
+        "TIMEZONE_LABEL": "Timezone",
+        "TIMEZONE_PLACEHOLDER": "Select timezone",
+        "WEEKLY_TITLE": "Team weekly availability",
+        "CLOSED": "Closed"
       },
       "SUPERVISOR_ALERT": {
         "TITLE": "Supervisor alert",
         "DESCRIPTION": "Register waiting conversations for administrator or supervisor follow-up.",
         "ENABLED": "Alert supervisor when the customer is waiting",
         "THRESHOLD": "Alert timeout"
+      },
+      "SUPERVISOR_DASHBOARD": {
+        "SIDEBAR": "Supervision",
+        "TITLE": "Conversation supervision",
+        "DESCRIPTION": "Track conversations transferred to humans that exceeded the waiting threshold configured in the distribution policy.",
+        "REFRESH": "Refresh",
+        "EMPTY": "No conversation requires attention right now.",
+        "EMPTY_VALUE": "Not informed",
+        "UNKNOWN_CUSTOMER": "Unnamed customer",
+        "API_ERROR": "Could not load supervision alerts.",
+        "OPEN_CONVERSATION": "Open",
+        "BACK_TO_HOME": "Dashboard",
+        "EVENT_LOGS": "View audit",
+        "CONVERSATION_ID": "#{id}",
+        "MINUTES": "{count} min",
+        "THRESHOLD": "limit {count} min",
+        "VISIBLE_ALERTS": "{count} alerts shown",
+        "SUMMARY": {
+          "ALERTS": "Active alerts",
+          "SCANNED": "Scanned conversations",
+          "CRITICAL": "Critical",
+          "UPDATED": "Updated at"
+        },
+        "FILTERS": {
+          "REASON": "Reason",
+          "SEVERITY": "Severity",
+          "TEAM": "Department",
+          "INBOX": "Communication channel",
+          "ALL_REASONS": "All reasons",
+          "ALL_SEVERITIES": "All severities",
+          "ALL_TEAMS": "All departments",
+          "ALL_INBOXES": "All channels"
+        },
+        "TABLE": {
+          "CONVERSATION": "Conversation",
+          "CUSTOMER": "Customer",
+          "ROUTING": "Department",
+          "WAITING": "Waiting",
+          "SEVERITY": "Severity",
+          "REASON": "Reason"
+        },
+        "REASONS": {
+          "UNASSIGNED": "No assigned agent",
+          "ASSIGNED": "No first response"
+        },
+        "SEVERITY": {
+          "WARNING": "Warning",
+          "CRITICAL": "Critical"
+        }
+      },
+      "EVENT_LOGS": {
+        "TITLE": "Distribution audit",
+        "DESCRIPTION": "Review events recorded by Ibsoft distribution to understand assignments, redistributions, and blocked actions.",
+        "REFRESH": "Refresh",
+        "BACK_TO_SUPERVISION": "Back to supervision",
+        "EMPTY": "No events found for the current filters.",
+        "EMPTY_VALUE": "Not informed",
+        "API_ERROR": "Could not load audit events.",
+        "CONVERSATION_ID": "#{id}",
+        "SUMMARY": {
+          "TOTAL": "Events found",
+          "PAGE": "Current page",
+          "UPDATED": "Updated at"
+        },
+        "FILTERS": {
+          "EVENT_TYPE": "Event type",
+          "REASON": "Reason",
+          "CONVERSATION": "Conversation ID",
+          "INBOX": "Communication channel",
+          "TEAM": "Department",
+          "SINCE": "From",
+          "UNTIL": "Until",
+          "APPLY": "Apply",
+          "CLEAR": "Clear",
+          "ALL_EVENT_TYPES": "All types",
+          "ALL_REASONS": "All reasons",
+          "ALL_INBOXES": "All channels",
+          "ALL_TEAMS": "All departments"
+        },
+        "TABLE": {
+          "CREATED_AT": "Date",
+          "EVENT_TYPE": "Event",
+          "REASON": "Reason",
+          "CONVERSATION": "Conversation",
+          "ROUTING": "Routing",
+          "ASSIGNEES": "Agents"
+        },
+        "PAGINATION": {
+          "PREVIOUS": "Previous",
+          "NEXT": "Next",
+          "PAGE": "Page {page} of {total}",
+          "RESULTS": "Showing {start} to {end} of {total} events"
+        },
+        "EVENT_TYPES": {
+          "ASSIGNMENT_COMPLETED": "Assignment completed",
+          "ASSIGNMENT_SKIPPED": "Assignment skipped",
+          "REDISTRIBUTION_COMPLETED": "Redistribution completed",
+          "REDISTRIBUTION_SKIPPED": "Redistribution skipped",
+          "AGENT_CLAIM_COMPLETED": "Agent claim completed",
+          "AGENT_CLAIM_SKIPPED": "Agent claim skipped"
+        },
+        "REASONS": {
+          "ELIGIBLE_FOR_ASSIGNMENT": "Eligible for assignment",
+          "REAL_ASSIGNMENT_DISABLED": "Real execution disabled",
+          "NO_AVAILABLE_AGENT": "No available agent",
+          "CANDIDATE_ALREADY_CLAIMED": "Conversation already claimed",
+          "CANDIDATE_ALREADY_CHANGED": "Conversation changed during the round",
+          "NOT_AVAILABLE_FOR_AGENT": "Not available for this agent",
+          "FIRST_RESPONSE_TIMEOUT": "First response timeout exceeded",
+          "OUTSIDE_BUSINESS_HOURS": "Outside business hours",
+          "NOT_ELIGIBLE": "Not eligible",
+          "CONVERSATION_NOT_FOUND": "Conversation not found",
+          "REQUIRED_ASSIGNMENTS_MISSING": "Required conversations were not selected"
+        }
+      },
+      "AGENT_ASSIGNMENT": {
+        "TITLE": "Waiting conversations",
+        "DESCRIPTION": "There are conversations transferred to your departments. Claim the required items to start your queue.",
+        "UNKNOWN_CUSTOMER": "Unnamed customer",
+        "WAITING_MINUTES": "{count} min waiting",
+        "REQUIRED": "Required on login",
+        "LATER": "Later",
+        "CLAIM": "Claim conversations",
+        "REQUIRED_NOTICE": "Claim the required conversations before closing this window.",
+        "CLAIM_SUCCESS": "Conversations claimed successfully.",
+        "CLAIM_ERROR": "Could not claim conversations."
       },
       "ACTIONS": {
         "SAVE": "Save policy"

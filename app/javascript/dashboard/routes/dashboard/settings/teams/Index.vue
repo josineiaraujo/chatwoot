@@ -210,7 +210,6 @@ const confirmPlaceHolderText = computed(() =>
     <TeamDistributionSettingsModal
       v-model:show="showDistributionPolicyModal"
       :team="selectedDistributionTeam"
-      :teams="teamsList"
     />
   </SettingsLayout>
 </template>

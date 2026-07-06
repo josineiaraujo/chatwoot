@@ -257,6 +257,7 @@ class Conversation < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     update_column(:waiting_since, nil)
     # rubocop:enable Rails/SkipsModelValidations
+    Ibsoft::Conversation::ResolvedAttentionNotificationCleanup.new(conversation: self).perform
   end
 
   def ensure_snooze_until_reset

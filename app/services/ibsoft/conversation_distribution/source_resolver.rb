@@ -10,7 +10,6 @@ class Ibsoft::ConversationDistribution::SourceResolver
   def perform
     return source_payload(explicit_source, 'explicit') if known_source?(explicit_source)
     return source_payload('bot_handoff', 'reporting_event') if bot_handoff?
-    return source_payload('manual_team_transfer', 'inferred_team_queue') if inferred_team_transfer?
 
     source_payload(nil, 'unknown')
   end
@@ -29,12 +28,6 @@ class Ibsoft::ConversationDistribution::SourceResolver
 
   def bot_handoff?
     @bot_handoff
-  end
-
-  def inferred_team_transfer?
-    conversation.team_id.present? &&
-      conversation.assignee_id.blank? &&
-      conversation.first_reply_created_at.blank?
   end
 
   def known_source?(source)
