@@ -12,7 +12,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AttentionNotificationSync do
     create(:inbox_member, inbox: inbox, user: new_assignee)
   end
 
-  it 'removes unread assignee attention notifications from the previous assignee' do
+  it 'removes assignee attention notifications from the previous assignee' do
     assignment_notification = create(
       :notification,
       account: account,
@@ -60,7 +60,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AttentionNotificationSync do
     expect(Notification.exists?(mention_notification.id)).to be(true)
   end
 
-  it 'keeps read history notifications from the previous assignee' do
+  it 'removes read assignment notifications from the previous assignee' do
     read_notification = create(
       :notification,
       account: account,
@@ -77,7 +77,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AttentionNotificationSync do
       new_assignee: new_assignee
     ).perform
 
-    expect(result).to eq(removed_count: 0)
-    expect(Notification.exists?(read_notification.id)).to be(true)
+    expect(result).to eq(removed_count: 1)
+    expect(Notification.exists?(read_notification.id)).to be(false)
   end
 end

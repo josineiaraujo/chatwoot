@@ -9,6 +9,7 @@ import { routes as internalChatRoutes } from 'dashboard/ibsoft/internalChat/rout
 import { routes as ibsoftConversationDistributionRoutes } from 'dashboard/ibsoft/conversationDistribution/routes';
 import { routes as ibsoftChathubSettingsRoutes } from 'dashboard/ibsoft/chathubSettings/routes';
 import { routes as ibsoftChathubAnalyticsRoutes } from 'dashboard/ibsoft/chathubAnalytics/routes';
+import { routes as ibsoftMessageBroadcastRoutes } from 'dashboard/ibsoft/messageBroadcast/routes';
 import { frontendURL } from '../../helper/URLHelper';
 import helpcenterRoutes from './helpcenter/helpcenter.routes';
 import campaignsRoutes from './campaigns/campaigns.routes';
@@ -30,6 +31,7 @@ export default {
         ...ibsoftConversationDistributionRoutes,
         ...ibsoftChathubSettingsRoutes,
         ...ibsoftChathubAnalyticsRoutes,
+        ...ibsoftMessageBroadcastRoutes,
         ...inboxRoutes,
         ...conversation.routes,
         ...settings.routes,

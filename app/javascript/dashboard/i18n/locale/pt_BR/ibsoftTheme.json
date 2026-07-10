@@ -11,19 +11,110 @@
     "INBOXES": "Canais de comunicação",
     "NEW_INBOX": "Novo canal de comunicação",
     "REPORTS_INBOX": "Canais de comunicação",
+    "TEAMS": "Departamentos",
+    "NEW_TEAM": "Novo departamento",
+    "REPORTS_TEAM": "Departamento",
+    "MACROS": "Conjuntos de ações",
     "REAUTHORIZE": "A conexão com o seu canal de comunicação expirou. Reconecte para continuar recebendo e enviando mensagens."
+  },
+  "BULK_ACTION": {
+    "ASSIGN_TEAM_TOOLTIP": "Atribuir departamento",
+    "TEAMS": {
+      "ASSIGN_TEAM_CONFIRMATION_LABEL": "Tem certeza de que deseja atribuir {n} conversa ao departamento {teamName}? | Tem certeza de que deseja atribuir {n} conversas ao departamento {teamName}?",
+      "ASSIGN_SUCCESFUL": "Departamentos atribuídos com sucesso.",
+      "ASSIGN_FAILED": "Falha ao atribuir departamento. Tente novamente."
+    }
+  },
+  "MACROS": {
+    "HEADER": "Conjuntos de ações",
+    "DESCRIPTION": "Um conjunto de ações salva tarefas recorrentes para ajudar os agentes a concluir atendimentos com facilidade. Os agentes podem definir ações como etiquetar uma conversa, enviar uma transcrição por e-mail, atualizar um atributo personalizado e executar tudo com um único clique.",
+    "LEARN_MORE": "Aprenda mais sobre conjuntos de ações",
+    "COUNT": "{n} conjunto de ações | {n} conjuntos de ações",
+    "HEADER_BTN_TXT": "Adicionar novo conjunto de ações",
+    "HEADER_BTN_TXT_SAVE": "Salvar conjunto de ações",
+    "LOADING": "Obtendo conjuntos de ações",
+    "SEARCH_PLACEHOLDER": "Pesquisar conjuntos de ações...",
+    "NO_RESULTS": "Nenhum conjunto de ações encontrado para esta busca",
+    "ORDER_INFO": "Os conjuntos de ações serão executados na ordem em que você adicionar as ações. Você pode reorganizá-las arrastando pelo identificador ao lado de cada nó.",
+    "ADD": {
+      "FORM": {
+        "NAME": {
+          "LABEL": "Nome do conjunto de ações",
+          "PLACEHOLDER": "Digite um nome para o conjunto de ações",
+          "ERROR": "Nome é necessário para criar um conjunto de ações"
+        }
+      },
+      "API": {
+        "SUCCESS_MESSAGE": "Conjunto de ações adicionado com sucesso",
+        "ERROR_MESSAGE": "Não foi possível criar o conjunto de ações. Tente novamente mais tarde."
+      }
+    },
+    "LIST": {
+      "404": "Nenhum conjunto de ações encontrado"
+    },
+    "DELETE": {
+      "TOOLTIP": "Excluir conjunto de ações",
+      "API": {
+        "SUCCESS_MESSAGE": "Conjunto de ações excluído com sucesso",
+        "ERROR_MESSAGE": "Ocorreu um erro ao excluir o conjunto de ações. Tente novamente mais tarde."
+      }
+    },
+    "VIEW": {
+      "TOOLTIP": "Ver conjunto de ações"
+    },
+    "EDIT": {
+      "TOOLTIP": "Editar conjunto de ações",
+      "API": {
+        "SUCCESS_MESSAGE": "Conjunto de ações atualizado com sucesso",
+        "ERROR_MESSAGE": "Não foi possível atualizar o conjunto de ações. Tente novamente mais tarde."
+      }
+    },
+    "EDITOR": {
+      "LOADING": "Obtendo conjunto de ações",
+      "VISIBILITY": {
+        "LABEL": "Visibilidade do conjunto de ações",
+        "GLOBAL": {
+          "DESCRIPTION": "Este conjunto de ações está disponível publicamente para todos os agentes desta conta.",
+          "CREATE_DISABLED_DESCRIPTION": "Somente administradores podem criar conjuntos de ações públicos.",
+          "EDIT_DISABLED_DESCRIPTION": "Somente administradores podem editar conjuntos de ações públicos."
+        },
+        "PERSONAL": {
+          "DESCRIPTION": "Este conjunto de ações será privado para você e não estará disponível para outras pessoas."
+        }
+      }
+    },
+    "EXECUTE": {
+      "PREVIEW": "Pré-visualizar conjunto de ações",
+      "EXECUTED_SUCCESSFULLY": "Conjunto de ações executado com sucesso"
+    },
+    "ACTIONS": {
+      "ASSIGN_TEAM": "Atribuir um departamento",
+      "REMOVE_ASSIGNED_TEAM": "Remover departamento atribuído"
+    }
   },
   "FILTER": {
     "ATTRIBUTES": {
-      "INBOX_NAME": "Canal de comunicação"
+      "INBOX_NAME": "Canal de comunicação",
+      "TEAM_NAME": "Nome do departamento"
     }
   },
   "AUTOMATION": {
+    "DESCRIPTION": "A automação pode substituir e simplificar processos existentes que requerem esforço manual, como a adição de etiquetas e a atribuição de conversas ao agente mais adequado. Isso permite que a equipe se concentre em seus pontos fortes e reduza o tempo gasto em tarefas rotineiras.",
     "ATTRIBUTES": {
-      "INBOX": "Canal de comunicação"
+      "INBOX": "Canal de comunicação",
+      "TEAM_NAME": "Departamento"
+    },
+    "ACTION": {
+      "TEAM_DROPDOWN_PLACEHOLDER": "Selecione departamentos"
+    },
+    "ACTIONS": {
+      "ASSIGN_TEAM": "Atribuir um departamento",
+      "REMOVE_ASSIGNED_TEAM": "Remover departamento atribuído",
+      "SEND_EMAIL_TO_TEAM": "Enviar um e-mail para o departamento"
     }
   },
   "AUDIT_LOGS": {
+    "DESCRIPTION": "Logs de Auditoria mantêm um registro de atividades em sua conta, permitindo que você acompanhe e audite sua conta, equipe ou serviços.",
     "INBOX": {
       "ADD": "{agentName} criou um canal de comunicação (#{id})",
       "EDIT": "{agentName} atualizou um canal de comunicação (#{id})",
@@ -32,16 +123,45 @@
     "INBOX_MEMBER": {
       "ADD": "{agentName} adicionou {user} ao canal de comunicação (#{inbox_id})",
       "REMOVE": "{agentName} removeu {user} do canal de comunicação (#{inbox_id})"
+    },
+    "TEAM": {
+      "ADD": "{agentName} criou um departamento (#{id})",
+      "EDIT": "{agentName} atualizou um departamento (#{id})",
+      "DELETE": "{agentName} excluiu um departamento (#{id})"
+    },
+    "TEAM_MEMBER": {
+      "ADD": "{agentName} adicionou {user} ao departamento (#{team_id})",
+      "REMOVE": "{agentName} removeu {user} do departamento (#{team_id})"
     }
   },
   "AGENT_BOTS": {
+    "DESCRIPTION": "Robôs agentes ajudam sua equipe com tarefas iniciais, para que os agentes possam focar no que importa. Você pode gerenciar seus robôs a partir desta página ou criar novos usando o botão de criação.",
     "BOT_CONFIGURATION": {
       "DESC": "Atribua um agente robô ao seu canal de comunicação. Ele pode lidar com as conversas iniciais e transferi-las para um agente humano quando necessário."
     }
   },
   "AGENT_MGMT": {
+    "DESCRIPTION": "Um agente é uma pessoa da sua equipe de atendimento que pode visualizar e responder mensagens dos clientes. A lista abaixo mostra todos os agentes da conta.",
+    "LIST": {
+      "TITLE": "Gerenciar agentes da equipe",
+      "DESC": "Você pode adicionar ou remover agentes de um departamento."
+    },
     "ADD": {
+      "TITLE": "Adicionar agente à equipe",
       "DESC": "Você pode adicionar pessoas que poderão acompanhar o suporte dos seus canais de comunicação."
+    },
+    "MULTI_SELECTOR": {
+      "TITLE": {
+        "TEAM": "Selecionar departamento"
+      },
+      "SEARCH": {
+        "NO_RESULTS": {
+          "TEAM": "Nenhum departamento encontrado"
+        },
+        "PLACEHOLDER": {
+          "TEAM": "Pesquisar departamentos"
+        }
+      }
     }
   },
   "CAMPAIGN": {
@@ -108,10 +228,32 @@
     "NO_INBOX_AGENT": "Uh oh! Parece que você não faz parte de nenhum canal de comunicação. Contate seu administrador.",
     "LOADING_INBOXES": "Carregando canais de comunicação",
     "OLD_INSTAGRAM_INBOX_REPLY_BANNER": "Esta conta do Instagram foi migrada para o novo canal de comunicação do Instagram. Todas as novas mensagens serão mostradas lá. Você não poderá mais enviar mensagens desta conversa.",
+    "VISIBLE_TO_AGENTS": "Mensagem privada: visível apenas para você e sua equipe",
+    "MENTION": {
+      "TEAMS": "Departamentos"
+    },
+    "HEADER": {
+      "MACROS": "Conjuntos de ações"
+    },
+    "CARD_CONTEXT_MENU": {
+      "ASSIGN_TEAM": "Atribuir departamento",
+      "API": {
+        "TEAM_ASSIGNMENT": {
+          "SUCCESFUL": "Departamento {team} atribuído para o id de conversa {conversationId}",
+          "FAILED": "Não foi possível atribuir departamento. Tente novamente."
+        }
+      }
+    },
     "ONBOARDING": {
       "ALL_CONVERSATION": {
         "NEW_LINK": "Clique aqui para criar um canal de comunicação"
       }
+    }
+  },
+  "CONVERSATION_SIDEBAR": {
+    "TEAM_LABEL": "Departamento atribuído",
+    "ACCORDION": {
+      "MACROS": "Conjuntos de ações"
     }
   },
   "GENERAL_SETTINGS": {
@@ -120,14 +262,38 @@
     }
   },
   "COMMAND_BAR": {
+    "SECTIONS": {
+      "CHANGE_TEAM": "Alterar departamento"
+    },
     "COMMANDS": {
       "GO_TO_INBOX_REPORTS": "Ir para relatórios de canais de comunicação",
-      "GO_TO_SETTINGS_INBOXES": "Ir para configurações de canais de comunicação"
+      "GO_TO_SETTINGS_INBOXES": "Ir para configurações de canais de comunicação",
+      "GO_TO_TEAM_REPORTS": "Ir para relatórios de departamentos",
+      "GO_TO_SETTINGS_TEAMS": "Ir para configurações de departamentos",
+      "ASSIGN_A_TEAM": "Atribuir um departamento"
     }
+  },
+  "CUSTOM_ROLE": {
+    "PAYWALL": {
+      "UPGRADE_PROMPT": "Atualize seu plano para obter acesso a recursos avançados como gerenciamento de departamentos, automações, atributos personalizados e muito mais."
+    }
+  },
+  "SLA": {
+    "DESCRIPTION": "Acordos de Nível de Serviço definem expectativas claras entre sua equipe e os clientes. Eles estabelecem padrões para tempos de resposta e resolução, criando responsabilidade e uma experiência consistente.",
+    "PAYWALL": {
+      "UPGRADE_PROMPT": "Atualize seu plano para obter acesso a recursos avançados como gerenciamento de departamentos, automações, atributos personalizados e muito mais."
+    }
+  },
+  "BILLING_SETTINGS": {
+    "DESCRIPTION": "Gerencie sua assinatura aqui, faça upgrade do plano e obtenha mais recursos para sua equipe."
   },
   "ONBOARDING": {
     "ALL_CONVERSATION": {
       "NEW_LINK": "Clique aqui para criar um canal de comunicação"
+    },
+    "TEAM_MEMBERS": {
+      "TITLE": "Convidar membros da equipe",
+      "NEW_LINK": "Clique aqui para convidar um membro da equipe"
     }
   },
   "PROFILE_SETTINGS": {
@@ -174,6 +340,7 @@
     }
   },
   "INTEGRATION_SETTINGS": {
+    "DESCRIPTION": "Chatwoot se integra com várias ferramentas e serviços para melhorar a eficiência da sua equipe. Explore a lista abaixo para configurar seus aplicativos favoritos.",
     "WEBHOOK": {
       "FORM": {
         "SUBSCRIPTIONS": {
@@ -561,29 +728,213 @@
     }
   },
   "TEAMS_SETTINGS": {
+    "NEW_TEAM": "Criar novo departamento",
+    "HEADER": "Departamentos",
+    "LOADING": "Buscando departamentos",
+    "DESCRIPTION": "Os departamentos permitem organizar agentes por responsabilidade. Um agente pode pertencer a vários departamentos e as conversas podem ser atribuídas a departamentos específicos.",
+    "LEARN_MORE": "Saiba mais sobre departamentos",
+    "COUNT": "{n} departamento | {n} departamentos",
+    "SEARCH_PLACEHOLDER": "Pesquisar departamentos...",
+    "NO_RESULTS": "Nenhum departamento encontrado correspondente à sua busca",
+    "LIST": {
+      "EDIT_TEAM": "Editar departamento"
+    },
+    "CREATE_FLOW": {
+      "CREATE": {
+        "TITLE": "Criar novo departamento",
+        "DESC": "Adicione um título e uma descrição ao novo departamento."
+      },
+      "AGENTS": {
+        "BUTTON_TEXT": "Adicionar agente ao departamento",
+        "TITLE": "Adicionar agentes ao departamento: {teamName}",
+        "DESC": "Adicione agentes ao departamento recém-criado para colaborar nas conversas atribuídas a ele."
+      },
+      "WIZARD_CREATE": {
+        "BODY": "Criar um novo departamento de agentes."
+      },
+      "WIZARD_ADD_AGENTS": {
+        "BODY": "Adicionar agentes ao departamento."
+      }
+    },
+    "EDIT_FLOW": {
+      "CREATE": {
+        "TITLE": "Editar detalhes do departamento",
+        "DESC": "Edite o título e a descrição do departamento.",
+        "BUTTON_TEXT": "Atualizar departamento"
+      },
+      "AGENTS": {
+        "BUTTON_TEXT": "Atualizar agentes no departamento",
+        "TITLE": "Adicionar agentes ao departamento: {teamName}",
+        "DESC": "Todos os agentes adicionados serão notificados quando uma conversa for atribuída a este departamento."
+      },
+      "EDIT_WIZARD_DETAILS": {
+        "TITLE": "Detalhes do departamento"
+      },
+      "EDIT_WIZARD_AGENTS": {
+        "BODY": "Gerenciar agentes do departamento."
+      }
+    },
+    "TEAM_FORM": {
+      "ERROR_MESSAGE": "Não foi possível salvar os detalhes do departamento. Tente novamente."
+    },
     "AGENTS": {
-      "ADD_AGENTS": "Adicionando agentes ao seu canal de comunicação..."
+      "ADD_AGENTS": "Adicionando agentes ao departamento..."
+    },
+    "ADD": {
+      "TITLE": "Adicionar agentes ao departamento: {teamName}",
+      "DESC": "Adicione agentes ao departamento recém-criado para colaborar nas conversas atribuídas a ele."
     },
     "FINISH": {
-      "TITLE": "Seu canal de comunicação está pronto!"
+      "TITLE": "Seu departamento está pronto!",
+      "MESSAGE": "Agora você pode colaborar como um departamento em conversas"
+    },
+    "DELETE": {
+      "API": {
+        "ERROR_MESSAGE": "Não foi possível excluir o departamento. Tente novamente."
+      },
+      "CONFIRM": {
+        "TITLE": "Tem certeza de que deseja excluir o departamento?",
+        "MESSAGE": "A exclusão do departamento irá remover a atribuição das conversas atribuídas a ele."
+      }
+    },
+    "FORM": {
+      "UPDATE": "Atualizar departamento",
+      "CREATE": "Criar novo departamento",
+      "NAME": {
+        "LABEL": "Nome do departamento"
+      },
+      "DESCRIPTION": {
+        "LABEL": "Descrição do departamento",
+        "PLACEHOLDER": "Breve descrição sobre este departamento."
+      },
+      "AUTO_ASSIGN": {
+        "LABEL": "Permitir atribuição automática para este departamento."
+      },
+      "SUBMIT_CREATE": "Criar novo departamento"
     }
   },
+  "TEAM_REPORTS": {
+    "HEADER": "Resumo do departamento",
+    "DESCRIPTION": "Tenha uma visão geral do desempenho dos departamentos com métricas essenciais, incluindo conversas, tempos de resposta, tempos de resolução e casos encerrados. Clique no nome do departamento para ver mais detalhes.",
+    "DOWNLOAD_TEAM_REPORTS": "Baixar relatórios de departamento",
+    "FILTER_DROPDOWN_LABEL": "Selecionar departamento",
+    "FILTERS": {
+      "INPUT_PLACEHOLDER": {
+        "TEAMS": "Pesquisar departamentos"
+      }
+    }
+  },
+  "CSAT_REPORTS": {
+    "FILTERS": {
+      "INPUT_PLACEHOLDER": {
+        "TEAMS": "Pesquisar departamentos"
+      },
+      "TEAMS": {
+        "LABEL": "Departamento"
+      }
+    }
+  },
+  "OVERVIEW_REPORTS": {
+    "TEAM_CONVERSATIONS": {
+      "ALL_TEAMS": "Todos os departamentos",
+      "HEADER": "Conversas por departamento",
+      "LOADING_MESSAGE": "Carregando métricas de departamentos...",
+      "TABLE_HEADER": {
+        "TEAM": "Departamento"
+      }
+    }
+  },
+  "SLA_REPORTS": {
+    "DROPDOWN": {
+      "INPUT_PLACEHOLDER": {
+        "TEAMS": "Nome do departamento"
+      },
+      "TEAMS": "Departamento"
+    }
+  },
+  "SUMMARY_REPORTS": {
+    "TEAM": "Departamento"
+  },
   "IBSOFT_THEME": {
+    "COMMON": {
+      "CLEAR_SELECTION": "Limpar seleção"
+    },
     "CHATHUB_SETTINGS": {
       "SIDEBAR": "Configurações ChatHub",
-      "TITLE": "Configurações de canais e times",
-      "DESCRIPTION": "Ajustes globais da operação que valem para todos os canais e times.",
+      "TITLE": "Configurações de canais e departamentos",
+      "DESCRIPTION": "Ajustes globais da operação que valem para todos os canais e departamentos.",
       "SAVE": "Salvar configurações",
       "SAVED": "Configurações salvas com sucesso.",
       "USER_OPTION": "{name} · {email}",
       "MENU": {
         "CHANNELS": "Canais de comunicação",
-        "TEAMS": "Times",
+        "TEAMS": "Departamentos",
+        "AGENT_BOTS": "Robôs",
+        "INTEGRATIONS": "Integrações",
         "ACCOUNT": "Conta",
-        "ATTENDANCE": "Políticas de atendentes",
+        "ERP": "ERPs",
+        "ATTENDANCE": "Ajustes de entrada",
         "POLICIES": "Políticas de distribuição",
         "AGENTS": "Agentes",
         "ACCESS_CONTROL": "Perfis e permissões"
+      },
+      "ERP": {
+        "TITLE": "ERPs",
+        "DESCRIPTION": "Configure as integrações com sistemas externos. Apenas uma integração pode ficar ativa por vez para os módulos que dependem de ERP.",
+        "NEW": "Adicionar ERP",
+        "CREATE_TITLE": "Adicionar ERP",
+        "EDIT_TITLE": "Editar ERP",
+        "SAVE": "Salvar ERP",
+        "SAVED": "ERP salvo com sucesso.",
+        "ACTIVATED": "ERP padrão atualizado.",
+        "DELETED": "ERP removido com sucesso.",
+        "EMPTY": "Nenhuma integração ERP foi configurada.",
+        "NAME": "Nome",
+        "NAME_PLACEHOLDER": "Ex.: IXC produção",
+        "PROVIDER": "ERP",
+        "AUTH_TYPE": "Autenticação",
+        "BASE_URL": "URL base",
+        "BASE_URL_PLACEHOLDER": "https://erp.exemplo.com.br",
+        "ACTIVE_TITLE": "ERP padrão ativo",
+        "ACTIVE_DESCRIPTION": "Todos os módulos que dependem de ERP usarão esta conexão.",
+        "ACTIVE_BADGE": "Padrão ativo",
+        "INACTIVE_BADGE": "Inativo",
+        "ACTIVATE": "Ativar padrão",
+        "EDIT": "Editar",
+        "DELETE": "Remover",
+        "DELETE_TITLE": "Remover ERP",
+        "DELETE_MESSAGE": "Tem certeza que deseja remover {name}?",
+        "DELETE_CONFIRM": "Sim, remover ERP",
+        "CREDENTIALS_TITLE": "Credenciais",
+        "CREDENTIALS_DESCRIPTION": "Informe as credenciais usadas para conectar com o ERP.",
+        "CREDENTIALS_CONFIGURED": "Credenciais configuradas",
+        "CREDENTIALS_MISSING": "Credenciais pendentes",
+        "PRESERVE_SECRET_HINT": "Deixe campos sensíveis em branco para manter os valores já configurados.",
+        "AUTH_TYPES": {
+          "BASIC": "Usuário e senha",
+          "TOKEN_APP": "Token e aplicativo"
+        },
+        "CREDENTIAL_FIELDS": {
+          "USERNAME": "Usuário",
+          "PASSWORD": "Senha",
+          "TOKEN": "Token",
+          "APP": "Aplicativo"
+        },
+        "TEST": {
+          "BUTTON": "Testar conexão",
+          "SUCCESS": "Conexão testada com sucesso.",
+          "FAILURE": "Não foi possível validar a conexão.",
+          "LAST_STATUS": "Último teste",
+          "STATUS": {
+            "SUCCESS": "sucesso",
+            "FAILED": "falha"
+          }
+        },
+        "ERRORS": {
+          "LOAD": "Não foi possível carregar as integrações ERP.",
+          "SAVE": "Não foi possível salvar o ERP.",
+          "DELETE": "Não foi possível remover o ERP."
+        }
       },
       "CHANNELS": {
         "TITLE": "Canais de comunicação",
@@ -604,9 +955,53 @@
         "DELETE_SUCCESS": "Canal removido com sucesso.",
         "DELETE_ERROR": "Não foi possível remover o canal."
       },
+      "CHANNEL_OPERATIONS": {
+        "BUTTON": "Regras",
+        "TITLE": "Configurações de {inbox}",
+        "SAVE": "Salvar configurações",
+        "SAVE_SUCCESS": "Configurações do canal salvas com sucesso.",
+        "SAVE_ERROR": "Não foi possível salvar as configurações do canal.",
+        "DISTRIBUTION_LOAD_ERROR": "Não foi possível carregar a política de distribuição do canal.",
+        "TABS_LABEL": "Configurações operacionais do canal",
+        "TABS": {
+          "DISTRIBUTION": "Distribuição",
+          "AUTOMATION": "Automação"
+        },
+        "DISTRIBUTION_TITLE": "Política de distribuição do canal",
+        "DISTRIBUTION_DESCRIPTION": "Defina a política padrão usada quando uma conversa deste canal for encaminhada para atendimento humano.",
+        "TEAM_OVERRIDE_NOTICE": "Configurações específicas de departamento podem sobrescrever esta política do canal."
+      },
+      "NATIVE_ASSIGNMENT": {
+        "DISABLE_ERROR": "Não foi possível desativar a atribuição automática nativa do canal.",
+        "INDICATOR": {
+          "ACTIVE": "Atribuição automática nativa ativa",
+          "DISABLING": "Desativando atribuição automática nativa",
+          "DISABLED": "Atribuição automática nativa desativada",
+          "FAILED": "Falha ao desativar atribuição automática nativa"
+        }
+      },
+      "AUTOMATION_HANDOFF": {
+        "BUTTON": "Automação",
+        "TITLE": "Automação de {inbox}",
+        "SAVE": "Salvar política",
+        "ENABLE_TITLE": "Encaminhar automações paradas",
+        "ENABLE_DESCRIPTION": "Quando uma conversa ficar pendente na automação por muito tempo, encaminhe automaticamente para um departamento humano.",
+        "STALE_AFTER": "Tempo máximo parada",
+        "MINUTES": "minutos",
+        "TARGET_TEAM": "Departamento de destino",
+        "SELECT_TEAM": "Selecione um departamento",
+        "INTERNAL_EVENT_NOTICE": "O evento interno será registrado automaticamente na conversa. A mensagem ao cliente é opcional.",
+        "CUSTOMER_MESSAGE_TITLE": "Mensagem ao cliente",
+        "CUSTOMER_MESSAGE_DESCRIPTION": "Envie uma mensagem pública quando a conversa sair da automação por inatividade.",
+        "CUSTOMER_MESSAGE": "Texto da mensagem",
+        "CUSTOMER_MESSAGE_PLACEHOLDER": "Vou encaminhar seu atendimento para nossa equipe.",
+        "SAVE_SUCCESS": "Política de automação salva com sucesso.",
+        "SAVE_ERROR": "Não foi possível salvar a política de automação.",
+        "LOAD_ERROR": "Não foi possível carregar a política de automação."
+      },
       "POLICIES": {
         "TITLE": "Políticas de distribuição",
-        "DESCRIPTION": "Crie e mantenha políticas reutilizáveis para vincular aos canais de comunicação e aos times.",
+        "DESCRIPTION": "Crie e mantenha políticas reutilizáveis para vincular aos canais de comunicação e aos departamentos.",
         "SELECT": "Selecionar política",
         "NEW": "Nova política",
         "NEW_OPTION": "Criar nova política",
@@ -620,7 +1015,7 @@
         "DISABLED": "Inativa",
         "ORDER": "Ordem",
         "PRIORITY": "Prioridade",
-        "USAGE": "Vinculada a {channels} canais e {teams} times.",
+        "USAGE": "Vinculada a {channels} canais e {teams} departamentos.",
         "SAVED": "Política salva com sucesso.",
         "DELETED": "Política removida com sucesso.",
         "EMPTY": "Nenhuma política foi criada.",
@@ -809,6 +1204,248 @@
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversas aparecem aqui quando há novas mensagens, menções ou atribuições para você."
     },
+    "MESSAGE_BROADCAST": {
+      "SIDEBAR": "Disparo de mensagens",
+      "TITLE": "Disparo de mensagens",
+      "DESCRIPTION": "Monte listas de destinatários a partir do ERP padrão, salve grupos fixos e prepare rascunhos de envio por WhatsApp.",
+      "EMPTY_ERP": "Configure e ative um ERP padrão antes de selecionar destinatários.",
+      "COMMON": {
+        "NOT_INFORMED": "Não informado"
+      },
+      "PAGINATION": {
+        "ITEMS_PER_PAGE": "Itens por página"
+      },
+      "MODES": {
+        "MENU_LABEL": "Tipos de busca de clientes",
+        "DIRECT": {
+          "TITLE": "Busca direta",
+          "DESCRIPTION": "Localize clientes por dados cadastrais, endereço, cidade ou status."
+        },
+        "CONTRACTS": {
+          "TITLE": "Contratos e planos",
+          "DESCRIPTION": "Filtre clientes por situação contratual, plano de acesso e status de internet."
+        },
+        "CONCENTRATORS": {
+          "TITLE": "Concentradores",
+          "DESCRIPTION": "Selecione concentradores para buscar logins ativos e localizar seus clientes."
+        }
+      },
+      "FILTERS": {
+        "NAME": "Nome",
+        "STATE": "Estado",
+        "CITY": "Cidade",
+        "CLIENT_STATUS": "Status do cliente",
+        "STREET": "Rua",
+        "NEIGHBORHOOD": "Bairro",
+        "ZIP_CODE": "CEP",
+        "CONTRACT_STATUS": "Status do contrato",
+        "INTERNET_STATUS": "Status da internet",
+        "PLAN": "Plano de acesso",
+        "CONCENTRATOR": "Concentrador",
+        "POP_IDS": "POPs",
+        "TRANSMITTER": "Transmissor",
+        "TRANSMISSION_INTERFACE": "Interface de transmissão",
+        "FTTH_BOX": "Caixa FTTH",
+        "TRANSMITTER_PORT": "Porta do transmissor",
+        "ID_LIST_PLACEHOLDER": "Ex: 1,2,3",
+        "ANY_STATUS": "Qualquer status",
+        "ACTIVE": "Ativo",
+        "INACTIVE": "Inativo",
+        "ANY_STATE": "Qualquer estado",
+        "ANY_CITY": "Qualquer cidade",
+        "ANY_CONTRACT": "Qualquer contrato",
+        "ANY_INTERNET": "Qualquer status de internet"
+      },
+      "LOOKUPS": {
+        "PLANS_TITLE": "Planos de acesso do IXC",
+        "PLANS_PLACEHOLDER": "Selecionar planos de acesso",
+        "PLANS_SEARCH": "Pesquisar planos de acesso",
+        "STATES_SEARCH": "Pesquisar estados",
+        "CITIES_SEARCH": "Pesquisar cidades",
+        "SELECT_STATE_FIRST": "Selecione um estado primeiro",
+        "POPS_PLACEHOLDER": "Selecionar POPs",
+        "POPS_SEARCH": "Pesquisar POPs",
+        "CLEAR_SELECTION": "Limpar seleção",
+        "TRANSMITTERS_PLACEHOLDER": "Selecionar transmissores",
+        "TRANSMITTERS_SEARCH": "Pesquisar transmissores",
+        "LOADING": "Carregando opções do IXC...",
+        "EMPTY": "Nenhuma opção encontrada no IXC para esta busca.",
+        "SELECTED": "{count} selecionado(s)",
+        "LOAD_ERROR": "Não foi possível carregar as opções do IXC."
+      },
+      "CONTRACT_STATUS": {
+        "ACTIVE": "Ativo",
+        "INACTIVE": "Inativo",
+        "PRE_CONTRACT": "Pré-contrato",
+        "CANCELLED": "Cancelado"
+      },
+      "INTERNET_STATUS": {
+        "ACTIVE": "Ativo",
+        "DISABLED": "Desativado",
+        "MANUAL_BLOCK": "Bloqueio manual",
+        "AUTO_BLOCK": "Bloqueio automático",
+        "WAITING_ACTIVATION": "Aguardando ativação"
+      },
+      "ACTIONS": {
+        "NEW_BROADCAST": "Novo disparo",
+        "BACK_TO_HISTORY": "Voltar ao histórico",
+        "BACK": "Voltar",
+        "CONTINUE": "Continuar",
+        "SEARCH": "Buscar clientes",
+        "SELECT_PAGE": "Selecionar página",
+        "UNSELECT_PAGE": "Limpar seleção",
+        "ADD_SELECTED": "Adicionar selecionados",
+        "ADD_ALL_RESULTS": "Adicionar todos os resultados",
+        "ADD_GROUPS": "Adicionar grupos",
+        "PREVIOUS": "Anterior",
+        "NEXT": "Próxima",
+        "ADD_VARIABLE": "Adicionar variável",
+        "SAVE_DRAFT": "Salvar como rascunho",
+        "SAVE_GROUP": "Salvar grupo",
+        "SEND_NOW": "Disparar agora"
+      },
+      "HISTORY": {
+        "TITLE": "Histórico de disparos",
+        "DESCRIPTION": "Acompanhe rascunhos e execuções anteriores antes de iniciar um novo disparo.",
+        "EMPTY": "Nenhum disparo foi criado ainda.",
+        "RECIPIENTS": "{count} destinatários",
+        "ID": "Disparo #{id}"
+      },
+      "STEPS": {
+        "SOURCE": "Origem",
+        "RECIPIENTS": "Destinatários",
+        "REVIEW": "Envio"
+      },
+      "SOURCE": {
+        "SEARCH_TITLE": "Pesquisar e selecionar",
+        "SEARCH_DESCRIPTION": "Use filtros do ERP para localizar clientes e montar uma lista manual de destinatários.",
+        "GROUPS_TITLE": "Usar grupos",
+        "GROUPS_DESCRIPTION": "Escolha grupos fixos existentes ou crie um novo grupo a partir dos filtros do ERP."
+      },
+      "SEARCH": {
+        "TITLE": "Filtros de busca",
+        "DESCRIPTION": "Busque clientes por cadastro, contratos, planos ou concentradores e adicione os resultados à lista."
+      },
+      "RESULTS": {
+        "TITLE": "Clientes encontrados",
+        "EMPTY": "Use os filtros para buscar clientes no ERP.",
+        "SEARCH_PLACEHOLDER": "Pesquisar nos clientes encontrados",
+        "SEARCH_LABEL": "Pesquisar na lista completa de clientes encontrados",
+        "CLEAR_SEARCH": "Limpar pesquisa nos clientes encontrados",
+        "SEARCH_ERROR": "Não foi possível preparar ou pesquisar a lista de clientes.",
+        "NO_PHONE": "Sem telefone válido",
+        "PAGE_INFO": "Página {page} · {count} clientes nesta página",
+        "SELECTED_ON_PAGE": "{count} selecionados nesta página",
+        "PAGINATION": "Exibindo {startItem} a {endItem} de {totalItems} clientes"
+      },
+      "RECIPIENTS": {
+        "TITLE": "Lista de destinatários",
+        "EMPTY": "Adicione clientes encontrados ou grupos para continuar.",
+        "FILTERED_EMPTY": "Nenhum destinatário corresponde à busca e ao filtro selecionados.",
+        "SEARCH_PLACEHOLDER": "Pesquisar destinatários",
+        "REMOVE": "Remover destinatário",
+        "EXTERNAL_ID": "Código no ERP: {id}",
+        "UNKNOWN_LOCATION": "Localização não informada",
+        "PAGINATION": "Exibindo {startItem} a {endItem} de {totalItems} destinatários",
+        "FILTERS": {
+          "ALL": "Todos os destinatários",
+          "DELIVERABLE": "Com telefone válido",
+          "UNAVAILABLE": "Sem telefone válido"
+        },
+        "COLUMNS": {
+          "CUSTOMER": "Cliente",
+          "PHONES": "Telefones",
+          "LOCATION": "Localização",
+          "ACTIONS": "Ações"
+        },
+        "EDIT": {
+          "ACTION": "Editar telefones",
+          "PRIMARY_PHONE": "Telefone principal",
+          "FALLBACK_PHONE": "Telefone alternativo",
+          "INVALID_PHONE": "Informe um telefone brasileiro válido com DDD.",
+          "SAVE": "Salvar telefones",
+          "CANCEL": "Cancelar edição"
+        }
+      },
+      "DETAIL": {
+        "TITLE": "Disparo #{id}",
+        "TEMPLATE_META": "{name} · {language}",
+        "CONVERSATION": "Conversa #{id}",
+        "SUMMARY": "Resumo do disparo",
+        "STATUS": "Status",
+        "CREATED_AT": "Criado em"
+      },
+      "GROUPS": {
+        "TITLE": "Grupos fixos",
+        "DESCRIPTION": "Selecione um ou mais grupos para adicionar seus membros aos destinatários.",
+        "SELECT": "Selecionar grupo",
+        "LOAD": "Carregar grupo",
+        "SAVE_TITLE": "Salvar seleção como grupo",
+        "SAVE_DESCRIPTION": "Selecione clientes nos resultados da busca e salve como um novo grupo fixo.",
+        "CREATE_FROM_FILTERS": "Criar grupo por filtros",
+        "MEMBERS": "{count} integrantes"
+      },
+      "REVIEW": {
+        "TITLE": "Preparação do disparo",
+        "SELECTED_COUNT": "{count} selecionados, {deliverable} com telefone válido.",
+        "INBOX": "Canal WhatsApp",
+        "SELECT_INBOX": "Selecione um canal",
+        "TEMPLATE": "Modelo da Meta",
+        "SELECT_TEMPLATE": "Selecione um modelo",
+        "TEMPLATE_LOADING": "Carregando modelos da Meta...",
+        "TEMPLATE_LOAD_ERROR": "Não foi possível carregar os modelos da Meta para este canal.",
+        "TEMPLATE_PREVIEW": "Conteúdo do modelo",
+        "TEMPLATE_PREVIEW_EMPTY": "Selecione um modelo para visualizar exatamente a mensagem que será usada.",
+        "TEMPLATE_NAME": "Nome do template",
+        "TEMPLATE_LANGUAGE": "Idioma do template",
+        "CONVERSATION_MODE": "Após o envio",
+        "SUMMARY": "Resumo",
+        "DELIVERABLE": "Com telefone válido",
+        "CLOSE_AFTER_SEND": "Criar e encerrar conversa",
+        "KEEP_OPEN": "Manter conversa aberta"
+      },
+      "VARIABLES": {
+        "TITLE": "Variáveis do template",
+        "DESCRIPTION": "Mapeie cada variável para um campo do cliente ou para um valor fixo deste disparo.",
+        "AUTO_DESCRIPTION": "As variáveis são identificadas automaticamente a partir do modelo selecionado.",
+        "EMPTY": "Este modelo não possui variáveis para preencher.",
+        "CUSTOMER_FIELD": "Campo do cliente",
+        "FIXED_VALUE": "Valor fixo",
+        "FIXED_PLACEHOLDER": "Texto fixo sem quebra de linha"
+      },
+      "TEMPLATE_COMPONENTS": {
+        "HEADER": "Cabeçalho",
+        "BODY": "Corpo",
+        "FOOTER": "Rodapé",
+        "BUTTONS": "Botões",
+        "UNKNOWN": "Componente"
+      },
+      "CUSTOMER_FIELDS": {
+        "NAME": "Nome",
+        "DOCUMENT": "Documento",
+        "ADDRESS": "Endereço",
+        "CITY": "Cidade",
+        "STATE": "Estado",
+        "PRIMARY_PHONE": "Telefone principal"
+      },
+      "STATUS": {
+        "DRAFT": "Rascunho",
+        "QUEUED": "Na fila",
+        "RUNNING": "Executando",
+        "COMPLETED": "Concluído",
+        "FAILED": "Falhou",
+        "CANCELLED": "Cancelado",
+        "PENDING": "Pendente",
+        "SENT": "Enviado",
+        "SKIPPED": "Ignorado"
+      },
+      "ALERTS": {
+        "GROUP_CREATED": "Grupo salvo com sucesso.",
+        "DRAFT_CREATED": "Rascunho #{id} criado com sucesso.",
+        "DETAIL_LOAD_ERROR": "Não foi possível abrir este rascunho.",
+        "SEND_STARTED": "Envio iniciado. Os status serão atualizados conforme o processamento avançar."
+      }
+    },
     "CHATHUB_ANALYTICS": {
       "SIDEBAR": "Página inicial",
       "EMPTY": "Sem dados para o período selecionado.",
@@ -941,25 +1578,25 @@
         "DESCRIPTION": "Desative as opções nativas de atribuição para evitar que o Chatwoot distribua o atendimento antes da política Ibsoft.",
         "ITEMS": {
           "CHANNEL_AUTO_ASSIGNMENT": "A atribuição automática do canal de comunicação ainda está ativa.",
-          "TEAM_AUTO_ASSIGNMENT": "A atribuição automática do time ainda está ativa.",
+          "TEAM_AUTO_ASSIGNMENT": "A atribuição automática do departamento ainda está ativa.",
           "ASSIGNMENT_POLICY": "Há uma política de atribuição nativa vinculada a este canal."
         }
       },
       "OVERRIDE": {
         "TITLE": "Sobrescrever regra do canal",
-        "DESCRIPTION": "Use uma regra específica para este time. Quando desligado, o time segue a configuração geral do canal de comunicação."
+        "DESCRIPTION": "Use uma regra específica para este departamento. Quando desligado, o departamento segue a configuração geral do canal de comunicação."
       },
       "POLICY_CATALOG": {
         "SELECT": "Política de distribuição",
         "NONE": "Sem política vinculada",
         "NEW": "Criar nova política",
         "NAME": "Nome da política",
-        "HELP": "A política é reutilizável. Alterações feitas aqui afetam todos os canais e times vinculados a ela.",
+        "HELP": "A política é reutilizável. Alterações feitas aqui afetam todos os canais e departamentos vinculados a ela.",
         "LINK_HELP": "A regra desta tela vem da política vinculada. Edite a política nas Configurações do ChatHub.",
         "EMPTY_LINK": "Sem política vinculada, a distribuição Ibsoft fica inativa para este vínculo.",
         "SAVE_LINK": "Salvar vínculo",
         "DEFAULT_CHANNEL_NAME": "Política do canal {inboxName}",
-        "DEFAULT_TEAM_NAME": "Política do time {teamName}"
+        "DEFAULT_TEAM_NAME": "Política do departamento {teamName}"
       },
       "DISTRIBUTION": {
         "TITLE": "Rodadas de distribuição",
@@ -1061,14 +1698,14 @@
       },
       "BUSINESS_HOURS": {
         "TITLE": "Horário de funcionamento",
-        "DESCRIPTION": "Defina se esta política segue o horário do canal ou usa uma disponibilidade própria do time.",
+        "DESCRIPTION": "Defina se esta política segue o horário do canal ou usa uma disponibilidade própria do departamento.",
         "MODE": "Regra de horário",
         "INHERIT_CHANNEL": "Seguir horário do canal",
-        "CUSTOM": "Usar horário específico do time",
+        "CUSTOM": "Usar horário específico do departamento",
         "ALWAYS_AVAILABLE": "Sempre disponível",
         "TIMEZONE_LABEL": "Fuso horário",
         "TIMEZONE_PLACEHOLDER": "Selecionar fuso horário",
-        "WEEKLY_TITLE": "Disponibilidade semanal do time",
+        "WEEKLY_TITLE": "Disponibilidade semanal do departamento",
         "CLOSED": "Fechado"
       },
       "SUPERVISOR_ALERT": {
@@ -1174,6 +1811,8 @@
           "ASSIGNMENT_SKIPPED": "Atribuição ignorada",
           "REDISTRIBUTION_COMPLETED": "Redistribuição concluída",
           "REDISTRIBUTION_SKIPPED": "Redistribuição ignorada",
+          "AUTOMATION_HANDOFF_COMPLETED": "Encaminhamento da automação concluído",
+          "AUTOMATION_HANDOFF_SKIPPED": "Encaminhamento da automação ignorado",
           "AGENT_CLAIM_COMPLETED": "Assunção pelo agente concluída",
           "AGENT_CLAIM_SKIPPED": "Assunção pelo agente ignorada"
         },
@@ -1188,7 +1827,8 @@
           "OUTSIDE_BUSINESS_HOURS": "Fora do horário de funcionamento",
           "NOT_ELIGIBLE": "Não elegível",
           "CONVERSATION_NOT_FOUND": "Conversa não encontrada",
-          "REQUIRED_ASSIGNMENTS_MISSING": "Atendimentos obrigatórios não foram selecionados"
+          "REQUIRED_ASSIGNMENTS_MISSING": "Atendimentos obrigatórios não foram selecionados",
+          "AUTOMATION_STALLED": "Automação parada"
         }
       },
       "AGENT_ASSIGNMENT": {
@@ -1213,17 +1853,13 @@
         "COPY_SUCCESS": "Política copiada com sucesso.",
         "COPY_ERROR": "Não foi possível copiar a política selecionada."
       },
-      "INBOX_SECTION": {
-        "TITLE": "Distribuição de atendimentos",
-        "DESCRIPTION": "Configure a regra geral deste canal de comunicação. Regras específicas de time podem sobrescrever esta configuração."
-      },
       "TEAM_MODAL": {
         "TITLE": "Distribuição de {teamName}",
-        "DESCRIPTION": "Configure como este time recebe, aguarda e redistribui atendimentos transferidos para humanos."
+        "DESCRIPTION": "Configure como este departamento recebe, aguarda e redistribui atendimentos transferidos para humanos."
       },
       "COPY": {
-        "LABEL": "Copiar regra de outro time",
-        "PLACEHOLDER": "Selecionar time de origem",
+        "LABEL": "Copiar regra de outro departamento",
+        "PLACEHOLDER": "Selecionar departamento de origem",
         "BUTTON": "Copiar regra"
       }
     }

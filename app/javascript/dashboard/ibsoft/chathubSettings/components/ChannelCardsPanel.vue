@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { picoSearch } from '@scmmishra/pico-search';
 
@@ -16,6 +16,7 @@ import {
   useStore,
   useStoreGetters,
 } from 'dashboard/composables/store';
+import AutomationHandoffPolicyModal from './AutomationHandoffPolicyModal.vue';
 
 const { t } = useI18n();
 const store = useStore();
@@ -25,8 +26,10 @@ const { isAdmin } = useAdmin();
 const selectedInbox = ref({});
 const searchQuery = ref('');
 const showDeletePopup = ref(false);
+const automationHandoffModalRef = ref(null);
 
 const inboxes = useMapGetter('inboxes/getInboxes');
+const teams = computed(() => store.getters['teams/getTeams'] || []);
 
 const inboxesList = computed(() =>
   [...(inboxes.value || [])].sort((a, b) =>
@@ -78,6 +81,10 @@ const openDelete = inbox => {
   showDeletePopup.value = true;
 };
 
+const openAutomationHandoff = inbox => {
+  automationHandoffModalRef.value?.open(inbox);
+};
+
 const closeDelete = () => {
   showDeletePopup.value = false;
   selectedInbox.value = {};
@@ -93,6 +100,10 @@ const confirmDeletion = async () => {
     closeDelete();
   }
 };
+
+onMounted(() => {
+  store.dispatch('teams/get');
+});
 </script>
 
 <template>
@@ -178,6 +189,16 @@ const confirmDeletion = async () => {
         <div
           class="flex items-center justify-end gap-2 border-t border-n-weak pt-3"
         >
+          <Button
+            v-if="isAdmin"
+            :label="
+              t('IBSOFT_THEME.CHATHUB_SETTINGS.CHANNEL_OPERATIONS.BUTTON')
+            "
+            icon="i-lucide-sliders-horizontal"
+            slate
+            sm
+            @click="openAutomationHandoff(inbox)"
+          />
           <router-link
             :to="{
               name: 'settings_inbox_show',
@@ -217,6 +238,11 @@ const confirmDeletion = async () => {
       :confirm-place-holder-text="confirmPlaceHolderText"
       @on-confirm="confirmDeletion"
       @on-close="closeDelete"
+    />
+
+    <AutomationHandoffPolicyModal
+      ref="automationHandoffModalRef"
+      :teams="teams"
     />
   </section>
 </template>

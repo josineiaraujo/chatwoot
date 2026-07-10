@@ -171,6 +171,57 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
     end
   end
 
+  describe 'automation handoff policies' do
+    it 'allows administrators to configure automation handoff by channel' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 12,
+              target_team_id: team.id,
+              customer_message_enabled: true,
+              customer_message: 'Vou encaminhar seu atendimento para nossa equipe.'
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'enabled' => true,
+        'inbox_id' => inbox.id,
+        'target_team_id' => team.id,
+        'target_team_name' => team.name,
+        'stale_after_minutes' => 12,
+        'customer_message_enabled' => true,
+        'customer_message' => 'Vou encaminhar seu atendimento para nossa equipe.'
+      )
+
+      get "#{base_url}/automation_handoff_policies/#{inbox.id}",
+          headers: admin_headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include('enabled' => true, 'target_team_id' => team.id)
+    end
+
+    it 'blocks agents from changing automation handoff policies' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: { enabled: true, target_team_id: team.id },
+            headers: agent_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'rejects enabling the policy without a target team' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: { enabled: true, stale_after_minutes: 10 },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+  end
+
   describe 'PATCH /team_policies/:team_id' do
     it 'allows administrators to save a disabled team override without inline configuration' do
       patch "#{base_url}/team_policies/#{team.id}",

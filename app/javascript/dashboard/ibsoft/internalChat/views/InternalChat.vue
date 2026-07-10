@@ -8,12 +8,14 @@ import {
   watch,
 } from 'vue';
 import { useElementSize } from '@vueuse/core';
+import { vOnClickOutside } from '@vueuse/components';
 import { useI18n } from 'vue-i18n';
 import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import ResizableEditorWrapper from 'dashboard/components/widgets/conversation/ResizableEditorWrapper.vue';
@@ -26,8 +28,13 @@ import {
   clearActiveInternalChatRoom,
   setActiveInternalChatRoom,
 } from '../helpers/audioNotifications';
+import {
+  buildMessageDateGroups,
+  formatMessageTimestamp,
+  isSameLocalDate,
+} from '../helpers/messageDateGroups';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const store = useStore();
 const route = useRoute();
 const currentUser = useMapGetter('getCurrentUser');
@@ -58,6 +65,7 @@ const isDirectChatModalOpen = ref(false);
 const isEditRoomModalOpen = ref(false);
 const isDeleteRoomConfirmOpen = ref(false);
 const isMediaPreviewOpen = ref(false);
+const isCreateMenuOpen = ref(false);
 const isLoadingRooms = ref(false);
 const isLoadingMessages = ref(false);
 const isLoadingOlderMessages = ref(false);
@@ -364,6 +372,26 @@ const mediaGalleryAttachments = computed(() =>
   )
 );
 
+const messageDateGroups = computed(() =>
+  buildMessageDateGroups(messages.value, {
+    locale: locale.value,
+    todayLabel: t('IBSOFT_INTERNAL_CHAT.MESSAGES.TODAY'),
+  })
+);
+
+const createMenuItems = computed(() => [
+  {
+    action: 'newDirectChat',
+    label: t('IBSOFT_INTERNAL_CHAT.ACTIONS.NEW_CONVERSATION'),
+    icon: 'i-lucide-message-circle-plus',
+  },
+  {
+    action: 'createRoom',
+    label: t('IBSOFT_INTERNAL_CHAT.ACTIONS.CREATE_NEW_ROOM'),
+    icon: 'i-lucide-users-round',
+  },
+]);
+
 const formatTime = value => {
   if (!value) return '';
 
@@ -372,6 +400,9 @@ const formatTime = value => {
     minute: '2-digit',
   }).format(new Date(value));
 };
+
+const formatInternalMessageTime = value =>
+  formatMessageTimestamp(value, { locale: locale.value });
 
 const roomIcon = room =>
   isDirectRoom(room)
@@ -646,8 +677,17 @@ const fetchRooms = async () => {
   }
 };
 
+const closeCreateMenu = () => {
+  isCreateMenuOpen.value = false;
+};
+
+const toggleCreateMenu = () => {
+  isCreateMenuOpen.value = !isCreateMenuOpen.value;
+};
+
 const openCreateRoomModal = () => {
   clearError();
+  closeCreateMenu();
   createRoomName.value = '';
   createMemberIds.value = [];
   isCreateRoomModalOpen.value = true;
@@ -659,12 +699,24 @@ const closeCreateRoomModal = () => {
 
 const openDirectChatModal = () => {
   clearError();
+  closeCreateMenu();
   directSearchQuery.value = '';
   isDirectChatModalOpen.value = true;
 };
 
 const closeDirectChatModal = () => {
   isDirectChatModalOpen.value = false;
+};
+
+const onCreateMenuAction = ({ action }) => {
+  if (action === 'newDirectChat') {
+    openDirectChatModal();
+    return;
+  }
+
+  if (action === 'createRoom') {
+    openCreateRoomModal();
+  }
 };
 
 const clearCoverCrop = () => {
@@ -1041,7 +1093,10 @@ const shouldShowSenderName = (message, index) => {
   if (!agentDisplayName(message.sender)) return false;
 
   const previousMessage = messages.value[index - 1];
-  return previousMessage?.sender?.id !== message.sender?.id;
+  return (
+    previousMessage?.sender?.id !== message.sender?.id ||
+    !isSameLocalDate(previousMessage?.created_at, message.created_at)
+  );
 };
 
 const formattedMessageContent = message => {
@@ -1143,22 +1198,23 @@ if (import.meta.hot) {
               {{ t('IBSOFT_INTERNAL_CHAT.HEADER.TITLE') }}
             </h1>
           </div>
-          <div class="flex gap-1">
-            <Button
-              icon="i-lucide-user-round-plus"
-              color="slate"
-              size="sm"
-              :title="t('IBSOFT_INTERNAL_CHAT.ACTIONS.NEW_DIRECT_CHAT')"
-              :aria-label="t('IBSOFT_INTERNAL_CHAT.ACTIONS.NEW_DIRECT_CHAT')"
-              @click="openDirectChatModal"
-            />
+          <div
+            v-on-click-outside="closeCreateMenu"
+            class="relative flex items-center"
+          >
             <Button
               icon="i-lucide-plus"
               color="blue"
               size="sm"
-              :title="t('IBSOFT_INTERNAL_CHAT.ACTIONS.CREATE_ROOM')"
-              :aria-label="t('IBSOFT_INTERNAL_CHAT.ACTIONS.CREATE_ROOM')"
-              @click="openCreateRoomModal"
+              :title="t('IBSOFT_INTERNAL_CHAT.ACTIONS.CREATE_MENU')"
+              :aria-label="t('IBSOFT_INTERNAL_CHAT.ACTIONS.CREATE_MENU')"
+              @click="toggleCreateMenu"
+            />
+            <DropdownMenu
+              v-if="isCreateMenuOpen"
+              :menu-items="createMenuItems"
+              class="top-full mt-1 w-52 ltr:right-0 rtl:left-0"
+              @action="onCreateMenuAction"
             />
           </div>
         </div>
@@ -1421,153 +1477,171 @@ if (import.meta.hot) {
           >
             {{ t('IBSOFT_INTERNAL_CHAT.MESSAGES.LOADING_OLDER') }}
           </div>
-          <article
-            v-for="(message, index) in messages"
-            :key="message.id"
-            class="message-bubble-container mb-2 flex w-full gap-2 first:mt-auto"
-            :class="{ 'justify-end': isOwnMessage(message) }"
+          <div
+            v-for="group in messageDateGroups"
+            :key="group.key"
+            class="flex w-full flex-col first:mt-auto"
           >
-            <Avatar
-              v-if="!isOwnMessage(message)"
-              :name="agentDisplayName(message.sender)"
-              :src="agentAvatarSrc(message.sender)"
-              :status="agentAvailabilityStatus(message.sender)"
-              :size="24"
-              class="mt-auto"
-              rounded-full
-            />
             <div
-              class="grid max-w-lg min-w-0 gap-1"
-              :class="
-                isOwnMessage(message)
-                  ? 'justify-items-end ltr:ml-8 rtl:mr-8'
-                  : 'justify-items-start ltr:mr-8 rtl:ml-8'
-              "
+              class="my-4 flex items-center gap-3 text-center text-xs font-medium text-n-slate-11"
             >
+              <span class="h-px flex-1 bg-n-weak" />
+              <span class="rounded-full bg-n-alpha-2 px-3 py-1 text-n-slate-11">
+                {{ group.label }}
+              </span>
+              <span class="h-px flex-1 bg-n-weak" />
+            </div>
+
+            <article
+              v-for="{ message, index } in group.messages"
+              :key="message.id"
+              class="message-bubble-container mb-2 flex w-full gap-2"
+              :class="{ 'justify-end': isOwnMessage(message) }"
+            >
+              <Avatar
+                v-if="!isOwnMessage(message)"
+                :name="agentDisplayName(message.sender)"
+                :src="agentAvatarSrc(message.sender)"
+                :status="agentAvailabilityStatus(message.sender)"
+                :size="24"
+                class="mt-auto"
+                rounded-full
+              />
               <div
-                class="max-w-full rounded-xl px-4 py-3 text-sm"
-                :class="messageBubbleClasses(message)"
-                data-bubble-name="text"
+                class="grid max-w-lg min-w-0 gap-1"
+                :class="
+                  isOwnMessage(message)
+                    ? 'justify-items-end ltr:ml-8 rtl:mr-8'
+                    : 'justify-items-start ltr:mr-8 rtl:ml-8'
+                "
               >
                 <div
-                  v-if="shouldShowSenderName(message, index)"
-                  class="mb-1 max-w-full truncate text-start text-xs font-semibold leading-4"
-                  :class="senderNameClasses(message.sender)"
+                  class="max-w-full rounded-xl px-4 py-3 text-sm"
+                  :class="messageBubbleClasses(message)"
+                  data-bubble-name="text"
                 >
-                  {{ agentDisplayName(message.sender) }}
-                </div>
-                <span
-                  v-if="message.content"
-                  v-dompurify-html="formattedMessageContent(message)"
-                  class="prose prose-bubble"
-                />
-                <div
-                  v-if="message.attachments?.length"
-                  class="mt-3 flex flex-col gap-2"
-                >
-                  <template
-                    v-for="attachment in message.attachments"
-                    :key="attachment.id"
+                  <div
+                    v-if="shouldShowSenderName(message, index)"
+                    class="mb-1 max-w-full truncate text-start text-xs font-semibold leading-4"
+                    :class="senderNameClasses(message.sender)"
                   >
-                    <button
-                      v-if="attachment.file_type === 'image'"
-                      type="button"
-                      class="skip-context-menu block max-w-full cursor-pointer border-0 bg-transparent p-0 text-left"
-                      :aria-label="
-                        t('IBSOFT_INTERNAL_CHAT.ACTIONS.PREVIEW_IMAGE')
-                      "
-                      @click="openMediaPreview(attachment, message)"
+                    {{ agentDisplayName(message.sender) }}
+                  </div>
+                  <span
+                    v-if="message.content"
+                    v-dompurify-html="formattedMessageContent(message)"
+                    class="prose prose-bubble"
+                  />
+                  <div
+                    v-if="message.attachments?.length"
+                    class="mt-3 flex flex-col gap-2"
+                  >
+                    <template
+                      v-for="attachment in message.attachments"
+                      :key="attachment.id"
                     >
-                      <img
-                        v-if="attachmentPreviewUrl(attachment)"
-                        :src="attachmentPreviewUrl(attachment)"
-                        :alt="attachment.file_name"
-                        class="block max-h-52 max-w-full rounded-lg object-contain"
-                        @load="keepMessagesPinnedToBottom"
-                      />
-                      <span
-                        v-else
-                        class="grid size-24 place-content-center rounded-lg bg-n-alpha-2 text-n-slate-11"
-                      >
-                        <span class="i-lucide-image size-6" />
-                      </span>
-                    </button>
-                    <div
-                      v-else-if="attachment.file_type === 'audio'"
-                      class="w-80 max-w-full"
-                    >
-                      <InternalChatAudioChip
-                        :attachment="audioChipAttachment(attachment)"
-                        :load-source="
-                          () => fetchAttachmentObjectUrl(attachment)
+                      <button
+                        v-if="attachment.file_type === 'image'"
+                        type="button"
+                        class="skip-context-menu block max-w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+                        :aria-label="
+                          t('IBSOFT_INTERNAL_CHAT.ACTIONS.PREVIEW_IMAGE')
                         "
-                        class="p-2 text-n-slate-12 skip-context-menu"
-                      />
-                    </div>
-                    <button
-                      v-else-if="attachment.file_type === 'video'"
-                      type="button"
-                      class="skip-context-menu group relative block aspect-video w-64 max-w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-n-alpha-2 p-0 text-left"
-                      :aria-label="
-                        t('IBSOFT_INTERNAL_CHAT.ACTIONS.PREVIEW_VIDEO')
-                      "
-                      @click="openMediaPreview(attachment, message)"
-                    >
-                      <img
-                        v-if="attachmentPreviewUrl(attachment)"
-                        :src="attachmentPreviewUrl(attachment)"
-                        :alt="attachment.file_name"
-                        class="size-full object-cover"
-                        @load="keepMessagesPinnedToBottom"
-                      />
-                      <span
-                        v-else
-                        class="grid size-full place-content-center text-n-slate-11"
+                        @click="openMediaPreview(attachment, message)"
                       >
-                        <span class="i-lucide-film size-8" />
-                      </span>
-                      <span
-                        class="absolute inset-0 grid place-content-center bg-n-alpha-black2 text-n-slate-12 opacity-90 transition-opacity group-hover:opacity-100"
+                        <img
+                          v-if="attachmentPreviewUrl(attachment)"
+                          :src="attachmentPreviewUrl(attachment)"
+                          :alt="attachment.file_name"
+                          class="block max-h-52 max-w-full rounded-lg object-contain"
+                          @load="keepMessagesPinnedToBottom"
+                        />
+                        <span
+                          v-else
+                          class="grid size-24 place-content-center rounded-lg bg-n-alpha-2 text-n-slate-11"
+                        >
+                          <span class="i-lucide-image size-6" />
+                        </span>
+                      </button>
+                      <div
+                        v-else-if="attachment.file_type === 'audio'"
+                        class="w-80 max-w-full"
+                      >
+                        <InternalChatAudioChip
+                          :attachment="audioChipAttachment(attachment)"
+                          :load-source="
+                            () => fetchAttachmentObjectUrl(attachment)
+                          "
+                          class="p-2 text-n-slate-12 skip-context-menu"
+                        />
+                      </div>
+                      <button
+                        v-else-if="attachment.file_type === 'video'"
+                        type="button"
+                        class="skip-context-menu group relative block aspect-video w-64 max-w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-n-alpha-2 p-0 text-left"
+                        :aria-label="
+                          t('IBSOFT_INTERNAL_CHAT.ACTIONS.PREVIEW_VIDEO')
+                        "
+                        @click="openMediaPreview(attachment, message)"
+                      >
+                        <img
+                          v-if="attachmentPreviewUrl(attachment)"
+                          :src="attachmentPreviewUrl(attachment)"
+                          :alt="attachment.file_name"
+                          class="size-full object-cover"
+                          @load="keepMessagesPinnedToBottom"
+                        />
+                        <span
+                          v-else
+                          class="grid size-full place-content-center text-n-slate-11"
+                        >
+                          <span class="i-lucide-film size-8" />
+                        </span>
+                        <span
+                          class="absolute inset-0 grid place-content-center bg-n-alpha-black2 text-n-slate-12 opacity-90 transition-opacity group-hover:opacity-100"
+                        >
+                          <span
+                            class="i-teenyicons-play-small-solid size-10 rounded-full bg-n-slate-1/70 shadow-sm"
+                          />
+                        </span>
+                      </button>
+                      <button
+                        v-else
+                        type="button"
+                        class="flex min-w-0 items-center gap-2 rounded-lg border-0 bg-n-alpha-3 px-3 py-2 text-left text-sm text-n-slate-12"
+                        @click="downloadAttachment(attachment)"
                       >
                         <span
-                          class="i-teenyicons-play-small-solid size-10 rounded-full bg-n-slate-1/70 shadow-sm"
+                          class="size-4"
+                          :class="attachmentIcon(attachment)"
                         />
-                      </span>
-                    </button>
-                    <button
-                      v-else
-                      type="button"
-                      class="flex min-w-0 items-center gap-2 rounded-lg border-0 bg-n-alpha-3 px-3 py-2 text-left text-sm text-n-slate-12"
-                      @click="downloadAttachment(attachment)"
-                    >
-                      <span
-                        class="size-4"
-                        :class="attachmentIcon(attachment)"
-                      />
-                      <span class="min-w-0 truncate">
-                        {{ attachment.file_name }}
-                      </span>
-                    </button>
-                  </template>
-                </div>
-                <div
-                  class="mt-2 flex items-center gap-1.5 text-xs text-n-slate-11"
-                  :class="messageMetaClasses(message)"
-                >
-                  <time>{{ formatTime(message.created_at) }}</time>
+                        <span class="min-w-0 truncate">
+                          {{ attachment.file_name }}
+                        </span>
+                      </button>
+                    </template>
+                  </div>
+                  <div
+                    class="mt-2 flex items-center gap-1.5 text-xs text-n-slate-11"
+                    :class="messageMetaClasses(message)"
+                  >
+                    <time>
+                      {{ formatInternalMessageTime(message.created_at) }}
+                    </time>
+                  </div>
                 </div>
               </div>
-            </div>
-            <Avatar
-              v-if="isOwnMessage(message)"
-              :name="agentDisplayName(currentUser)"
-              :src="agentAvatarSrc(currentUser)"
-              :status="agentAvailabilityStatus(currentUser)"
-              :size="24"
-              class="mt-auto"
-              rounded-full
-            />
-          </article>
+              <Avatar
+                v-if="isOwnMessage(message)"
+                :name="agentDisplayName(currentUser)"
+                :src="agentAvatarSrc(currentUser)"
+                :status="agentAvailabilityStatus(currentUser)"
+                :size="24"
+                class="mt-auto"
+                rounded-full
+              />
+            </article>
+          </div>
           <div aria-hidden="true" class="h-4 shrink-0" />
         </div>
       </section>
