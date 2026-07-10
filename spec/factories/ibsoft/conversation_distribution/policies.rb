@@ -53,4 +53,14 @@ FactoryBot.define do
       )
     end
   end
+
+  factory :ibsoft_automation_handoff_policy, class: 'Ibsoft::ConversationDistribution::AutomationHandoffPolicy' do
+    account
+    inbox { create(:inbox, account: account) }
+    target_team { create(:team, account: account) }
+    enabled { true }
+    stale_after_minutes { 10 }
+    customer_message_enabled { false }
+    customer_message { nil }
+  end
 end

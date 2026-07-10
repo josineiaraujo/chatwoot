@@ -2,14 +2,16 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
   ACTION_KEYS = {
     assignment_completed: 'ibsoft.conversation_distribution.activity.assignment_completed',
     agent_claim_completed: 'ibsoft.conversation_distribution.activity.agent_claim_completed',
+    automation_handoff_completed: 'ibsoft.conversation_distribution.activity.automation_handoff_completed',
     redistribution_completed: 'ibsoft.conversation_distribution.activity.redistribution_completed'
   }.freeze
 
-  def initialize(conversation:, action:, assignee: nil, previous_assignee: nil)
+  def initialize(conversation:, action:, assignee: nil, previous_assignee: nil, target_team: nil)
     @conversation = conversation
     @action = action&.to_sym
     @assignee = assignee
     @previous_assignee = previous_assignee
+    @target_team = target_team
   end
 
   def perform
@@ -31,7 +33,7 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
 
   private
 
-  attr_reader :conversation, :action, :assignee, :previous_assignee
+  attr_reader :conversation, :action, :assignee, :previous_assignee, :target_team
 
   def skipped(status)
     { applied: false, status: status }
@@ -50,11 +52,16 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
   def translation_params
     {
       assignee_name: assignee_name(assignee),
-      previous_assignee_name: assignee_name(previous_assignee)
+      previous_assignee_name: assignee_name(previous_assignee),
+      target_team_name: team_name(target_team)
     }
   end
 
   def assignee_name(user)
     user&.name.presence || I18n.t('ibsoft.conversation_distribution.activity.unknown_assignee', locale: locale)
+  end
+
+  def team_name(team)
+    team&.name.presence || I18n.t('ibsoft.conversation_distribution.activity.unknown_team', locale: locale)
   end
 end

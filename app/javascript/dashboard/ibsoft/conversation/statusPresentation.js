@@ -15,6 +15,11 @@ export const getConversationStatusLabelKey = status => {
 export const getConversationStatusLabel = (translate, status) =>
   translate(getConversationStatusLabelKey(status));
 
+export const getDefaultAssigneeTabForConversationType = conversationType =>
+  conversationType === wootConstants.CONVERSATION_TYPE.MENTION
+    ? ALL_ASSIGNEE_TAB
+    : wootConstants.ASSIGNEE_TYPE.ME;
+
 export const canManuallyMarkConversationPending = false;
 
 export const visibleManualConversationStatusOptions = options =>

@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import ActionCableConnector from '../actionCable';
+import { notifyConversationAssignment } from 'dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications';
 
 vi.mock('shared/helpers/mitt', () => ({
   emitter: {
@@ -12,6 +13,13 @@ vi.mock('dashboard/composables/useImpersonation', () => ({
     isImpersonating: { value: false },
   }),
 }));
+
+vi.mock(
+  'dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications',
+  () => ({
+    notifyConversationAssignment: vi.fn(),
+  })
+);
 
 global.chatwootConfig = {
   websocketURL: 'wss://test.chatwoot.com',
@@ -158,6 +166,29 @@ describe('ActionCableConnector - Copilot Tests', () => {
 
       vi.advanceTimersByTime(4000);
       expect(mockDispatch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('assignment event handlers', () => {
+    it('notifies the Ibsoft assignment audio helper when the assignee changes', () => {
+      const payload = {
+        id: 6179,
+        account_id: 1,
+        meta: {
+          assignee: {
+            id: 7,
+            name: 'Agente',
+          },
+        },
+      };
+
+      actionCable.onReceived({
+        event: 'assignee.changed',
+        data: payload,
+      });
+
+      expect(notifyConversationAssignment).toHaveBeenCalledWith(payload);
+      expect(mockDispatch).toHaveBeenCalledWith('updateConversation', payload);
     });
   });
 });

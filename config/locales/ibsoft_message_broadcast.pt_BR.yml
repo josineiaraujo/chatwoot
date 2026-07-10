@@ -1,0 +1,5 @@
+pt_BR:
+  ibsoft:
+    message_broadcast:
+      errors:
+        template_not_found: "Modelo de mensagem não encontrado ou não aprovado"

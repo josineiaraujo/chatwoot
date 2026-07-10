@@ -220,7 +220,7 @@ for removido.
 | `app/javascript/dashboard/ibsoft/internalChat/routes.js` | Declara a rota da tela de chat interno. |
 | `app/javascript/dashboard/ibsoft/internalChat/api/internalChat.js` | Cliente API do modulo. Centraliza chamadas para salas, mensagens, membros, leitura, anexos e contagem. |
 | `app/javascript/dashboard/ibsoft/internalChat/store.js` | Store Vuex do modulo. Controla contador global, salas nao lidas, sala ativa e eventos realtime. |
-| `app/javascript/dashboard/ibsoft/internalChat/views/InternalChat.vue` | Tela principal. Lista chats, abre sala/chat, carrega mensagens, envia mensagens/anexos, exibe composer e trata eventos locais. |
+| `app/javascript/dashboard/ibsoft/internalChat/views/InternalChat.vue` | Tela principal. Lista chats, abre sala/chat pelo menu unico de criacao, carrega mensagens agrupadas por dia, envia mensagens/anexos, exibe composer e trata eventos locais. |
 | `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatAudioChip.vue` | Player de audio do chat interno. Reaproveita o padrao visual do Chatwoot, mas trata URLs `blob:` de anexos protegidos sem invalidar a reproducao. |
 | `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatComposer.vue` | Reply box interno. Orquestra editor, anexos, audio e atalhos mantendo o contrato com a tela principal. |
 | `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatReplyTopPanel.vue` | Painel superior do composer interno, isolado para acompanhar a composicao do `ReplyBox` do Chatwoot sem carregar modos de conversa com cliente. |
@@ -228,6 +228,7 @@ for removido.
 | `app/javascript/dashboard/ibsoft/internalChat/components/MediaPreviewModal.vue` | Modal de preview de imagem/video com carregamento, zoom, rotacao, navegacao e download. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentUrls.js` | Helpers de URL de anexos do chat interno, incluindo preservacao de `blob:`/`data:` para reproducao de audio. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/audioNotifications.js` | Controla som de novas mensagens e sala ativa para evitar alertas indevidos. |
+| `app/javascript/dashboard/ibsoft/internalChat/helpers/messageDateGroups.js` | Normaliza timestamps, agrupa mensagens por dia e formata divisorias/data-hora do historico interno. |
 
 ## Traducoes
 
@@ -262,6 +263,7 @@ for removido.
 | `spec/requests/api/v1/accounts/ibsoft/internal_chat/reads_spec.rb` | Testa marcacao de leitura apenas no contexto correto. |
 | `spec/requests/api/v1/accounts/ibsoft/internal_chat/attachments_spec.rb` | Testa streaming autorizado de anexos/previews e bloqueio imediato apos remocao. |
 | `app/javascript/dashboard/ibsoft/internalChat/specs/attachmentUrls.spec.js` | Testa que URLs `blob:`/`data:` de audio nao recebem cache-buster e continuam reproduziveis. |
+| `app/javascript/dashboard/ibsoft/internalChat/specs/messageDateGroups.spec.js` | Testa agrupamento por dia, rotulo de hoje e formato de data/hora das mensagens internas. |
 
 ## Pontos de acoplamento no Chatwoot original
 

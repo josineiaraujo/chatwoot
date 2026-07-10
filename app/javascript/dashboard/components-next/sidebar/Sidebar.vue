@@ -52,6 +52,8 @@ const IBSOFT_HIDDEN_NATIVE_SETTINGS_ITEMS = new Set([
   'Settings Agents',
   'Settings Teams',
   'Settings Inboxes',
+  'Settings Agent Bots',
+  'Settings Integrations',
 ]);
 
 const isACustomBrandedInstance = useMapGetter(
@@ -263,6 +265,10 @@ const canManageChathubSettings = computed(() => {
     activeAccount.value?.permissions?.includes('ibsoft_chathub_settings_manage')
   );
 });
+
+const canUseMessageBroadcast = computed(
+  () => activeAccount.value?.role === 'administrator'
+);
 
 onMounted(() => {
   store.dispatch('labels/get');
@@ -511,6 +517,17 @@ const menuItems = computed(() => {
         count: 'ibsoftInternalChat/getUnreadRoomCount',
       },
     },
+    ...(canUseMessageBroadcast.value
+      ? [
+          {
+            name: 'Ibsoft Message Broadcast',
+            label: t('IBSOFT_THEME.MESSAGE_BROADCAST.SIDEBAR'),
+            icon: 'i-lucide-send',
+            to: accountScopedRoute('ibsoft_message_broadcast'),
+            activeOn: ['ibsoft_message_broadcast'],
+          },
+        ]
+      : []),
     {
       name: 'Captain',
       icon: 'i-woot-captain',

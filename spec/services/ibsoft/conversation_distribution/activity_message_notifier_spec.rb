@@ -6,6 +6,7 @@ RSpec.describe Ibsoft::ConversationDistribution::ActivityMessageNotifier do
   let(:conversation) { create(:conversation, account: account, inbox: inbox) }
   let(:previous_assignee) { create(:user, account: account, name: 'Agente Anterior') }
   let(:assignee) { create(:user, account: account, name: 'Agente Novo') }
+  let(:target_team) { create(:team, account: account, name: 'Suporte') }
 
   it 'creates an internal activity message for automatic assignment' do
     result = nil
@@ -37,6 +38,20 @@ RSpec.describe Ibsoft::ConversationDistribution::ActivityMessageNotifier do
     expect(conversation.messages.activity.last.content).to eq(
       'Atendimento redistribuído automaticamente de Agente Anterior para Agente Novo ' \
       'pela redistribuição automática por exceder o tempo de espera.'
+    )
+  end
+
+  it 'creates an internal activity message for automation handoff' do
+    perform_enqueued_jobs(only: Conversations::ActivityMessageJob) do
+      described_class.new(
+        conversation: conversation,
+        action: :automation_handoff_completed,
+        target_team: target_team
+      ).perform
+    end
+
+    expect(conversation.messages.activity.last.content).to eq(
+      "Atendimento encaminhado automaticamente da automação para #{target_team.reload.name} por inatividade."
     )
   end
 end

@@ -38,8 +38,7 @@ class Ibsoft::ConversationDistribution::AttentionNotificationSync
       account: account,
       user: previous_assignee,
       primary_actor: conversation,
-      notification_type: STALE_ASSIGNEE_NOTIFICATION_TYPES,
-      read_at: nil
+      notification_type: STALE_ASSIGNEE_NOTIFICATION_TYPES
     )
   end
 

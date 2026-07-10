@@ -75,18 +75,6 @@ const selectSection = sectionId => {
   router.replace({ query });
 };
 
-const integratedSectionLabel = sectionId => {
-  if (sectionId === 'channels') {
-    return t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.CHANNELS');
-  }
-
-  if (sectionId === 'teams') {
-    return t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.TEAMS');
-  }
-
-  return t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.ACCOUNT');
-};
-
 const menuItems = computed(() => {
   const items = [
     {
@@ -106,7 +94,7 @@ const menuItems = computed(() => {
       ...integratedSections.map(section => ({
         id: section.id,
         icon: section.icon,
-        label: integratedSectionLabel(section.id),
+        label: section.label(t),
       }))
     );
 

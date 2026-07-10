@@ -25,6 +25,7 @@ Backend isolado:
 
 - `app/models/ibsoft/conversation_distribution/channel_policy.rb`
 - `app/models/ibsoft/conversation_distribution/team_policy.rb`
+- `app/models/ibsoft/conversation_distribution/automation_handoff_policy.rb`
 - `app/models/ibsoft/conversation_distribution/event_log.rb`
 - `app/models/ibsoft/conversation_distribution/configuration.rb`
 - `app/services/ibsoft/conversation_distribution/configuration_validator.rb`
@@ -32,6 +33,8 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/unavailability_config_validator.rb`
 - `app/services/ibsoft/conversation_distribution/unavailability_config_normalizer.rb`
 - `app/services/ibsoft/conversation_distribution/candidate_finder.rb`
+- `app/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder.rb`
+- `app/services/ibsoft/conversation_distribution/automation_handoff_executor.rb`
 - `app/services/ibsoft/conversation_distribution/source_resolver.rb`
 - `app/services/ibsoft/conversation_distribution/source_marker.rb`
 - `app/services/ibsoft/conversation_distribution/candidate_evaluator.rb`
@@ -73,19 +76,23 @@ Frontend isolado:
 - `app/javascript/dashboard/ibsoft/conversationDistribution/api.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/policyDefaults.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue`
-- `app/javascript/dashboard/ibsoft/conversationDistribution/components/InboxDistributionSettings.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/TeamDistributionSettingsModal.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/AgentAssignmentPrompt.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/PolicyBusinessHourDay.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/EventLogsDashboard.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/routes.js`
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/AutomationHandoffPolicyModal.vue`
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`
+  consome o modal nos cards privados de canais de comunicacao.
 
 Banco de dados:
 
 - `ibsoft_conversation_distribution_policies`
 - `ibsoft_conversation_distribution_channel_policies`
 - `ibsoft_conversation_distribution_team_policies`
+- `ibsoft_conversation_distribution_automation_handoff_policies`
 - `ibsoft_conversation_distribution_event_logs`
 
 ## Politicas
@@ -202,6 +209,58 @@ A precedencia planejada e:
 Um vinculo sem `distribution_policy_id` e considerado desativado. Isso nao e
 fallback de regra: e ausencia explicita de politica aplicavel naquele ponto.
 
+### Politica de automacoes paradas por canal
+
+A tabela `ibsoft_conversation_distribution_automation_handoff_policies`
+configura, por canal de comunicacao, o que fazer quando uma conversa fica presa
+na automacao.
+
+Essa politica e separada da politica nomeada de distribuicao porque resolve um
+problema anterior ao atendimento humano: retirar conversas de `pending` quando a
+automacao ficou parada. Depois que a conversa e encaminhada para um time humano,
+o fluxo normal de distribuicao Ibsoft passa a decidir se atribui a um agente,
+aguarda, envia mensagem de indisponibilidade ou aplica fallback conforme a
+politica de distribuicao vinculada ao canal/time.
+
+Campos principais:
+
+- `enabled`: ativa a verificacao no canal;
+- `stale_after_minutes`: tempo maximo que a conversa pode ficar parada na
+  automacao;
+- `target_team_id`: time humano que recebera a conversa;
+- `customer_message_enabled` e `customer_message`: mensagem publica opcional ao
+  cliente.
+
+O evento interno na conversa e obrigatorio e usa Rails i18n. A mensagem ao
+cliente e opcional, publica e criada como `message_type=template`, para nao
+contar como primeira resposta humana.
+
+Uma conversa so e candidata quando:
+
+- esta com `status=pending`;
+- nao possui `assignee_id`;
+- ainda nao possui `first_reply_created_at`;
+- pertence a um canal com politica ativa;
+- `last_activity_at` e mais antigo que `stale_after_minutes`;
+- ha sinal de automacao ativa: bot ativo no canal, `assignee_agent_bot_id` ou
+  historico de mensagem com `sender_type=AgentBot`;
+- nao existe evento `automation_handoff_completed` criado depois da ultima
+  atividade da conversa.
+
+O service `AutomationHandoffExecutor` usa `FOR UPDATE SKIP LOCKED` para evitar
+processamento concorrente. Quando
+`IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=false`, ele apenas
+registra `automation_handoff_skipped` com motivo `real_assignment_disabled`.
+Quando a execucao real esta ativa, ele:
+
+- abre a conversa;
+- move para o time alvo;
+- limpa `assignee_id` e `assignee_agent_bot_id`;
+- preserva `waiting_since` quando ja existir;
+- marca `additional_attributes.ibsoft_distribution_source=system_team_transfer`
+  e `ibsoft_distribution_source_reason=automation_stalled`;
+- registra `automation_handoff_completed` na auditoria.
+
 O horario fica dentro da politica nomeada. O campo `business_hours.mode` aceita:
 
 - `inherit_channel`: usa o horario do canal;
@@ -247,6 +306,8 @@ Rotas:
 - `POST /policies`
 - `PATCH /policies/:id`
 - `DELETE /policies/:id`
+- `GET /automation_handoff_policies/:inbox_id`
+- `PATCH /automation_handoff_policies/:inbox_id`
 - `GET /inbox_policies/:inbox_id`
 - `PATCH /inbox_policies/:inbox_id`
 - `GET /team_policies/:team_id`
@@ -541,9 +602,9 @@ Com execucao real ligada:
   `previous_assignee_id`, `new_assignee_id`, timeout e evento gatilho;
 - cria mensagem de atividade informando que o atendimento foi redistribuido
   automaticamente por falta de primeira resposta;
-- `AttentionNotificationSync` remove notificacoes nao lidas de responsabilidade
-  do agente anterior, incluindo notificacoes de participante, preservando
-  mencoes e historico lido;
+- `AttentionNotificationSync` remove notificacoes de responsabilidade do agente
+  anterior, lidas ou nao, incluindo notificacoes de participante, preservando
+  mencoes;
 - `PreviousAssigneeParticipationCleanup` remove o agente anterior de
   `conversation_participants` depois de uma redistribuicao real, evitando que
   ele continue recebendo mensagens como participante. Isso vale apenas para
@@ -710,13 +771,17 @@ Neste incremento inicial, os pontos de acoplamento sao:
 - `config/schedule.yml`: registro do cron privado
   `ibsoft_conversation_distribution_watchdog_job`, protegido por flag.
 - `app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CollaboratorsPage.vue`:
-  adiciona a secao Ibsoft de distribuicao na configuracao do canal.
+  teve o encaixe Ibsoft de distribuicao removido para manter as regras privadas
+  do canal fora da tela nativa do Chatwoot.
 - `app/javascript/dashboard/routes/dashboard/settings/teams/Index.vue`: adiciona
   um botao discreto na linha do time para abrir o modal Ibsoft de distribuicao.
 - `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
   rota frontend do painel de supervisao Ibsoft.
 - `app/javascript/dashboard/routes/dashboard/Dashboard.vue`: monta o prompt
   privado de assuncao de fila do agente.
+- `app/javascript/dashboard/helper/actionCable.js`: no evento nativo
+  `assignee.changed`, delega para helper privado Ibsoft a decisao de tocar som
+  quando a conversa passa a ser atribuida ao usuario atual.
 - `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: registra a
   Home ChatHub no menu lateral. O painel de supervisao continua em rota
   propria, mas o acesso visual fica dentro da Home para usuarios com permissao.
@@ -737,12 +802,14 @@ Neste incremento inicial, os pontos de acoplamento sao:
 - `app/services/action_service.rb`: ponto pequeno para marcar origem Ibsoft
   quando uma automacao, macro ou acao de sistema atribui a conversa a um time.
 
-Nenhum callback de conversa, status de agente, Assignment V2 ou ActionCable foi
-alterado nesta fase. A unica escrita nova em conversa e o marcador
-`additional_attributes.ibsoft_distribution_source` durante atribuicao a time,
-sem executar distribuicao. A atribuicao real so acontece pelo endpoint
-administrativo `POST /executions` quando a flag global de seguranca estiver
-explicitamente ligada.
+Nenhum callback de conversa, status de agente ou Assignment V2 foi alterado
+nesta fase. O unico acoplamento em ActionCable e a chamada frontend ao helper
+Ibsoft de som de atribuicao no evento `assignee.changed`; toda regra continua
+isolada em `assignmentAudioNotifications.js`. A unica escrita nova em conversa
+e o marcador `additional_attributes.ibsoft_distribution_source` durante
+atribuicao a time, sem executar distribuicao. A atribuicao real so acontece pelo
+endpoint administrativo `POST /executions` quando a flag global de seguranca
+estiver explicitamente ligada.
 
 ## Proximas fases planejadas
 
@@ -753,6 +820,8 @@ explicitamente ligada.
 
 - `bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
 - `bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
+- `bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
 - validar build/lint dos arquivos em
   `app/javascript/dashboard/ibsoft/conversationDistribution/`;
 - validar manualmente CRUD de politica por canal e por time;
