@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_05_004000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -917,6 +917,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_004000) do
     t.index ["account_id"], name: "index_ibsoft_chathub_settings_on_account_id", unique: true
   end
 
+  create_table "ibsoft_conversation_distribution_automation_handoff_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "target_team_id"
+    t.boolean "enabled", default: false, null: false
+    t.integer "stale_after_minutes", default: 10, null: false
+    t.boolean "customer_message_enabled", default: false, null: false
+    t.text "customer_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "enabled"], name: "idx_ibsoft_automation_handoff_account_enabled"
+    t.index ["account_id", "inbox_id"], name: "idx_ibsoft_automation_handoff_account_inbox", unique: true
+    t.index ["account_id"], name: "idx_on_account_id_bda58423ea"
+    t.index ["inbox_id"], name: "idx_on_inbox_id_e5240f4318"
+    t.index ["target_team_id"], name: "idx_on_target_team_id_2133056d62"
+  end
+
   create_table "ibsoft_conversation_distribution_channel_policies", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "inbox_id", null: false
@@ -981,6 +998,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_004000) do
     t.index ["team_id"], name: "idx_on_team_id_d59e9eeb35"
   end
 
+  create_table "ibsoft_erp_connections", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.string "auth_type", null: false
+    t.string "base_url", null: false
+    t.boolean "active", default: false, null: false
+    t.text "credentials", default: "{}", null: false
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "last_tested_at"
+    t.string "last_test_status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "active"], name: "idx_ibsoft_erp_connections_one_active", unique: true, where: "(active = true)"
+    t.index ["account_id", "provider", "name"], name: "idx_ibsoft_erp_connections_account_provider_name", unique: true
+    t.index ["account_id"], name: "index_ibsoft_erp_connections_on_account_id"
+  end
+
   create_table "ibsoft_internal_chat_attachments", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "message_id", null: false
@@ -1039,6 +1074,84 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_004000) do
     t.index ["account_id", "room_type"], name: "index_ibsoft_internal_chat_rooms_on_account_id_and_room_type"
     t.index ["account_id"], name: "index_ibsoft_internal_chat_rooms_on_account_id"
     t.index ["created_by_id"], name: "index_ibsoft_internal_chat_rooms_on_created_by_id"
+  end
+
+  create_table "ibsoft_message_broadcast_group_members", force: :cascade do |t|
+    t.bigint "group_id", null: false
+    t.string "external_customer_id", null: false
+    t.string "customer_name", null: false
+    t.string "primary_phone"
+    t.string "fallback_phone"
+    t.string "city"
+    t.string "state"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_id", "external_customer_id"], name: "idx_ibsoft_broadcast_group_members_customer", unique: true
+    t.index ["group_id"], name: "index_ibsoft_message_broadcast_group_members_on_group_id"
+  end
+
+  create_table "ibsoft_message_broadcast_groups", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_id", null: false
+    t.string "name", null: false
+    t.string "erp_provider", null: false
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "idx_ibsoft_broadcast_groups_account_name", unique: true
+    t.index ["account_id"], name: "index_ibsoft_message_broadcast_groups_on_account_id"
+    t.index ["created_by_id"], name: "index_ibsoft_message_broadcast_groups_on_created_by_id"
+  end
+
+  create_table "ibsoft_message_broadcast_recipients", force: :cascade do |t|
+    t.bigint "broadcast_id", null: false
+    t.bigint "conversation_id"
+    t.bigint "message_id"
+    t.string "external_customer_id", null: false
+    t.string "customer_name", null: false
+    t.string "primary_phone"
+    t.string "fallback_phone"
+    t.string "phone_used"
+    t.string "phone_status", default: "pending", null: false
+    t.string "status", default: "pending", null: false
+    t.string "error_code"
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "template_variable_values", default: {}, null: false
+    t.index ["broadcast_id", "external_customer_id"], name: "idx_ibsoft_broadcast_recipients_customer", unique: true
+    t.index ["broadcast_id"], name: "index_ibsoft_message_broadcast_recipients_on_broadcast_id"
+    t.index ["conversation_id"], name: "index_ibsoft_message_broadcast_recipients_on_conversation_id"
+    t.index ["message_id"], name: "index_ibsoft_message_broadcast_recipients_on_message_id"
+  end
+
+  create_table "ibsoft_message_broadcasts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "erp_connection_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "assignee_id"
+    t.bigint "team_id"
+    t.string "status", default: "draft", null: false
+    t.string "source_type", null: false
+    t.string "template_name", null: false
+    t.string "template_language", null: false
+    t.string "conversation_mode", default: "close_after_send", null: false
+    t.jsonb "template_variables", default: {}, null: false
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "sent_by_id"
+    t.index ["account_id", "created_at"], name: "idx_ibsoft_broadcasts_account_created"
+    t.index ["account_id"], name: "index_ibsoft_message_broadcasts_on_account_id"
+    t.index ["assignee_id"], name: "index_ibsoft_message_broadcasts_on_assignee_id"
+    t.index ["created_by_id"], name: "index_ibsoft_message_broadcasts_on_created_by_id"
+    t.index ["erp_connection_id"], name: "index_ibsoft_message_broadcasts_on_erp_connection_id"
+    t.index ["inbox_id"], name: "index_ibsoft_message_broadcasts_on_inbox_id"
+    t.index ["sent_by_id"], name: "index_ibsoft_message_broadcasts_on_sent_by_id"
+    t.index ["team_id"], name: "index_ibsoft_message_broadcasts_on_team_id"
   end
 
   create_table "ibsoft_working_hour_breaks", force: :cascade do |t|
@@ -1557,9 +1670,26 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_05_004000) do
   add_foreign_key "ibsoft_chathub_agent_presence_states", "accounts"
   add_foreign_key "ibsoft_chathub_agent_presence_states", "users"
   add_foreign_key "ibsoft_chathub_settings", "accounts"
+  add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "accounts"
+  add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "inboxes"
+  add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "teams", column: "target_team_id"
   add_foreign_key "ibsoft_conversation_distribution_channel_policies", "ibsoft_conversation_distribution_policies", column: "distribution_policy_id"
   add_foreign_key "ibsoft_conversation_distribution_policies", "accounts"
   add_foreign_key "ibsoft_conversation_distribution_team_policies", "ibsoft_conversation_distribution_policies", column: "distribution_policy_id"
+  add_foreign_key "ibsoft_erp_connections", "accounts"
+  add_foreign_key "ibsoft_message_broadcast_group_members", "ibsoft_message_broadcast_groups", column: "group_id"
+  add_foreign_key "ibsoft_message_broadcast_groups", "accounts"
+  add_foreign_key "ibsoft_message_broadcast_groups", "users", column: "created_by_id"
+  add_foreign_key "ibsoft_message_broadcast_recipients", "conversations"
+  add_foreign_key "ibsoft_message_broadcast_recipients", "ibsoft_message_broadcasts", column: "broadcast_id"
+  add_foreign_key "ibsoft_message_broadcast_recipients", "messages"
+  add_foreign_key "ibsoft_message_broadcasts", "accounts"
+  add_foreign_key "ibsoft_message_broadcasts", "ibsoft_erp_connections", column: "erp_connection_id"
+  add_foreign_key "ibsoft_message_broadcasts", "inboxes"
+  add_foreign_key "ibsoft_message_broadcasts", "teams"
+  add_foreign_key "ibsoft_message_broadcasts", "users", column: "assignee_id"
+  add_foreign_key "ibsoft_message_broadcasts", "users", column: "created_by_id"
+  add_foreign_key "ibsoft_message_broadcasts", "users", column: "sent_by_id"
   add_foreign_key "ibsoft_working_hour_breaks", "accounts"
   add_foreign_key "ibsoft_working_hour_breaks", "inboxes"
   add_foreign_key "inboxes", "portals"

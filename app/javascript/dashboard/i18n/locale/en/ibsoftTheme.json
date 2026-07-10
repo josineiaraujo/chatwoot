@@ -29,21 +29,85 @@
     }
   },
   "IBSOFT_THEME": {
+    "COMMON": {
+      "CLEAR_SELECTION": "Clear selection"
+    },
     "CHATHUB_SETTINGS": {
       "SIDEBAR": "ChatHub settings",
-      "TITLE": "ChatHub settings",
-      "DESCRIPTION": "Global operational settings applied across channels and teams.",
+      "TITLE": "Channel and department settings",
+      "DESCRIPTION": "Global operational settings applied across channels and departments.",
       "SAVE": "Save settings",
       "SAVED": "Settings saved successfully.",
       "USER_OPTION": "{name} · {email}",
       "MENU": {
         "CHANNELS": "Communication channels",
-        "TEAMS": "Teams",
+        "TEAMS": "Departments",
+        "AGENT_BOTS": "Bots",
+        "INTEGRATIONS": "Integrations",
         "ACCOUNT": "Account",
-        "ATTENDANCE": "Attendance",
+        "ERP": "ERPs",
+        "ATTENDANCE": "Entry settings",
         "POLICIES": "Policies",
         "AGENTS": "Agents",
         "ACCESS_CONTROL": "Profiles and permissions"
+      },
+      "ERP": {
+        "TITLE": "ERPs",
+        "DESCRIPTION": "Configure external system integrations. Only one integration can be active at a time for modules that depend on ERP data.",
+        "NEW": "Add ERP",
+        "CREATE_TITLE": "Add ERP",
+        "EDIT_TITLE": "Edit ERP",
+        "SAVE": "Save ERP",
+        "SAVED": "ERP saved successfully.",
+        "ACTIVATED": "Default ERP updated.",
+        "DELETED": "ERP deleted successfully.",
+        "EMPTY": "No ERP integration has been configured.",
+        "NAME": "Name",
+        "NAME_PLACEHOLDER": "Example: IXC production",
+        "PROVIDER": "ERP",
+        "AUTH_TYPE": "Authentication",
+        "BASE_URL": "Base URL",
+        "BASE_URL_PLACEHOLDER": "https://erp.example.com",
+        "ACTIVE_TITLE": "Active default ERP",
+        "ACTIVE_DESCRIPTION": "All modules that depend on ERP data will use this connection.",
+        "ACTIVE_BADGE": "Active default",
+        "INACTIVE_BADGE": "Inactive",
+        "ACTIVATE": "Set as default",
+        "EDIT": "Edit",
+        "DELETE": "Delete",
+        "DELETE_TITLE": "Delete ERP",
+        "DELETE_MESSAGE": "Are you sure you want to delete {name}?",
+        "DELETE_CONFIRM": "Yes, delete ERP",
+        "CREDENTIALS_TITLE": "Credentials",
+        "CREDENTIALS_DESCRIPTION": "Enter the credentials used to connect to the ERP.",
+        "CREDENTIALS_CONFIGURED": "Credentials configured",
+        "CREDENTIALS_MISSING": "Credentials pending",
+        "PRESERVE_SECRET_HINT": "Leave sensitive fields blank to keep the values already configured.",
+        "AUTH_TYPES": {
+          "BASIC": "Username and password",
+          "TOKEN_APP": "Token and app"
+        },
+        "CREDENTIAL_FIELDS": {
+          "USERNAME": "Username",
+          "PASSWORD": "Password",
+          "TOKEN": "Token",
+          "APP": "App"
+        },
+        "TEST": {
+          "BUTTON": "Test connection",
+          "SUCCESS": "Connection tested successfully.",
+          "FAILURE": "Could not validate the connection.",
+          "LAST_STATUS": "Last test",
+          "STATUS": {
+            "SUCCESS": "success",
+            "FAILED": "failed"
+          }
+        },
+        "ERRORS": {
+          "LOAD": "Could not load ERP integrations.",
+          "SAVE": "Could not save ERP.",
+          "DELETE": "Could not delete ERP."
+        }
       },
       "CHANNELS": {
         "TITLE": "Communication channels",
@@ -63,6 +127,50 @@
         "DELETE_CANCEL": "Cancel",
         "DELETE_SUCCESS": "Channel deleted successfully.",
         "DELETE_ERROR": "Could not delete the channel."
+      },
+      "CHANNEL_OPERATIONS": {
+        "BUTTON": "Rules",
+        "TITLE": "{inbox} settings",
+        "SAVE": "Save settings",
+        "SAVE_SUCCESS": "Channel settings saved successfully.",
+        "SAVE_ERROR": "Could not save the channel settings.",
+        "DISTRIBUTION_LOAD_ERROR": "Could not load the channel distribution policy.",
+        "TABS_LABEL": "Channel operational settings",
+        "TABS": {
+          "DISTRIBUTION": "Distribution",
+          "AUTOMATION": "Automation"
+        },
+        "DISTRIBUTION_TITLE": "Channel distribution policy",
+        "DISTRIBUTION_DESCRIPTION": "Define the default policy used when a conversation from this channel is forwarded to human support.",
+        "TEAM_OVERRIDE_NOTICE": "Team-specific settings can override this channel policy."
+      },
+      "NATIVE_ASSIGNMENT": {
+        "DISABLE_ERROR": "Could not disable the channel native auto-assignment.",
+        "INDICATOR": {
+          "ACTIVE": "Native auto-assignment active",
+          "DISABLING": "Disabling native auto-assignment",
+          "DISABLED": "Native auto-assignment disabled",
+          "FAILED": "Failed to disable native auto-assignment"
+        }
+      },
+      "AUTOMATION_HANDOFF": {
+        "BUTTON": "Automation",
+        "TITLE": "{inbox} automation",
+        "SAVE": "Save policy",
+        "ENABLE_TITLE": "Forward stuck automations",
+        "ENABLE_DESCRIPTION": "When a conversation remains pending in automation for too long, automatically forward it to a human team.",
+        "STALE_AFTER": "Maximum idle time",
+        "MINUTES": "minutes",
+        "TARGET_TEAM": "Target team",
+        "SELECT_TEAM": "Select a team",
+        "INTERNAL_EVENT_NOTICE": "The internal event will always be recorded in the conversation. The customer message is optional.",
+        "CUSTOMER_MESSAGE_TITLE": "Customer message",
+        "CUSTOMER_MESSAGE_DESCRIPTION": "Send a public message when the conversation leaves automation because of inactivity.",
+        "CUSTOMER_MESSAGE": "Message text",
+        "CUSTOMER_MESSAGE_PLACEHOLDER": "I will forward your conversation to our team.",
+        "SAVE_SUCCESS": "Automation policy saved successfully.",
+        "SAVE_ERROR": "Could not save the automation policy.",
+        "LOAD_ERROR": "Could not load the automation policy."
       },
       "POLICIES": {
         "TITLE": "Distribution policies",
@@ -278,6 +386,248 @@
     },
     "INBOX": {
       "EMPTY_STATE_NOTE": "Conversations appear here when there are new messages, mentions, or assignments for you."
+    },
+    "MESSAGE_BROADCAST": {
+      "SIDEBAR": "Message broadcasts",
+      "TITLE": "Message broadcasts",
+      "DESCRIPTION": "Build recipient lists from the default ERP, save fixed groups, and prepare WhatsApp sending drafts.",
+      "EMPTY_ERP": "Configure and activate a default ERP before selecting recipients.",
+      "COMMON": {
+        "NOT_INFORMED": "Not provided"
+      },
+      "PAGINATION": {
+        "ITEMS_PER_PAGE": "Items per page"
+      },
+      "MODES": {
+        "MENU_LABEL": "Customer search types",
+        "DIRECT": {
+          "TITLE": "Direct search",
+          "DESCRIPTION": "Find customers by registration data, address, city, or status."
+        },
+        "CONTRACTS": {
+          "TITLE": "Contracts and plans",
+          "DESCRIPTION": "Filter customers by contract status, access plan, and internet status."
+        },
+        "CONCENTRATORS": {
+          "TITLE": "Concentrators",
+          "DESCRIPTION": "Select concentrators to fetch active logins and locate their customers."
+        }
+      },
+      "FILTERS": {
+        "NAME": "Name",
+        "STATE": "State",
+        "CITY": "City",
+        "CLIENT_STATUS": "Customer status",
+        "STREET": "Street",
+        "NEIGHBORHOOD": "Neighborhood",
+        "ZIP_CODE": "ZIP code",
+        "CONTRACT_STATUS": "Contract status",
+        "INTERNET_STATUS": "Internet status",
+        "PLAN": "Access plan",
+        "CONCENTRATOR": "Concentrator",
+        "POP_IDS": "POPs",
+        "TRANSMITTER": "Transmitter",
+        "TRANSMISSION_INTERFACE": "Transmission interface",
+        "FTTH_BOX": "FTTH box",
+        "TRANSMITTER_PORT": "Transmitter port",
+        "ID_LIST_PLACEHOLDER": "Ex: 1,2,3",
+        "ANY_STATUS": "Any status",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "ANY_STATE": "Any state",
+        "ANY_CITY": "Any city",
+        "ANY_CONTRACT": "Any contract",
+        "ANY_INTERNET": "Any internet status"
+      },
+      "LOOKUPS": {
+        "PLANS_TITLE": "IXC access plans",
+        "PLANS_PLACEHOLDER": "Select access plans",
+        "PLANS_SEARCH": "Search access plans",
+        "STATES_SEARCH": "Search states",
+        "CITIES_SEARCH": "Search cities",
+        "SELECT_STATE_FIRST": "Select a state first",
+        "POPS_PLACEHOLDER": "Select POPs",
+        "POPS_SEARCH": "Search POPs",
+        "CLEAR_SELECTION": "Clear selection",
+        "TRANSMITTERS_PLACEHOLDER": "Select transmitters",
+        "TRANSMITTERS_SEARCH": "Search transmitters",
+        "LOADING": "Loading IXC options...",
+        "EMPTY": "No IXC option found for this search.",
+        "SELECTED": "{count} selected",
+        "LOAD_ERROR": "Could not load IXC options."
+      },
+      "CONTRACT_STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "PRE_CONTRACT": "Pre-contract",
+        "CANCELLED": "Cancelled"
+      },
+      "INTERNET_STATUS": {
+        "ACTIVE": "Active",
+        "DISABLED": "Disabled",
+        "MANUAL_BLOCK": "Manual block",
+        "AUTO_BLOCK": "Automatic block",
+        "WAITING_ACTIVATION": "Waiting activation"
+      },
+      "ACTIONS": {
+        "NEW_BROADCAST": "New broadcast",
+        "BACK_TO_HISTORY": "Back to history",
+        "BACK": "Back",
+        "CONTINUE": "Continue",
+        "SEARCH": "Search customers",
+        "SELECT_PAGE": "Select page",
+        "UNSELECT_PAGE": "Clear selection",
+        "ADD_SELECTED": "Add selected",
+        "ADD_ALL_RESULTS": "Add all results",
+        "ADD_GROUPS": "Add groups",
+        "PREVIOUS": "Previous",
+        "NEXT": "Next",
+        "ADD_VARIABLE": "Add variable",
+        "SAVE_DRAFT": "Save as draft",
+        "SAVE_GROUP": "Save group",
+        "SEND_NOW": "Send now"
+      },
+      "HISTORY": {
+        "TITLE": "Broadcast history",
+        "DESCRIPTION": "Review drafts and previous runs before starting another broadcast.",
+        "EMPTY": "No broadcast has been created yet.",
+        "RECIPIENTS": "{count} recipients",
+        "ID": "Broadcast #{id}"
+      },
+      "STEPS": {
+        "SOURCE": "Source",
+        "RECIPIENTS": "Recipients",
+        "REVIEW": "Sending"
+      },
+      "SOURCE": {
+        "SEARCH_TITLE": "Search and select",
+        "SEARCH_DESCRIPTION": "Use ERP filters to find customers and build a manual recipient list.",
+        "GROUPS_TITLE": "Use groups",
+        "GROUPS_DESCRIPTION": "Choose existing fixed groups or create a new group from ERP filters."
+      },
+      "SEARCH": {
+        "TITLE": "Search filters",
+        "DESCRIPTION": "Search customers by registration data, contracts, plans, or concentrators and add results to the list."
+      },
+      "RESULTS": {
+        "TITLE": "Found customers",
+        "EMPTY": "Use the filters to search customers in the ERP.",
+        "SEARCH_PLACEHOLDER": "Search found customers",
+        "SEARCH_LABEL": "Search the complete found customer list",
+        "CLEAR_SEARCH": "Clear found customer search",
+        "SEARCH_ERROR": "Could not prepare or search the customer list.",
+        "NO_PHONE": "No valid phone",
+        "PAGE_INFO": "Page {page} · {count} customers on this page",
+        "SELECTED_ON_PAGE": "{count} selected on this page",
+        "PAGINATION": "Showing {startItem} to {endItem} of {totalItems} customers"
+      },
+      "RECIPIENTS": {
+        "TITLE": "Recipient list",
+        "EMPTY": "Add found customers or groups to continue.",
+        "FILTERED_EMPTY": "No recipients match the selected search and filter.",
+        "SEARCH_PLACEHOLDER": "Search recipients",
+        "REMOVE": "Remove recipient",
+        "EXTERNAL_ID": "ERP ID: {id}",
+        "UNKNOWN_LOCATION": "Location not provided",
+        "PAGINATION": "Showing {startItem} to {endItem} of {totalItems} recipients",
+        "FILTERS": {
+          "ALL": "All recipients",
+          "DELIVERABLE": "With valid phone",
+          "UNAVAILABLE": "Without valid phone"
+        },
+        "COLUMNS": {
+          "CUSTOMER": "Customer",
+          "PHONES": "Phones",
+          "LOCATION": "Location",
+          "ACTIONS": "Actions"
+        },
+        "EDIT": {
+          "ACTION": "Edit phones",
+          "PRIMARY_PHONE": "Primary phone",
+          "FALLBACK_PHONE": "Fallback phone",
+          "INVALID_PHONE": "Enter a valid Brazilian phone number with area code.",
+          "SAVE": "Save phones",
+          "CANCEL": "Cancel editing"
+        }
+      },
+      "DETAIL": {
+        "TITLE": "Broadcast #{id}",
+        "TEMPLATE_META": "{name} · {language}",
+        "CONVERSATION": "Conversation #{id}",
+        "SUMMARY": "Broadcast summary",
+        "STATUS": "Status",
+        "CREATED_AT": "Created at"
+      },
+      "GROUPS": {
+        "TITLE": "Fixed groups",
+        "DESCRIPTION": "Select one or more groups to add their members to the recipients.",
+        "SELECT": "Select group",
+        "LOAD": "Load group",
+        "SAVE_TITLE": "Save selection as group",
+        "SAVE_DESCRIPTION": "Select customers from the search results and save them as a new fixed group.",
+        "CREATE_FROM_FILTERS": "Create group from filters",
+        "MEMBERS": "{count} members"
+      },
+      "REVIEW": {
+        "TITLE": "Broadcast preparation",
+        "SELECTED_COUNT": "{count} selected, {deliverable} with valid phone.",
+        "INBOX": "WhatsApp channel",
+        "SELECT_INBOX": "Select a channel",
+        "TEMPLATE": "Meta template",
+        "SELECT_TEMPLATE": "Select a template",
+        "TEMPLATE_LOADING": "Loading Meta templates...",
+        "TEMPLATE_LOAD_ERROR": "Could not load Meta templates for this channel.",
+        "TEMPLATE_PREVIEW": "Template content",
+        "TEMPLATE_PREVIEW_EMPTY": "Select a template to preview exactly which message will be used.",
+        "TEMPLATE_NAME": "Template name",
+        "TEMPLATE_LANGUAGE": "Template language",
+        "CONVERSATION_MODE": "After sending",
+        "SUMMARY": "Summary",
+        "DELIVERABLE": "With valid phone",
+        "CLOSE_AFTER_SEND": "Create and close conversation",
+        "KEEP_OPEN": "Keep conversation open"
+      },
+      "VARIABLES": {
+        "TITLE": "Template variables",
+        "DESCRIPTION": "Map each variable to a customer field or to a fixed value for this broadcast.",
+        "AUTO_DESCRIPTION": "Variables are detected automatically from the selected template.",
+        "EMPTY": "This template has no variables to fill.",
+        "CUSTOMER_FIELD": "Customer field",
+        "FIXED_VALUE": "Fixed value",
+        "FIXED_PLACEHOLDER": "Fixed text without line breaks"
+      },
+      "TEMPLATE_COMPONENTS": {
+        "HEADER": "Header",
+        "BODY": "Body",
+        "FOOTER": "Footer",
+        "BUTTONS": "Buttons",
+        "UNKNOWN": "Component"
+      },
+      "CUSTOMER_FIELDS": {
+        "NAME": "Name",
+        "DOCUMENT": "Document",
+        "ADDRESS": "Address",
+        "CITY": "City",
+        "STATE": "State",
+        "PRIMARY_PHONE": "Primary phone"
+      },
+      "STATUS": {
+        "DRAFT": "Draft",
+        "QUEUED": "Queued",
+        "RUNNING": "Running",
+        "COMPLETED": "Completed",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled",
+        "PENDING": "Pending",
+        "SENT": "Sent",
+        "SKIPPED": "Skipped"
+      },
+      "ALERTS": {
+        "GROUP_CREATED": "Group saved successfully.",
+        "DRAFT_CREATED": "Draft #{id} created successfully.",
+        "DETAIL_LOAD_ERROR": "Could not open this draft.",
+        "SEND_STARTED": "Sending started. Statuses will update as processing advances."
+      }
     },
     "CHATHUB_ANALYTICS": {
       "SIDEBAR": "Home",
@@ -644,6 +994,8 @@
           "ASSIGNMENT_SKIPPED": "Assignment skipped",
           "REDISTRIBUTION_COMPLETED": "Redistribution completed",
           "REDISTRIBUTION_SKIPPED": "Redistribution skipped",
+          "AUTOMATION_HANDOFF_COMPLETED": "Automation handoff completed",
+          "AUTOMATION_HANDOFF_SKIPPED": "Automation handoff skipped",
           "AGENT_CLAIM_COMPLETED": "Agent claim completed",
           "AGENT_CLAIM_SKIPPED": "Agent claim skipped"
         },
@@ -658,7 +1010,8 @@
           "OUTSIDE_BUSINESS_HOURS": "Outside business hours",
           "NOT_ELIGIBLE": "Not eligible",
           "CONVERSATION_NOT_FOUND": "Conversation not found",
-          "REQUIRED_ASSIGNMENTS_MISSING": "Required conversations were not selected"
+          "REQUIRED_ASSIGNMENTS_MISSING": "Required conversations were not selected",
+          "AUTOMATION_STALLED": "Stuck automation"
         }
       },
       "AGENT_ASSIGNMENT": {
@@ -682,10 +1035,6 @@
         "SAVE_ERROR": "Could not save the distribution policy.",
         "COPY_SUCCESS": "Policy copied successfully.",
         "COPY_ERROR": "Could not copy the selected policy."
-      },
-      "INBOX_SECTION": {
-        "TITLE": "Conversation distribution",
-        "DESCRIPTION": "Configure this channel's general rule. Team-specific rules can override this configuration."
       },
       "TEAM_MODAL": {
         "TITLE": "{teamName} distribution",

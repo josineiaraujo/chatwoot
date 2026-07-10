@@ -15,6 +15,17 @@ class ConversationDistributionAPI extends ApiClient {
     return axios.patch(`${this.url}/inbox_policies/${inboxId}`, payload);
   }
 
+  getAutomationHandoffPolicy(inboxId) {
+    return axios.get(`${this.url}/automation_handoff_policies/${inboxId}`);
+  }
+
+  updateAutomationHandoffPolicy(inboxId, payload) {
+    return axios.patch(
+      `${this.url}/automation_handoff_policies/${inboxId}`,
+      payload
+    );
+  }
+
   getPolicies() {
     return axios.get(`${this.url}/policies`);
   }

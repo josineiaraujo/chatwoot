@@ -1,9 +1,10 @@
 require 'securerandom'
 
+# rubocop:disable Metrics/ClassLength
 class Ibsoft::ConversationDistribution::WatchdogRunner
   DEFAULT_ACCOUNT_BATCH_SIZE = 100
   LOCK_KEY = 'IBSOFT_CONVERSATION_DISTRIBUTION::WATCHDOG::%<scope>s'.freeze
-  SUMMARY_COUNTER_KEYS = %i[scanned assigned redistributed skipped ignored].freeze
+  SUMMARY_COUNTER_KEYS = %i[scanned handoffed assigned redistributed skipped ignored].freeze
 
   def initialize(account_id: nil, inbox_id: nil, team_id: nil, limit: Ibsoft::ConversationDistribution::ExecutionConfig.job_limit)
     @account_id = account_id
@@ -65,10 +66,19 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   def run_account(account)
     sync_presence_if_needed(account)
 
+    automation_handoff_result = automation_handoff_executor(account).perform
     assignment_result = assignment_executor(account).perform
     redistribution_result = redistribution_executor(account).perform
 
-    account_result_payload(account, assignment_result, redistribution_result)
+    account_result_payload(account, automation_handoff_result, assignment_result, redistribution_result)
+  end
+
+  def automation_handoff_executor(account)
+    Ibsoft::ConversationDistribution::AutomationHandoffExecutor.new(
+      account: account,
+      inbox_id: inbox_id,
+      limit: safe_limit
+    )
   end
 
   def assignment_executor(account)
@@ -89,14 +99,19 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     )
   end
 
-  def account_result_payload(account, assignment_result, redistribution_result)
+  def account_result_payload(account, automation_handoff_result, assignment_result, redistribution_result)
     {
       account_id: account.id,
       real_assignment_enabled: assignment_result[:real_assignment_enabled],
       filters: assignment_result[:filters],
+      automation_handoff_summary: automation_handoff_result[:summary],
       assignment_summary: assignment_result[:summary],
       redistribution_summary: redistribution_result[:summary],
-      summary: combined_account_summary(assignment_result[:summary], redistribution_result[:summary])
+      summary: combined_account_summary(
+        automation_handoff_result[:summary],
+        assignment_result[:summary],
+        redistribution_result[:summary]
+      )
     }
   end
 
@@ -106,8 +121,8 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     end
   end
 
-  def combined_account_summary(assignment_summary, redistribution_summary)
-    [assignment_summary, redistribution_summary].each_with_object(empty_summary.except(:accounts)) do |partial_summary, summary|
+  def combined_account_summary(*partial_summaries)
+    partial_summaries.each_with_object(empty_summary.except(:accounts)) do |partial_summary, summary|
       merge_summary!(summary, partial_summary)
     end
   end
@@ -123,6 +138,7 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     {
       accounts: 0,
       scanned: 0,
+      handoffed: 0,
       assigned: 0,
       redistributed: 0,
       skipped: 0,
@@ -140,7 +156,14 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   def policy_account_scope
     Account.where(id: active_channel_account_ids)
            .or(Account.where(id: active_team_account_ids))
+           .or(Account.where(id: active_automation_handoff_account_ids))
            .distinct
+  end
+
+  def active_automation_handoff_account_ids
+    Ibsoft::ConversationDistribution::AutomationHandoffPolicy
+      .enabled
+      .select(:account_id)
   end
 
   def active_channel_account_ids
@@ -201,3 +224,4 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     format(LOCK_KEY, scope: [account_id || 'all', inbox_id || 'all', team_id || 'all'].join(':'))
   end
 end
+# rubocop:enable Metrics/ClassLength

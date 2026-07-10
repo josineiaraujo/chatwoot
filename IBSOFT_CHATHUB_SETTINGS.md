@@ -3,14 +3,19 @@
 ## Objetivo
 
 Centralizar configuracoes globais da operacao ChatHub que nao pertencem a um
-canal de comunicacao ou time especifico.
+canal de comunicacao ou departamento especifico.
 
 Nesta fase, a tela controla:
 
 - visualizacao propria em cards para canais de comunicacao, usando stores e
   rotas nativas sem editar o componente original de canais;
-- atalhos integrados para as telas nativas de times e conta, renderizadas
-  dentro do menu ChatHub apenas para administradores;
+- modal por canal para configurar encaminhamento de conversas paradas na
+  automacao, delegando regra e persistencia ao modulo de distribuicao Ibsoft;
+- desativacao silenciosa da atribuicao automatica nativa do Chatwoot ao abrir
+  as regras do canal, evitando conflito com as politicas Ibsoft;
+- atalhos integrados para as telas nativas de departamentos, robos,
+  integracoes e conta, alem da tela privada de ERPs, renderizadas dentro do
+  menu ChatHub apenas para administradores;
 - modal pos-login para agentes;
 - percentual minimo de atendimentos obrigatorios ao entrar;
 - minimo obrigatorio de atendimentos ao entrar;
@@ -34,6 +39,7 @@ Backend isolado:
 Frontend isolado:
 
 - `app/javascript/dashboard/ibsoft/chathubSettings/api.js`
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/AutomationHandoffPolicyModal.vue`
 - `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`
 - `app/javascript/dashboard/ibsoft/chathubSettings/defaults.js`
 - `app/javascript/dashboard/ibsoft/chathubSettings/routes.js`
@@ -124,10 +130,10 @@ A permissao privada e:
 Administradores sempre acessam. Usuarios nao administradores precisam estar em
 um perfil Ibsoft que contenha essa permissao.
 
-As secoes integradas que renderizam tela de gestao de canais, times e conta
-ficam restritas a administradores, pois as rotas nativas correspondentes exigem
-`administrator`. Isso evita que a tela privada ChatHub contorne permissoes do
-core.
+As secoes integradas que renderizam tela de gestao de canais, departamentos,
+robos, integracoes e conta ficam restritas a administradores, pois as rotas
+nativas correspondentes exigem `administrator`. Isso evita que a tela privada
+ChatHub contorne permissoes do core.
 
 ## Pontos de acoplamento
 
@@ -137,9 +143,10 @@ core.
 - `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adiciona o
   item de menu quando o usuario possui permissao, sempre ao final da lista
   principal. O mesmo ponto de conexao oculta visualmente os itens nativos de
-  configuracao `Conta`, `Agente`, `Times` e `Canais de comunicacao` do menu
-  padrao, pois essas entradas passam a ser centralizadas na tela privada
-  ChatHub. As rotas nativas permanecem ativas para uso pelos atalhos internos.
+  configuracao `Conta`, `Agente`, `Times`, `Canais de comunicacao`, `Robos` e
+  `Integracoes` do menu padrao, pois essas entradas passam a ser centralizadas
+  na tela privada ChatHub. As rotas nativas permanecem ativas para uso pelos
+  atalhos internos.
 - `app/views/api/v1/models/_user.json.jbuilder`: usa
   `Ibsoft::PermissionRegistry` para expor permissoes privadas.
 - `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`: textos da UI.
@@ -153,17 +160,32 @@ core.
 Integracao com telas de configuracao:
 
 - `app/javascript/dashboard/ibsoft/chathubSettings/settingsSections.js`
-  declara os imports assincronos das secoes integradas.
+  declara os imports assincronos das secoes integradas para conta, ERPs,
+  canais, departamentos, robos e integracoes. O id tecnico de departamentos
+  continua `teams`, seguindo o contrato nativo do Chatwoot, mas a UI exibe
+  `Departamentos`.
 - `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`
   renderiza canais em cards usando `inboxes/getInboxes`, `inboxes/delete` e
-  rotas nativas `settings_inbox_new` e `settings_inbox_show`.
+  rotas nativas `settings_inbox_new` e `settings_inbox_show`. Tambem abre o
+  `AutomationHandoffPolicyModal.vue` para configurar, por canal, regras de
+  distribuicao e encaminhamento de automacoes paradas.
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/AutomationHandoffPolicyModal.vue`
+  usa a action nativa `inboxes/updateInbox` para desativar silenciosamente
+  `enable_auto_assignment` quando o modal e aberto e o canal ainda estiver com
+  atribuicao automatica nativa ligada. Nao cria controller, rota ou tabela
+  adicional para essa correcao. A UI exibe apenas um LED discreto de status,
+  sem texto explicativo visivel.
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CollaboratorsPage.vue`
+  oculta a secao nativa de atribuicao automatica para evitar que o usuario
+  reative manualmente a distribuicao do Chatwoot enquanto a operacao usa as
+  politicas Ibsoft.
 - `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue` sincroniza
   a secao ativa com `?section=...`. Isso preserva a secao atual quando o
   usuario abre uma rota nativa de configuracao e volta pelo navegador.
 - Os componentes originais em `dashboard/routes/dashboard/settings/**` nao sao
-  modificados para essa integracao. Times e conta continuam usando seus indices
-  nativos; canais usam componente Ibsoft proprio e mantem navegacao para as
-  rotas nativas do Chatwoot.
+  modificados para essa integracao. Times, robos, integracoes e conta
+  continuam usando seus indices nativos; canais usam componente Ibsoft proprio
+  e mantem navegacao para as rotas nativas do Chatwoot.
 
 ## Testes
 

@@ -13,7 +13,21 @@ RSpec.describe AccountUser do
       expect(account_user.user.notification_settings).not_to be_nil
 
       expect(account_user.user.notification_settings.first.email_conversation_creation?).to be(false)
-      expect(account_user.user.notification_settings.first.email_conversation_assignment?).to be(true)
+      expect(account_user.user.notification_settings.first.selected_email_flags).to eq([])
+      expect(account_user.user.notification_settings.first.selected_push_flags).to match_array(
+        %i[
+          push_conversation_assignment
+          push_conversation_mention
+          push_assigned_conversation_new_message
+          push_participating_conversation_new_message
+        ]
+      )
+      expect(account_user.user.ui_settings).to include(
+        'enable_audio_alerts' => 'assigned',
+        'notification_tone' => 'magic',
+        'always_play_audio_alert' => false,
+        'alert_if_unread_assigned_conversation_exist' => false
+      )
     end
   end
 

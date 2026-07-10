@@ -15,7 +15,6 @@ import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.v
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import assignmentPoliciesAPI from 'dashboard/api/assignmentPolicies';
-import InboxDistributionSettings from 'dashboard/ibsoft/conversationDistribution/components/InboxDistributionSettings.vue';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
@@ -43,6 +42,7 @@ const availablePolicies = ref([]);
 const isLoadingPolicies = ref(false);
 const showPolicyDropdown = ref(false);
 const isLinkingPolicy = ref(false);
+const showNativeAssignmentSettings = false;
 
 const agentList = computed(() => store.getters['agents/getAgents']);
 
@@ -397,6 +397,7 @@ onMounted(() => {
       </template>
     </SettingsFieldSection>
     <SettingsAccordion
+      v-if="showNativeAssignmentSettings"
       :title="$t('INBOX_MGMT.SETTINGS_POPUP.AGENT_ASSIGNMENT')"
       class="mt-6"
     >
@@ -668,8 +669,6 @@ onMounted(() => {
         </template>
       </SettingsToggleSection>
     </SettingsAccordion>
-    <InboxDistributionSettings :inbox="inbox" />
-
     <woot-modal
       v-if="showDeleteConfirmModal"
       :show="showDeleteConfirmModal"

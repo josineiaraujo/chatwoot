@@ -60,6 +60,7 @@ import {
   buildOperationalAssigneeTabItems,
   getAssigneeTypeForConversationTab,
   getConversationPageFilterKey,
+  getDefaultAssigneeTabForConversationType,
   getStatusForConversationTab,
   isAutomationAssigneeTab,
 } from 'dashboard/ibsoft/conversation/statusPresentation';
@@ -83,7 +84,9 @@ const store = useStore();
 
 const resolveAttributesModalRef = ref(null);
 
-const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
+const activeAssigneeTab = ref(
+  getDefaultAssigneeTabForConversationType(props.conversationType)
+);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const lastNonAutomationStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
@@ -295,9 +298,7 @@ const conversationFilters = computed(() => {
     status: effectiveActiveStatus.value,
     sortBy: activeSortBy.value,
     page: conversationListPagination.value,
-    preserveConversationStats: isAutomationAssigneeTab(
-      activeAssigneeTab.value
-    ),
+    preserveConversationStats: isAutomationAssigneeTab(activeAssigneeTab.value),
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
@@ -625,7 +626,8 @@ function fetchConversations() {
 }
 
 async function refreshAutomationConversationCount() {
-  const requestId = (automationConversationStatsRequestId += 1);
+  automationConversationStatsRequestId += 1;
+  const requestId = automationConversationStatsRequestId;
 
   try {
     const count = await fetchAutomationConversationCount({
@@ -973,7 +975,11 @@ watch(
 );
 watch(
   computed(() => props.conversationType),
-  () => resetAndFetchData()
+  conversationType => {
+    activeAssigneeTab.value =
+      getDefaultAssigneeTabForConversationType(conversationType);
+    resetAndFetchData();
+  }
 );
 
 watch(activeFolder, (newVal, oldVal) => {

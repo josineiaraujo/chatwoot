@@ -322,6 +322,7 @@ Rails.application.routes.draw do
 
             namespace :conversation_distribution do
               resources :policies, only: [:index, :show, :create, :update, :destroy]
+              resources :automation_handoff_policies, only: [:show, :update], param: :inbox_id
               resources :inbox_policies, only: [:show, :update], param: :inbox_id
               resources :team_policies, only: [:show, :update], param: :team_id
               resources :dry_runs, only: [:index]
@@ -336,6 +337,26 @@ Rails.application.routes.draw do
 
             namespace :chathub_settings do
               resource :setting, only: [:show, :update], controller: :settings
+            end
+
+            namespace :erp do
+              resources :connections, only: [:index, :show, :create, :update, :destroy] do
+                post :test_connection, on: :member
+              end
+            end
+
+            namespace :message_broadcast do
+              resources :groups
+              resources :broadcasts, only: [:index, :show, :create] do
+                post :send_broadcast, on: :member
+              end
+              get 'templates', to: 'templates#index'
+              get 'lookups/states', to: 'lookups#states'
+              get 'lookups/cities', to: 'lookups#cities'
+              get 'lookups/plans', to: 'lookups#plans'
+              get 'lookups/pops', to: 'lookups#pops'
+              get 'lookups/transmitters', to: 'lookups#transmitters'
+              post 'recipients/preview', to: 'recipients#preview'
             end
 
             namespace :access_control do

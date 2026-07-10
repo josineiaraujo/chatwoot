@@ -8,12 +8,15 @@
       "CHANGE_COVER": "Alterar foto",
       "CHOOSE_COVER": "Escolher foto",
       "CLOSE": "Fechar",
+      "CREATE_MENU": "Criar",
+      "CREATE_NEW_ROOM": "Criar nova sala",
       "CREATE_ROOM": "Criar sala",
       "DELETE_CHAT": "Excluir chat",
       "DELETE_ROOM": "Excluir sala",
       "DOWNLOAD": "Baixar",
       "EDIT_ROOM": "Editar sala",
       "NEXT_MEDIA": "Próxima mídia",
+      "NEW_CONVERSATION": "Nova conversa",
       "NEW_DIRECT_CHAT": "Novo chat direto",
       "PREVIEW_IMAGE": "Abrir imagem",
       "PREVIEW_VIDEO": "Abrir vídeo",
@@ -68,6 +71,7 @@
       "MEDIA_UNAVAILABLE": "Não foi possível carregar a mídia.",
       "PLACEHOLDER": "Escreva uma mensagem",
       "READ_ONLY": "Você pode visualizar este chat, mas não pode enviar mensagens porque não é participante.",
+      "TODAY": "Hoje",
       "YOU": "Você"
     },
     "ROOMS": {

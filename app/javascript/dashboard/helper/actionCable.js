@@ -14,6 +14,7 @@ import {
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { notifyConversationAssignment } from 'dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications';
 import { notifyNewInternalChatMessage } from 'dashboard/ibsoft/internalChat/helpers/audioNotifications';
 
 const { isImpersonating } = useImpersonation();
@@ -103,6 +104,7 @@ class ActionCableConnector extends BaseActionCableConnector {
   onAssigneeChanged = payload => {
     const { id } = payload;
     if (id) {
+      notifyConversationAssignment(payload);
       this.app.$store.dispatch('updateConversation', payload);
     }
     this.fetchConversationStats();

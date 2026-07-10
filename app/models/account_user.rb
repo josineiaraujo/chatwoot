@@ -43,10 +43,7 @@ class AccountUser < ApplicationRecord
   validates :user_id, uniqueness: { scope: :account_id }
 
   def create_notification_setting
-    setting = user.notification_settings.new(account_id: account.id)
-    setting.selected_email_flags = [:email_conversation_assignment]
-    setting.selected_push_flags = [:push_conversation_assignment]
-    setting.save!
+    Ibsoft::UserDefaults::NotificationPreferences.new(account: account, user: user).perform
   end
 
   def remove_user_from_account
