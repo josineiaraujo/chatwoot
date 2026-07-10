@@ -1054,7 +1054,7 @@
         "NAME": "Nome",
         "NAME_PLACEHOLDER": "Nome do agente",
         "EMAIL": "E-mail",
-        "EMAIL_PLACEHOLDER": "agente@empresa.com",
+        "EMAIL_PLACEHOLDER": "agente{'@'}empresa.com",
         "PICTURE": "Foto do agente",
         "AVATAR_FALLBACK": "Agente",
         "CROP_TITLE": "Ajustar foto",
