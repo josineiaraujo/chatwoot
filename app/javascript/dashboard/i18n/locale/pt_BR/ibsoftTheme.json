@@ -4,6 +4,11 @@
       "TITLE": "Atenção"
     }
   },
+  "COMPONENTS": {
+    "MEDIA": {
+      "AUDIO_UNAVAILABLE": "Este áudio não está mais disponível."
+    }
+  },
   "SIDEBAR": {
     "INBOX": "Atenção",
     "INBOX_VIEW": "Canal de comunicação",

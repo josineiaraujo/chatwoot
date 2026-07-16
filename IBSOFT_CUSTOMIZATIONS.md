@@ -23,14 +23,18 @@ Documento operacional de variaveis de ambiente:
 
 1. Atualize a branch alinhada ao Chatwoot oficial:
    `git switch develop`, `git fetch upstream`, `git merge --ff-only upstream/develop`.
-2. Leia as secoes `Pontos de acoplamento no Chatwoot original` e
+2. Antes de aplicar o upstream nas branches privadas, revise todos os itens
+   marcados como `backport temporario` neste documento. Confirme se a correcao
+   oficial ja entrou em `upstream/develop` e remova qualquer implementacao
+   duplicada.
+3. Leia as secoes `Pontos de acoplamento no Chatwoot original` e
    `Arquivos sensiveis para conflito`.
-3. Atualize/rebaseie as branches privadas sobre `develop`.
-4. Resolva primeiro os pontos de acoplamento pequenos no core.
-5. Depois valide os modulos isolados em `app/**/ibsoft` e
+4. Atualize/rebaseie as branches privadas sobre `develop`.
+5. Resolva primeiro os pontos de acoplamento pequenos no core.
+6. Depois valide os modulos isolados em `app/**/ibsoft` e
    `app/javascript/**/ibsoft`.
-6. Rode migracoes, testes e lint proporcionais aos modulos afetados.
-7. Verifique manualmente os fluxos visuais do dashboard antes de publicar.
+7. Rode migracoes, testes e lint proporcionais aos modulos afetados.
+8. Verifique manualmente os fluxos visuais do dashboard antes de publicar.
 
 ## Principio de manutencao
 
@@ -1138,6 +1142,51 @@ Cuidados:
 - Nao commitar `.env`, backups, dumps, tokens ou segredos.
 - `docker-compose.yaml` costuma ser local/desenvolvimento; revisar antes de
   incluir em commit de producao.
+
+### 8. Backport temporario de retry para audio
+
+Origem oficial: `chatwoot/chatwoot#13675` (`fix/audio-retry`).
+
+> [!IMPORTANT]
+> AVISO PARA A PROXIMA SINCRONIZACAO: este codigo nao e uma customizacao Ibsoft
+> permanente. Ele replica temporariamente uma correcao oficial ainda nao
+> incorporada ao `upstream/develop` no momento da aplicacao. Antes de resolver
+> conflitos ou aceitar alteracoes nesses arquivos, verifique o estado do PR
+> oficial e compare o codigo do upstream. Nao mantenha duas implementacoes de
+> retry para o mesmo carregamento de audio.
+
+Objetivo:
+
+- Repetir o carregamento de audios recebidos em tempo real quando a primeira
+  URL temporaria do Active Storage responder antes de o arquivo estar pronto.
+- Evitar que o agente precise recarregar a pagina depois de um `404` inicial.
+
+Pontos nativos tocados pelo backport:
+
+- `app/javascript/dashboard/components-next/message/bubbles/Audio.vue`
+- `app/javascript/dashboard/composables/loadWithRetry.js`
+- `app/javascript/dashboard/i18n/locale/en/settings.json`
+
+Complementos privados:
+
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: traducao do
+  estado de audio indisponivel.
+- `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`:
+  cobre sucesso, retry com cache busting e falha definitiva.
+
+Remocao futura:
+
+- Consultar `https://github.com/chatwoot/chatwoot/pull/13675` e confirmar se o
+  PR, ou uma correcao equivalente, entrou em `upstream/develop`.
+- Comparar os tres arquivos nativos com a versao oficial antes de resolver
+  conflitos. Se o upstream ja contiver a correcao, preferir o codigo oficial.
+- Remover somente o codigo duplicado do backport. Preservar a traducao pt-BR
+  privada caso o upstream ainda nao forneca uma traducao equivalente.
+- Reavaliar ou remover o spec privado quando a cobertura oficial equivalente
+  existir; enquanto isso, ele deve continuar validando o comportamento.
+- Depois da sincronizacao, executar o spec
+  `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`
+  e testar manualmente um audio recebido em tempo real sem recarregar a pagina.
 
 ## Arquivos sensiveis para conflito
 
