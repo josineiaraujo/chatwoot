@@ -21,6 +21,8 @@ O modulo suporta:
 - permissao por participante;
 - remocao de membro com bloqueio imediato a novas mensagens e anexos;
 - endpoints protegidos para anexos e previews.
+- entrega de anexos compativel com disco local e object storage compartilhado;
+- processamento assincrono de previews de imagem pelo Active Storage.
 
 ## Principios de arquitetura
 
@@ -108,6 +110,11 @@ Importante:
 - o acesso deve passar pelo controller protegido de anexos;
 - previews devem usar endpoint proprio;
 - permissao deve ser sempre derivada da sala.
+- no disco local, o endpoint autorizado faz streaming do arquivo;
+- em storage remoto, o endpoint autorizado emite redirecionamento temporario
+  para uma URL assinada com validade de um minuto;
+- a URL assinada pode continuar valida ate o fim desse minuto mesmo se o membro
+  for removido da sala depois de recebe-la.
 
 ## Permissoes
 
@@ -145,9 +152,16 @@ Regra atual:
 1. Frontend envia texto e arquivos para `MessagesController#create`.
 2. Controller autoriza via `RoomPolicy#post_message?`.
 3. `PostMessageService` valida conteudo e anexos.
-4. Mensagem e anexos sao criados em transacao.
-5. Servico dispara broadcast para membros.
-6. Frontend atualiza lista e mensagens via eventos.
+4. `AttachmentBlobPreparer` envia os arquivos ao Active Storage antes da
+   transacao da mensagem, evitando manter transacao de banco aberta durante I/O
+   de rede.
+5. Mensagem e vinculos com os blobs preparados sao persistidos em uma transacao
+   curta.
+6. Em caso de falha, blobs preparados que permanecerem sem vinculo sao
+   removidos de forma assincrona.
+7. Active Storage agenda o processamento dos previews depois do commit.
+8. Servico dispara broadcast para membros.
+9. Frontend atualiza lista e mensagens via eventos.
 
 ### Ler mensagens
 
@@ -161,9 +175,13 @@ Regra atual:
 1. Payload da mensagem contem URL interna protegida.
 2. Frontend busca o arquivo via Axios, com autenticacao.
 3. Backend verifica se o usuario ainda participa da sala.
-4. Arquivo e servido como stream.
-5. Frontend renderiza um `blob:` local.
-6. Para audios, `InternalChatAudioChip` so solicita o arquivo ao clicar em
+4. Com `Disk`, o arquivo e servido como stream pelo Rails.
+5. Com S3 ou outro storage remoto, o backend retorna um redirecionamento 307
+   para uma URL assinada de curta duracao.
+6. Se o preview ainda estiver em processamento, o backend responde `202` com
+   `Retry-After`, e o frontend tenta novamente por um periodo limitado.
+7. Frontend renderiza um `blob:` local.
+8. Para audios, `InternalChatAudioChip` so solicita o arquivo ao clicar em
    reproduzir ou baixar, preservando a URL `blob:` sem acrescentar cache-buster,
    pois `blob:...?...` deixa de apontar para o objeto em memoria no navegador.
 
@@ -181,7 +199,7 @@ for removido.
 | `app/controllers/api/v1/accounts/ibsoft/internal_chat/messages_controller.rb` | Lista mensagens com paginacao por cursor e cria novas mensagens. |
 | `app/controllers/api/v1/accounts/ibsoft/internal_chat/reads_controller.rb` | Marca sala/chat como lido no contexto de sala ativa. |
 | `app/controllers/api/v1/accounts/ibsoft/internal_chat/memberships_controller.rb` | Adiciona e remove membros de salas. |
-| `app/controllers/api/v1/accounts/ibsoft/internal_chat/attachments_controller.rb` | Serve anexos e previews por endpoint autorizado, sem expor URL direta do ActiveStorage. |
+| `app/controllers/api/v1/accounts/ibsoft/internal_chat/attachments_controller.rb` | Autoriza anexos/previews e delega streaming local, redirecionamento assinado remoto ou espera de preview assincrono. |
 
 ### Models
 
@@ -208,6 +226,9 @@ for removido.
 | `app/services/ibsoft/internal_chat/add_members_service.rb` | Adiciona membros a uma sala existente. |
 | `app/services/ibsoft/internal_chat/remove_member_service.rb` | Remove membro de sala e dispara eventos. Bloqueia remocao do criador e do ultimo admin/membro. |
 | `app/services/ibsoft/internal_chat/post_message_service.rb` | Cria mensagem, valida anexos, define tipo de arquivo e faz broadcast. |
+| `app/services/ibsoft/internal_chat/attachment_blob_preparer.rb` | Envia blobs ao storage antes da transacao da mensagem e limpa uploads sem vinculo quando ocorre falha. |
+| `app/services/ibsoft/internal_chat/attachment_delivery.rb` | Escolhe entrega por streaming no Disk ou URL assinada temporaria em storage remoto sem processar previews na requisicao web. |
+| `app/services/ibsoft/internal_chat/attachment_preview_scheduler.rb` | Agenda preview pendente com trava curta no Redis compartilhado, cobrindo anexos antigos e evitando jobs duplicados durante retries e replicas. |
 | `app/services/ibsoft/internal_chat/mark_as_read_service.rb` | Atualiza ultima mensagem lida e timestamp de leitura do membership. |
 | `app/services/ibsoft/internal_chat/broadcast_room_event_service.rb` | Publica eventos realtime do modulo para os membros corretos. |
 | `app/services/ibsoft/internal_chat/member_lookup.rb` | Resolve usuarios validos dentro da conta para services de sala/membros. |
@@ -227,6 +248,7 @@ for removido.
 | `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatReplyBottomPanel.vue` | Painel inferior do composer interno. Centraliza botoes de emoji, anexo, audio e envio usando a mesma organizacao visual do Chatwoot. |
 | `app/javascript/dashboard/ibsoft/internalChat/components/MediaPreviewModal.vue` | Modal de preview de imagem/video com carregamento, zoom, rotacao, navegacao e download. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentUrls.js` | Helpers de URL de anexos do chat interno, incluindo preservacao de `blob:`/`data:` para reproducao de audio. |
+| `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentLoader.js` | Carrega anexos protegidos e repete temporariamente a consulta quando o preview assincrono responde `202`. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/audioNotifications.js` | Controla som de novas mensagens e sala ativa para evitar alertas indevidos. |
 | `app/javascript/dashboard/ibsoft/internalChat/helpers/messageDateGroups.js` | Normaliza timestamps, agrupa mensagens por dia e formata divisorias/data-hora do historico interno. |
 
@@ -255,14 +277,18 @@ for removido.
 | `spec/policies/ibsoft/internal_chat/room_policy_spec.rb` | Testa regras de autorizacao do modulo. |
 | `spec/services/ibsoft/internal_chat/create_room_service_spec.rb` | Testa criacao de sala e rejeicao de usuarios fora da conta. |
 | `spec/services/ibsoft/internal_chat/find_or_create_direct_room_service_spec.rb` | Testa chat direto unico por par de agentes e bloqueio de chat consigo mesmo. |
-| `spec/services/ibsoft/internal_chat/post_message_service_spec.rb` | Testa criacao de mensagem, broadcast e validacoes de anexos. |
+| `spec/services/ibsoft/internal_chat/post_message_service_spec.rb` | Testa criacao, broadcast, validacoes, upload antes da transacao e agendamento assincrono de previews. |
+| `spec/services/ibsoft/internal_chat/attachment_blob_preparer_spec.rb` | Testa preparacao de blobs e limpeza de uploads parciais em falhas. |
+| `spec/services/ibsoft/internal_chat/attachment_delivery_spec.rb` | Testa streaming Disk, preview pendente/processado e URL assinada de storage remoto. |
+| `spec/services/ibsoft/internal_chat/attachment_preview_scheduler_spec.rb` | Testa agendamento sob demanda, trava contra duplicidade e compatibilidade com preview nativo. |
 | `spec/services/ibsoft/internal_chat/remove_member_service_spec.rb` | Testa remocao de membro e protecao do criador. |
 | `spec/services/ibsoft/internal_chat/update_room_service_spec.rb` | Testa atualizacao de nome/capa e permissoes de edicao. |
 | `spec/requests/api/v1/accounts/ibsoft/internal_chat/rooms_spec.rb` | Testa listagem, contagem de nao lidas e delecao por administrador. |
 | `spec/requests/api/v1/accounts/ibsoft/internal_chat/messages_spec.rb` | Testa paginacao de mensagens e bloqueio de leitura por nao participante. |
 | `spec/requests/api/v1/accounts/ibsoft/internal_chat/reads_spec.rb` | Testa marcacao de leitura apenas no contexto correto. |
-| `spec/requests/api/v1/accounts/ibsoft/internal_chat/attachments_spec.rb` | Testa streaming autorizado de anexos/previews e bloqueio imediato apos remocao. |
+| `spec/requests/api/v1/accounts/ibsoft/internal_chat/attachments_spec.rb` | Testa autorizacao, streaming, `202` de preview, redirecionamento remoto e bloqueio apos remocao. |
 | `app/javascript/dashboard/ibsoft/internalChat/specs/attachmentUrls.spec.js` | Testa que URLs `blob:`/`data:` de audio nao recebem cache-buster e continuam reproduziveis. |
+| `app/javascript/dashboard/ibsoft/internalChat/specs/attachmentLoader.spec.js` | Testa carregamento imediato, repeticao de preview pendente e limite de tentativas. |
 | `app/javascript/dashboard/ibsoft/internalChat/specs/messageDateGroups.spec.js` | Testa agrupamento por dia, rotulo de hoje e formato de data/hora das mensagens internas. |
 
 ## Pontos de acoplamento no Chatwoot original
@@ -304,6 +330,47 @@ Ao adicionar novo recurso ao chat interno:
 8. Rodar teste especifico e lint.
 9. Atualizar este documento quando novo arquivo ou ponto de acoplamento surgir.
 
+## Storage local e autoscaling
+
+O modulo usa a configuracao nativa do Active Storage e nao cria variaveis de
+ambiente proprias para storage.
+
+### Desenvolvimento/local
+
+```env
+ACTIVE_STORAGE_SERVICE=local
+```
+
+- Rails e Sidekiq precisam acessar o mesmo diretorio `/app/storage`.
+- Em Docker Compose, preserve o volume `storage_data`.
+- `Disk` e apropriado para uma unica maquina, mas nao para replicas em hosts
+  diferentes sem filesystem compartilhado.
+
+### Producao com multiplas replicas
+
+```env
+ACTIVE_STORAGE_SERVICE=amazon
+S3_BUCKET_NAME=...
+AWS_REGION=...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+- Rails e todos os processos Sidekiq devem receber a mesma configuracao.
+- O bucket precisa permitir CORS para `GET` e `HEAD` a partir dos dominios do
+  ChatHub, pois o navegador segue a URL assinada depois da autorizacao interna.
+- O bucket deve permanecer privado; o modulo usa URL assinada por um minuto.
+- A fila `default` do Sidekiq precisa estar ativa para os jobs nativos do Active
+  Storage.
+- Migrar de `local` para S3 exige copiar os objetos ja existentes; trocar apenas
+  a variavel nao move arquivos antigos.
+
+Previews de imagens usam o variant nomeado `internal_chat_preview` e sao
+processados de forma assincrona com libvips. O Chatwoot desativa previewers de
+video/PDF em `config/application.rb`; o modulo respeita essa decisao. Se o
+upstream habilitar previewers no futuro, o mesmo variant passa a agendar
+`ActiveStorage::PreviewImageJob` sem mudanca no contrato do modulo.
+
 ## Como receber atualizacoes do Chatwoot
 
 Fluxo recomendado:
@@ -344,8 +411,16 @@ pnpm exec eslint \
 
 - `actionCable.js` e `Sidebar.vue` sao os pontos frontend mais sujeitos a
   conflito em updates do Chatwoot.
-- O controller de anexos protege acesso, mas tambem faz streaming pelo app; em
-  arquivos muito grandes, monitorar uso de memoria e tempo de resposta.
+- No storage remoto, uma URL assinada ja emitida permanece utilizavel por ate um
+  minuto. Reduzir esse prazo exige avaliar latencia e downloads grandes.
+- Sem CORS no bucket, o navegador autoriza o endpoint interno, mas falha ao
+  seguir o redirecionamento para o arquivo remoto.
+- Em `Disk`, downloads continuam passando pelo Rails; para autoscaling use
+  object storage compartilhado.
+- Upload interrompido por encerramento abrupto do processo entre o envio ao
+  storage e a persistencia pode deixar blob orfao. A limpeza implementada cobre
+  excecoes normais, mas uma rotina periodica de saneamento deve ser avaliada se
+  esse cenario aparecer no monitoramento.
 - Se o Chatwoot mudar autenticacao da API, revisar o carregamento de anexos via
   Axios/blob.
 - Se o Chatwoot mudar estrutura de sidebar, store ou rotas, revisar os pontos

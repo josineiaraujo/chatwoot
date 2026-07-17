@@ -28,7 +28,11 @@ class Ibsoft::InternalChat::Attachment < ApplicationRecord
              class_name: 'Ibsoft::InternalChat::Message',
              inverse_of: :attachments
 
-  has_one_attached :file
+  has_one_attached :file do |attachable|
+    attachable.variant :internal_chat_preview,
+                       resize_to_limit: PREVIEW_RESIZE_TO_LIMIT,
+                       preprocessed: :previewable_media?
+  end
 
   enum file_type: { file: 0, image: 1, audio: 2, video: 3 }
 

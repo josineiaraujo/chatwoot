@@ -5,17 +5,14 @@ class Api::V1::Accounts::Ibsoft::InternalChat::AttachmentsController < Api::V1::
   def show
     authorize @room, :show?
 
-    stream_attachment(@attachment.file)
+    deliver_attachment(@attachment.file)
   end
 
   def preview
     authorize @room, :show?
 
-    preview = preview_attachment
-    return head :not_found if preview.blank?
-
-    stream_attachment(
-      preview,
+    deliver_attachment(
+      preview_attachment,
       content_type: preview_content_type,
       filename: @attachment.file.filename
     )
@@ -41,11 +38,30 @@ class Api::V1::Accounts::Ibsoft::InternalChat::AttachmentsController < Api::V1::
     return @attachment.file unless @attachment.file.representable?
     return unless @attachment.image? || @attachment.video?
 
-    @attachment.file
-               .representation(resize_to_limit: Ibsoft::InternalChat::Attachment::PREVIEW_RESIZE_TO_LIMIT)
-               .processed
+    @attachment.file.representation(:internal_chat_preview)
   rescue ActiveStorage::UnrepresentableError
     @attachment.image? ? @attachment.file : nil
+  end
+
+  def deliver_attachment(streamable, content_type: nil, filename: nil)
+    delivery = Ibsoft::InternalChat::AttachmentDelivery.new(streamable: streamable).perform
+    return stream_attachment(delivery.streamable, content_type: content_type, filename: filename) if delivery.stream?
+    return redirect_to_remote_attachment(delivery.url) if delivery.redirect?
+    return preview_pending(streamable) if delivery.pending?
+
+    head :not_found
+  end
+
+  def redirect_to_remote_attachment(url)
+    response.headers['Cache-Control'] = 'private, no-store'
+    redirect_to url, allow_other_host: true, status: :temporary_redirect
+  end
+
+  def preview_pending(streamable)
+    Ibsoft::InternalChat::AttachmentPreviewScheduler.new(streamable: streamable).perform
+    response.headers['Cache-Control'] = 'private, no-store'
+    response.headers['Retry-After'] = '1'
+    head :accepted
   end
 
   def preview_content_type

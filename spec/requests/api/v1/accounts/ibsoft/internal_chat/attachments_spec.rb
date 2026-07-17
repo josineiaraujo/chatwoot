@@ -51,11 +51,40 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::InternalChat::Attachments', type: :re
     end
 
     it 'streams an image preview for a room member' do
+      attachment.file.representation(:internal_chat_preview).processed
+
       get preview_url, headers: member_headers
 
       expect(response).to have_http_status(:success)
       expect(response.media_type).to eq('image/png')
       expect(response.body).to be_present
+    end
+
+    it 'asks the client to retry while a preview is still being processed' do
+      scheduler = instance_double(Ibsoft::InternalChat::AttachmentPreviewScheduler, perform: true)
+      allow(Ibsoft::InternalChat::AttachmentPreviewScheduler).to receive(:new).and_return(scheduler)
+
+      get preview_url, headers: member_headers
+
+      expect(response).to have_http_status(:accepted)
+      expect(response.headers['Retry-After']).to eq('1')
+      expect(response.headers['Cache-Control']).to include('no-store')
+      expect(scheduler).to have_received(:perform)
+    end
+
+    it 'redirects remote storage only after authorizing the room member' do
+      delivery = Ibsoft::InternalChat::AttachmentDelivery::Result.new(
+        status: :redirect,
+        url: 'https://storage.example.test/signed-file'
+      )
+      allow(Ibsoft::InternalChat::AttachmentDelivery).to receive(:new)
+        .and_return(instance_double(Ibsoft::InternalChat::AttachmentDelivery, perform: delivery))
+
+      get attachment_url, headers: member_headers
+
+      expect(response).to have_http_status(:temporary_redirect)
+      expect(response.location).to eq('https://storage.example.test/signed-file')
+      expect(response.headers['Cache-Control']).to include('no-store')
     end
 
     it 'denies access immediately after the member is removed' do

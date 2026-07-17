@@ -4,6 +4,11 @@
       "TITLE": "Atenção"
     }
   },
+  "COMPONENTS": {
+    "MEDIA": {
+      "AUDIO_UNAVAILABLE": "Este áudio não está mais disponível."
+    }
+  },
   "SIDEBAR": {
     "INBOX": "Atenção",
     "INBOX_VIEW": "Canal de comunicação",
@@ -298,6 +303,21 @@
   },
   "PROFILE_SETTINGS": {
     "FORM": {
+      "PASSWORD_SECTION": {
+        "SHOW_PASSWORD": "Mostrar senha",
+        "HIDE_PASSWORD": "Ocultar senha"
+      },
+      "SESSIONS_SECTION": {
+        "TITLE": "Sessões ativas",
+        "NOTE": "Estes são os dispositivos conectados à sua conta no momento.",
+        "CURRENT": "Sessão atual",
+        "REVOKE": "Revogar",
+        "REVOKE_SUCCESS": "Sessão revogada com sucesso",
+        "REVOKE_ERROR": "Não foi possível revogar a sessão. Tente novamente.",
+        "FETCH_ERROR": "Não foi possível carregar as sessões. Tente novamente.",
+        "LAST_ACTIVE": "Última atividade",
+        "UNKNOWN_DEVICE": "Dispositivo desconhecido"
+      },
       "MESSAGE_SIGNATURE_SECTION": {
         "NOTE": "Crie uma assinatura de mensagem única para aparecer no final de cada mensagem que você enviar por qualquer canal de comunicação. Você também pode incluir uma imagem anexada, suportada em live-chat, e-mail e canais de API."
       }
@@ -1673,7 +1693,7 @@
         "ENABLED": "Enviar mensagem ao atribuir agente",
         "ENABLED_DESCRIPTION": "Use esta opção para informar ao cliente que o atendimento foi direcionado para uma pessoa específica.",
         "MESSAGE": "Mensagem automática ao cliente",
-        "DEFAULT_MESSAGE": "Seu atendimento foi direcionado para {{agent.name}}. Em instantes ele continuará com você.",
+        "DEFAULT_MESSAGE": "Seu atendimento foi direcionado para {'{{agent.name}}'}. Em instantes ele continuará com você.",
         "ONLY_BEFORE_FIRST_REPLY": "Somente antes da primeira resposta humana",
         "ONLY_BEFORE_FIRST_REPLY_DESCRIPTION": "Evita enviar a confirmação quando a conversa já recebeu uma resposta humana anteriormente."
       },
