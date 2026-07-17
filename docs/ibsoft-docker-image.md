@@ -4,7 +4,7 @@ Este projeto publica uma imagem privada do Chatwoot customizado no GitHub
 Container Registry:
 
 ```text
-ghcr.io/josineiaraujo/chathub-chatwoot-private:ibsoft-production
+ghcr.io/josineiaraujo/chathub-chatwoot-ee:ibsoft-production
 ```
 
 ## Publicacao
@@ -25,8 +25,12 @@ Entradas recomendadas para execucao manual:
 
 O workflow sempre publica tambem uma tag imutavel no formato `sha-<commit>`.
 
-O workflow usa `GITHUB_TOKEN`, portanto nao e necessario criar token manual
-para publicar a partir do proprio repositorio.
+O workflow usa o secret `GHCR_PRIVATE_TOKEN`, contendo um personal access token
+classic do proprietario com `write:packages` e `read:packages`.
+
+Nao substitua esse secret por `GITHUB_TOKEN`. Como o fork do Chatwoot e publico,
+um pacote criado pelo workflow com `GITHUB_TOKEN` herda a visibilidade publica
+do repositorio.
 
 Importante: o botao manual `workflow_dispatch` do GitHub so aparece quando o
 arquivo do workflow esta na branch padrao do repositorio. Como a `develop` deve
@@ -43,9 +47,10 @@ git push origin ibsoft-image-teste-20260607
 ## Privacidade e acesso
 
 Apos a primeira publicacao, confira a visibilidade do pacote em GitHub Packages.
-O pacote novo nasce privado e deve permanecer privado. O workflow tambem
-verifica se a tag publicada pode ser lida anonimamente e falha se detectar
-acesso publico.
+O pacote criado com o PAT classic nasce privado e deve permanecer privado. O
+workflow consulta a visibilidade pela API autenticada do GitHub e tambem testa
+o manifesto anonimamente usando todos os formatos OCI/Docker aceitos. A
+publicacao falha se qualquer verificacao indicar acesso publico.
 
 Nunca altere a visibilidade para publica. O GitHub Container Registry nao
 permite transformar novamente um pacote publico em privado.
@@ -58,7 +63,7 @@ export CR_PAT='TOKEN_CLASSIC_COM_READ_PACKAGES'
 echo "$CR_PAT" | docker login ghcr.io -u USUARIO_GITHUB --password-stdin
 unset CR_PAT
 
-docker pull ghcr.io/josineiaraujo/chathub-chatwoot-private:ibsoft-production
+docker pull ghcr.io/josineiaraujo/chathub-chatwoot-ee:ibsoft-production
 ```
 
 Use um token do GitHub com permissao de leitura de pacotes quando a conta nao
