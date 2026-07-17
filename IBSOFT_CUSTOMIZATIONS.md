@@ -23,14 +23,18 @@ Documento operacional de variaveis de ambiente:
 
 1. Atualize a branch alinhada ao Chatwoot oficial:
    `git switch develop`, `git fetch upstream`, `git merge --ff-only upstream/develop`.
-2. Leia as secoes `Pontos de acoplamento no Chatwoot original` e
+2. Antes de aplicar o upstream nas branches privadas, revise todos os itens
+   marcados como `backport temporario` neste documento. Confirme se a correcao
+   oficial ja entrou em `upstream/develop` e remova qualquer implementacao
+   duplicada.
+3. Leia as secoes `Pontos de acoplamento no Chatwoot original` e
    `Arquivos sensiveis para conflito`.
-3. Atualize/rebaseie as branches privadas sobre `develop`.
-4. Resolva primeiro os pontos de acoplamento pequenos no core.
-5. Depois valide os modulos isolados em `app/**/ibsoft` e
+4. Atualize/rebaseie as branches privadas sobre `develop`.
+5. Resolva primeiro os pontos de acoplamento pequenos no core.
+6. Depois valide os modulos isolados em `app/**/ibsoft` e
    `app/javascript/**/ibsoft`.
-6. Rode migracoes, testes e lint proporcionais aos modulos afetados.
-7. Verifique manualmente os fluxos visuais do dashboard antes de publicar.
+7. Rode migracoes, testes e lint proporcionais aos modulos afetados.
+8. Verifique manualmente os fluxos visuais do dashboard antes de publicar.
 
 ## Principio de manutencao
 
@@ -778,9 +782,29 @@ Arquivos privados principais:
 - `app/javascript/dashboard/ibsoft/internalChat/`
 - `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatAudioChip.vue`
 - `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentUrls.js`
+- `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentLoader.js`
 - `config/locales/ibsoft_internal_chat.en.yml`
 - `config/locales/ibsoft_internal_chat.pt_BR.yml`
 - `spec/**/ibsoft/internal_chat/`
+
+Compatibilidade de storage e autoscaling:
+
+- `app/services/ibsoft/internal_chat/attachment_blob_preparer.rb` envia arquivos
+  ao Active Storage antes da transacao curta da mensagem e limpa blobs sem
+  vinculo em falhas.
+- `app/services/ibsoft/internal_chat/attachment_delivery.rb` mantem streaming
+  no `Disk` e usa URL assinada de um minuto em storage remoto, sempre depois da
+  autorizacao da sala.
+- `app/services/ibsoft/internal_chat/attachment_preview_scheduler.rb` agenda
+  previews pendentes com trava curta no Redis compartilhado, inclusive para
+  anexos anteriores a esta adaptacao e em execucao com varias replicas.
+- `app/models/ibsoft/internal_chat/attachment.rb` registra o preview nomeado
+  `internal_chat_preview` para processamento assincrono pelo Active Storage.
+- O endpoint de preview responde `202` enquanto o variant nao estiver pronto;
+  `attachmentLoader.js` repete a consulta por tempo limitado.
+- Nao ha nova variavel Ibsoft. Em autoscaling, usar a configuracao nativa
+  `ACTIVE_STORAGE_SERVICE=amazon`, bucket privado, CORS e fila Sidekiq `default`.
+- Nenhum novo arquivo do core do Chatwoot foi tocado por esta adaptacao.
 
 Banco de dados:
 
@@ -1117,6 +1141,19 @@ Risco principal:
 - Se o upstream alterar o widget ou o modelo `working_hours`, validar que
   `ibsoft_working_hour_breaks` continua sendo aplicado no backend e no widget.
 
+Correcoes localizadas de compatibilidade com Vue I18n:
+
+- `app/javascript/dashboard/i18n/locale/he/login.json`: escapa o `@` literal
+  do placeholder de e-mail.
+- `app/javascript/dashboard/i18n/locale/pt_BR/helpCenter.json`: escapa o `@`
+  literal do placeholder de usuario das redes sociais.
+- `app/javascript/dashboard/i18n/locale/sq/integrations.json`: usa a sintaxe
+  de pluralizacao suportada pelo Vue I18n em duas mensagens do Captain.
+- Essas tres alteracoes sao correcoes pontuais em traducoes nativas. Ao receber
+  upstream, remover cada ajuste que ja tiver sido corrigido oficialmente.
+- `app/javascript/dashboard/ibsoft/i18n/specs/translationCompiler.spec.js`
+  protege essas mensagens e os literais privados usados pela distribuicao.
+
 ### 7. Imagem Docker privada
 
 Documento detalhado: `docs/ibsoft-docker-image.md`.
@@ -1138,6 +1175,84 @@ Cuidados:
 - Nao commitar `.env`, backups, dumps, tokens ou segredos.
 - `docker-compose.yaml` costuma ser local/desenvolvimento; revisar antes de
   incluir em commit de producao.
+
+### 8. Backport temporario de retry para audio
+
+Origem oficial: `chatwoot/chatwoot#13675` (`fix/audio-retry`).
+
+> [!IMPORTANT]
+> AVISO PARA A PROXIMA SINCRONIZACAO: este codigo nao e uma customizacao Ibsoft
+> permanente. Ele replica temporariamente uma correcao oficial ainda nao
+> incorporada ao `upstream/develop` no momento da aplicacao. Antes de resolver
+> conflitos ou aceitar alteracoes nesses arquivos, verifique o estado do PR
+> oficial e compare o codigo do upstream. Nao mantenha duas implementacoes de
+> retry para o mesmo carregamento de audio.
+
+Objetivo:
+
+- Repetir o carregamento de audios recebidos em tempo real quando a primeira
+  URL temporaria do Active Storage responder antes de o arquivo estar pronto.
+- Evitar que o agente precise recarregar a pagina depois de um `404` inicial.
+
+Pontos nativos tocados pelo backport:
+
+- `app/javascript/dashboard/components-next/message/bubbles/Audio.vue`
+- `app/javascript/dashboard/composables/loadWithRetry.js`
+- `app/javascript/dashboard/i18n/locale/en/settings.json`
+
+Complementos privados:
+
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: traducao do
+  estado de audio indisponivel.
+- `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`:
+  cobre sucesso, retry com cache busting e falha definitiva.
+
+Remocao futura:
+
+- Consultar `https://github.com/chatwoot/chatwoot/pull/13675` e confirmar se o
+  PR, ou uma correcao equivalente, entrou em `upstream/develop`.
+- Comparar os tres arquivos nativos com a versao oficial antes de resolver
+  conflitos. Se o upstream ja contiver a correcao, preferir o codigo oficial.
+- Remover somente o codigo duplicado do backport. Preservar a traducao pt-BR
+  privada caso o upstream ainda nao forneca uma traducao equivalente.
+- Reavaliar ou remover o spec privado quando a cobertura oficial equivalente
+  existir; enquanto isso, ele deve continuar validando o comportamento.
+- Depois da sincronizacao, executar o spec
+  `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`
+  e testar manualmente um audio recebido em tempo real sem recarregar a pagina.
+
+### 9. Perfil: visibilidade de senha e sessoes em pt-BR
+
+Objetivo:
+
+- Permitir visualizar individualmente os tres campos da troca de senha.
+- Traduzir integralmente a secao de sessoes ativas para portugues do Brasil.
+
+Pontos nativos tocados:
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/ChangePassword.vue`
+
+Traducoes privadas:
+
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json`
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`
+
+Teste:
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/specs/ChangePassword.spec.js`
+
+Acoplamento e cuidados:
+
+- A composicao dos botoes de visibilidade e local a tela de senha; o componente
+  global `woot-input` permanece intocado.
+- Os arquivos `settings.json` nativos permanecem intocados; as chaves adicionais
+  e a traducao pt-BR de sessoes usam o agregador privado de locale.
+- Os botoes usam componentes, icones e tokens de tema existentes e possuem
+  rotulos acessiveis traduzidos.
+- Ao receber atualizacoes do upstream, conferir se a tela oficial passou a
+  oferecer visibilidade de senha ou se o `woot-input` foi substituido. Nesse
+  caso, remover a composicao duplicada e preservar apenas as traducoes ainda
+  ausentes.
 
 ## Arquivos sensiveis para conflito
 
@@ -1214,6 +1329,12 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/routes/dashboard/settings/inbox/components/BusinessDay.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
+
+### Frontend: perfil
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/ChangePassword.vue`
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json`
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`
 
 ## Arquivos locais/temporarios que exigem auditoria
 

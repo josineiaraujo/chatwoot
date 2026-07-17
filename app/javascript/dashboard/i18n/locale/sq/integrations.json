@@ -630,7 +630,7 @@
         "TITLE": "Udhëzimet e përgjigjes",
         "DESCRIPTION": "Stili dhe struktura e përgjigjeve të asistentit tuaj—të qarta dhe miqësore? Të shkurtra dhe koncize? Të detajuara dhe formale?",
         "BULK_ACTION": {
-          "SELECTED": "{count, plural, one {{count} element i përzgjedhur} other {{count} elemente të përzgjedhura}}",
+          "SELECTED": "{count} element i përzgjedhur | {count} elemente të përzgjedhura",
           "SELECT_ALL": "Zgjidh të gjitha ({count})",
           "UNSELECT_ALL": "Hiq përzgjedhjen nga të gjitha ({count})",
           "BULK_DELETE_BUTTON": "Fshij"
@@ -675,7 +675,7 @@
         "TITLE": "Skenarë",
         "DESCRIPTION": "Jepini asistentit pak kontekst—si p.sh. “çfarë të bëjë kur një përdorues ngec” ose “si të veprojë gjatë një kërkese për rimbursim”.",
         "BULK_ACTION": {
-          "SELECTED": "{count, plural, one {{count} element i përzgjedhur} other {{count} elemente të përzgjedhura}}",
+          "SELECTED": "{count} element i përzgjedhur | {count} elemente të përzgjedhura",
           "SELECT_ALL": "Zgjidh të gjitha ({count})",
           "UNSELECT_ALL": "Hiq përzgjedhjen nga të gjitha ({count})",
           "BULK_DELETE_BUTTON": "Fshi"

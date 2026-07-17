@@ -4,6 +4,14 @@
       "TITLE": "Attention"
     }
   },
+  "PROFILE_SETTINGS": {
+    "FORM": {
+      "PASSWORD_SECTION": {
+        "SHOW_PASSWORD": "Show password",
+        "HIDE_PASSWORD": "Hide password"
+      }
+    }
+  },
   "SIDEBAR": {
     "INBOX": "Attention"
   },
@@ -856,7 +864,7 @@
         "ENABLED": "Send message when assigning an agent",
         "ENABLED_DESCRIPTION": "Use this option to tell the customer that the conversation was routed to a specific person.",
         "MESSAGE": "Automatic message to customer",
-        "DEFAULT_MESSAGE": "Your conversation was routed to {{agent.name}}. They will continue with you shortly.",
+        "DEFAULT_MESSAGE": "Your conversation was routed to {'{{agent.name}}'}. They will continue with you shortly.",
         "ONLY_BEFORE_FIRST_REPLY": "Only before the first human reply",
         "ONLY_BEFORE_FIRST_REPLY_DESCRIPTION": "Avoids sending the confirmation when the conversation already received a human reply."
       },

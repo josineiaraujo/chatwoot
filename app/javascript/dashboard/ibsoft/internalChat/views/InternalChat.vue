@@ -28,6 +28,7 @@ import {
   clearActiveInternalChatRoom,
   setActiveInternalChatRoom,
 } from '../helpers/audioNotifications';
+import { loadProtectedAttachment } from '../helpers/attachmentLoader';
 import {
   buildMessageDateGroups,
   formatMessageTimestamp,
@@ -300,8 +301,14 @@ const fetchAttachmentObjectUrl = async (attachment, variant = 'source') => {
   }
 
   const generation = attachmentObjectUrlGeneration;
-  const request = InternalChatAPI.attachment(url)
-    .then(({ data }) => {
+  const request = loadProtectedAttachment({
+    url,
+    request: requestUrl => InternalChatAPI.attachment(requestUrl),
+    retryPending: variant === 'preview',
+  })
+    .then(data => {
+      if (!data) return '';
+
       const objectUrl = URL.createObjectURL(data);
       if (generation !== attachmentObjectUrlGeneration) {
         URL.revokeObjectURL(objectUrl);

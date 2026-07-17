@@ -97,6 +97,59 @@ RSpec.describe Ibsoft::InternalChat::PostMessageService do
         )
       )
     end
+
+    it 'uploads attachments before opening the message transaction' do
+      upload = Rack::Test::UploadedFile.new(Rails.root.join('spec/assets/avatar.png'), 'image/png')
+      execution_order = []
+
+      allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |method, **arguments|
+        execution_order << :upload
+        method.call(**arguments)
+      end
+      allow(Ibsoft::InternalChat::Message).to receive(:transaction).and_wrap_original do |method, &block|
+        execution_order << :message_transaction
+        method.call(&block)
+      end
+
+      message = described_class.new(room: room, current_user: sender).perform(
+        content: 'Imagem interna',
+        attachments: [upload]
+      )
+
+      attachment = message.reload.attachments.first
+      expect(attachment).to be_image
+      expect(attachment.file).to be_attached
+      expect(execution_order.first(2)).to eq(%i[upload message_transaction])
+      expect(execution_order.count(:upload)).to eq(1)
+    end
+
+    it 'enqueues asynchronous preview processing for images' do
+      upload = Rack::Test::UploadedFile.new(Rails.root.join('spec/assets/avatar.png'), 'image/png')
+
+      expect do
+        described_class.new(room: room, current_user: sender).perform(
+          content: 'Imagem interna',
+          attachments: [upload]
+        )
+      end.to have_enqueued_job(ActiveStorage::TransformJob)
+    end
+
+    it 'enqueues asynchronous preview processing for videos' do
+      upload = Rack::Test::UploadedFile.new(Rails.root.join('spec/assets/sample.mp4'), 'video/mp4')
+      video_previewer = Class.new do
+        def self.accept?(blob)
+          blob.content_type == 'video/mp4'
+        end
+      end
+      allow(ActiveStorage).to receive(:previewers).and_return([video_previewer])
+
+      expect do
+        described_class.new(room: room, current_user: sender).perform(
+          content: 'Video interno',
+          attachments: [upload]
+        )
+      end.to have_enqueued_job(ActiveStorage::PreviewImageJob)
+    end
   end
 
   def fake_upload(content_type:, byte_size:)
