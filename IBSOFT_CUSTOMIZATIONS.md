@@ -782,9 +782,29 @@ Arquivos privados principais:
 - `app/javascript/dashboard/ibsoft/internalChat/`
 - `app/javascript/dashboard/ibsoft/internalChat/components/InternalChatAudioChip.vue`
 - `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentUrls.js`
+- `app/javascript/dashboard/ibsoft/internalChat/helpers/attachmentLoader.js`
 - `config/locales/ibsoft_internal_chat.en.yml`
 - `config/locales/ibsoft_internal_chat.pt_BR.yml`
 - `spec/**/ibsoft/internal_chat/`
+
+Compatibilidade de storage e autoscaling:
+
+- `app/services/ibsoft/internal_chat/attachment_blob_preparer.rb` envia arquivos
+  ao Active Storage antes da transacao curta da mensagem e limpa blobs sem
+  vinculo em falhas.
+- `app/services/ibsoft/internal_chat/attachment_delivery.rb` mantem streaming
+  no `Disk` e usa URL assinada de um minuto em storage remoto, sempre depois da
+  autorizacao da sala.
+- `app/services/ibsoft/internal_chat/attachment_preview_scheduler.rb` agenda
+  previews pendentes com trava curta no Redis compartilhado, inclusive para
+  anexos anteriores a esta adaptacao e em execucao com varias replicas.
+- `app/models/ibsoft/internal_chat/attachment.rb` registra o preview nomeado
+  `internal_chat_preview` para processamento assincrono pelo Active Storage.
+- O endpoint de preview responde `202` enquanto o variant nao estiver pronto;
+  `attachmentLoader.js` repete a consulta por tempo limitado.
+- Nao ha nova variavel Ibsoft. Em autoscaling, usar a configuracao nativa
+  `ACTIVE_STORAGE_SERVICE=amazon`, bucket privado, CORS e fila Sidekiq `default`.
+- Nenhum novo arquivo do core do Chatwoot foi tocado por esta adaptacao.
 
 Banco de dados:
 
@@ -1121,6 +1141,19 @@ Risco principal:
 - Se o upstream alterar o widget ou o modelo `working_hours`, validar que
   `ibsoft_working_hour_breaks` continua sendo aplicado no backend e no widget.
 
+Correcoes localizadas de compatibilidade com Vue I18n:
+
+- `app/javascript/dashboard/i18n/locale/he/login.json`: escapa o `@` literal
+  do placeholder de e-mail.
+- `app/javascript/dashboard/i18n/locale/pt_BR/helpCenter.json`: escapa o `@`
+  literal do placeholder de usuario das redes sociais.
+- `app/javascript/dashboard/i18n/locale/sq/integrations.json`: usa a sintaxe
+  de pluralizacao suportada pelo Vue I18n em duas mensagens do Captain.
+- Essas tres alteracoes sao correcoes pontuais em traducoes nativas. Ao receber
+  upstream, remover cada ajuste que ja tiver sido corrigido oficialmente.
+- `app/javascript/dashboard/ibsoft/i18n/specs/translationCompiler.spec.js`
+  protege essas mensagens e os literais privados usados pela distribuicao.
+
 ### 7. Imagem Docker privada
 
 Documento detalhado: `docs/ibsoft-docker-image.md`.
@@ -1187,6 +1220,39 @@ Remocao futura:
 - Depois da sincronizacao, executar o spec
   `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`
   e testar manualmente um audio recebido em tempo real sem recarregar a pagina.
+
+### 9. Perfil: visibilidade de senha e sessoes em pt-BR
+
+Objetivo:
+
+- Permitir visualizar individualmente os tres campos da troca de senha.
+- Traduzir integralmente a secao de sessoes ativas para portugues do Brasil.
+
+Pontos nativos tocados:
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/ChangePassword.vue`
+
+Traducoes privadas:
+
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json`
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`
+
+Teste:
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/specs/ChangePassword.spec.js`
+
+Acoplamento e cuidados:
+
+- A composicao dos botoes de visibilidade e local a tela de senha; o componente
+  global `woot-input` permanece intocado.
+- Os arquivos `settings.json` nativos permanecem intocados; as chaves adicionais
+  e a traducao pt-BR de sessoes usam o agregador privado de locale.
+- Os botoes usam componentes, icones e tokens de tema existentes e possuem
+  rotulos acessiveis traduzidos.
+- Ao receber atualizacoes do upstream, conferir se a tela oficial passou a
+  oferecer visibilidade de senha ou se o `woot-input` foi substituido. Nesse
+  caso, remover a composicao duplicada e preservar apenas as traducoes ainda
+  ausentes.
 
 ## Arquivos sensiveis para conflito
 
@@ -1263,6 +1329,12 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/routes/dashboard/settings/inbox/components/BusinessDay.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
+
+### Frontend: perfil
+
+- `app/javascript/dashboard/routes/dashboard/settings/profile/ChangePassword.vue`
+- `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json`
+- `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`
 
 ## Arquivos locais/temporarios que exigem auditoria
 
