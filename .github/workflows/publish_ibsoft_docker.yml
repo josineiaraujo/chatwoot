@@ -18,7 +18,7 @@ on:
         default: linux/amd64
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/chathub-chatwoot
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/chathub-chatwoot-private
 
 permissions:
   contents: read
@@ -82,3 +82,40 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.sha_tag }}
           cache-from: type=gha,scope=ibsoft-chatwoot-${{ inputs.platforms }}
           cache-to: type=gha,mode=max,scope=ibsoft-chatwoot-${{ inputs.platforms }}
+
+      - name: Verify package requires authentication
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          repository="${IMAGE_NAME#ghcr.io/}"
+          token_response="$(mktemp)"
+          token_status="$(
+            curl --silent --show-error \
+              --output "$token_response" \
+              --write-out "%{http_code}" \
+              "https://ghcr.io/token?scope=repository%3A${repository//\//%2F}%3Apull"
+          )"
+
+          if [[ "$token_status" != "200" ]]; then
+            exit 0
+          fi
+
+          token="$(jq --raw-output '.token // empty' "$token_response")"
+          if [[ -z "$token" ]]; then
+            exit 0
+          fi
+
+          manifest_status="$(
+            curl --silent --show-error \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              --header "Authorization: Bearer $token" \
+              --header "Accept: application/vnd.oci.image.manifest.v1+json" \
+              "https://ghcr.io/v2/$repository/manifests/$IMAGE_TAG"
+          )"
+
+          if [[ "$manifest_status" == "200" ]]; then
+            echo "::error::The container package is publicly readable without authentication."
+            exit 1
+          fi
