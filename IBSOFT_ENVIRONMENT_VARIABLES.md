@@ -123,6 +123,68 @@ Cuidados:
 - Essa variavel nao substitui traducoes ausentes. Ela apenas escolhe o locale
   padrao.
 
+### ACTIVE_STORAGE_SERVICE e storage compartilhado
+
+Exemplo local:
+
+```env
+ACTIVE_STORAGE_SERVICE=local
+```
+
+Exemplo recomendado para producao com autoscaling:
+
+```env
+ACTIVE_STORAGE_SERVICE=amazon
+S3_BUCKET_NAME=chathub-production
+AWS_REGION=sa-east-1
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+Origem:
+
+- Nativas do Chatwoot/Active Storage.
+
+Motivo:
+
+- Armazenam anexos do Chatwoot e dos modulos privados, inclusive chat interno.
+- Object storage permite que varias replicas Rails e Sidekiq acessem os mesmos
+  arquivos sem depender do disco efemero de uma instancia.
+
+Cuidados:
+
+- `local` exige que Rails e Sidekiq compartilhem e preservem `/app/storage`.
+- `local` nao deve ser usado entre replicas em hosts diferentes sem filesystem
+  compartilhado.
+- Em S3, o bucket deve ser privado e permitir CORS `GET`/`HEAD` para os dominios
+  do ChatHub. O chat interno autoriza o usuario e depois entrega URL assinada de
+  um minuto para o navegador.
+- Rails e Sidekiq devem receber os mesmos valores de storage.
+- A fila `default` do Sidekiq precisa estar ativa para analise e previews do
+  Active Storage.
+- Alterar `ACTIVE_STORAGE_SERVICE` nao copia objetos antigos. Planeje a migracao
+  de `/app/storage` para o bucket antes de retirar o volume local.
+- A configuracao `amazon` atual em `config/storage.yml` recebe explicitamente
+  `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY`. Usar IAM Role sem chaves exige
+  primeiro adaptar essa configuracao e validar o SDK; nao assuma esse suporte
+  no estado atual do repositorio.
+
+Exemplo minimo de CORS do bucket, ajustando os dominios reais:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedOrigins": ["https://ibsoftcloud.com.br:3443"],
+    "ExposeHeaders": ["Content-Length", "Content-Type", "ETag"]
+  }
+]
+```
+
+O chat interno nao adiciona variavel Ibsoft para storage: ele respeita o service
+nativo selecionado por `ACTIVE_STORAGE_SERVICE`.
+
 ## Variaveis Ibsoft
 
 As variaveis abaixo nao fazem parte do Chatwoot oficial. Elas foram criadas

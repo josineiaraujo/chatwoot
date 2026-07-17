@@ -14,12 +14,18 @@ class Ibsoft::InternalChat::PostMessageService
 
     validate_files!(files)
 
-    message = create_message(normalized_content, files)
+    prepared_attachments = prepare_attachments(files)
+    message = create_message(normalized_content, prepared_attachments)
     broadcast_message(message)
     message
+  rescue StandardError
+    attachment_preparer&.purge_unattached_blobs
+    raise
   end
 
   private
+
+  attr_reader :attachment_preparer
 
   def validate_files!(files)
     if files.size > MAX_ATTACHMENTS
@@ -49,7 +55,14 @@ class Ibsoft::InternalChat::PostMessageService
     raise Ibsoft::InternalChat::Error, I18n.t('ibsoft_internal_chat.errors.file_type_not_supported')
   end
 
-  def create_message(content, files)
+  def prepare_attachments(files)
+    @attachment_preparer = Ibsoft::InternalChat::AttachmentBlobPreparer.new(
+      files: files.map { |file| { file: file, file_type: file_type_for(file) } }
+    )
+    attachment_preparer.perform
+  end
+
+  def create_message(content, prepared_attachments)
     Ibsoft::InternalChat::Message.transaction do
       message = @room.messages.create!(
         account: @room.account,
@@ -58,12 +71,13 @@ class Ibsoft::InternalChat::PostMessageService
         content: content
       )
 
-      files.each do |file|
-        attachment = message.attachments.create!(
+      prepared_attachments.each do |prepared_attachment|
+        attachment = message.attachments.build(
           account: @room.account,
-          file_type: file_type_for(file)
+          file_type: prepared_attachment.file_type
         )
-        attachment.file.attach(file)
+        attachment.file.attach(prepared_attachment.blob)
+        attachment.save!
       end
 
       message
