@@ -4,7 +4,7 @@ Este projeto publica uma imagem privada do Chatwoot customizado no GitHub
 Container Registry:
 
 ```text
-ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production
+ghcr.io/josineiaraujo/chathub-chatwoot-private:ibsoft-production
 ```
 
 ## Publicacao
@@ -43,14 +43,22 @@ git push origin ibsoft-image-teste-20260607
 ## Privacidade e acesso
 
 Apos a primeira publicacao, confira a visibilidade do pacote em GitHub Packages.
-O pacote deve permanecer privado.
+O pacote novo nasce privado e deve permanecer privado. O workflow tambem
+verifica se a tag publicada pode ser lida anonimamente e falha se detectar
+acesso publico.
+
+Nunca altere a visibilidade para publica. O GitHub Container Registry nao
+permite transformar novamente um pacote publico em privado.
 
 Para outra pessoa ou servidor baixar a imagem, essa identidade precisa ter
 permissao de leitura no pacote e autenticar no GHCR:
 
 ```sh
-docker login ghcr.io -u USUARIO_GITHUB
-docker pull ghcr.io/josineiaraujo/chathub-chatwoot:ibsoft-production
+export CR_PAT='TOKEN_CLASSIC_COM_READ_PACKAGES'
+echo "$CR_PAT" | docker login ghcr.io -u USUARIO_GITHUB --password-stdin
+unset CR_PAT
+
+docker pull ghcr.io/josineiaraujo/chathub-chatwoot-private:ibsoft-production
 ```
 
 Use um token do GitHub com permissao de leitura de pacotes quando a conta nao
