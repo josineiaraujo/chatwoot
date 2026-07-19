@@ -18,11 +18,11 @@ on:
         default: linux/amd64
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/chathub-chatwoot-private
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/chathub-chatwoot-ee
+  PACKAGE_NAME: chathub-chatwoot-ee
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build:
@@ -31,6 +31,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Require private registry token
+        shell: bash
+        env:
+          GHCR_PRIVATE_TOKEN: ${{ secrets.GHCR_PRIVATE_TOKEN }}
+        run: |
+          if [[ -z "$GHCR_PRIVATE_TOKEN" ]]; then
+            echo "::error::Repository secret GHCR_PRIVATE_TOKEN is required."
+            exit 1
+          fi
 
       - name: Prepare image tags
         id: image
@@ -67,8 +77,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PRIVATE_TOKEN }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -83,18 +93,33 @@ jobs:
           cache-from: type=gha,scope=ibsoft-chatwoot-${{ inputs.platforms }}
           cache-to: type=gha,mode=max,scope=ibsoft-chatwoot-${{ inputs.platforms }}
 
-      - name: Verify package requires authentication
+      - name: Verify package is private
         shell: bash
         env:
+          GHCR_PRIVATE_TOKEN: ${{ secrets.GHCR_PRIVATE_TOKEN }}
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
+          package_metadata="$(
+            curl --fail --silent --show-error \
+              --header "Authorization: Bearer $GHCR_PRIVATE_TOKEN" \
+              --header "Accept: application/vnd.github+json" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/user/packages/container/$PACKAGE_NAME"
+          )"
+          package_visibility="$(jq --raw-output '.visibility' <<< "$package_metadata")"
+
+          if [[ "$package_visibility" != "private" ]]; then
+            echo "::error::Container package visibility is '$package_visibility', expected 'private'."
+            exit 1
+          fi
+
           repository="${IMAGE_NAME#ghcr.io/}"
           token_response="$(mktemp)"
           token_status="$(
             curl --silent --show-error \
               --output "$token_response" \
               --write-out "%{http_code}" \
-              "https://ghcr.io/token?scope=repository%3A${repository//\//%2F}%3Apull"
+              "https://ghcr.io/token?service=ghcr.io&scope=repository%3A${repository//\//%2F}%3Apull"
           )"
 
           if [[ "$token_status" != "200" ]]; then
@@ -111,11 +136,16 @@ jobs:
               --output /dev/null \
               --write-out "%{http_code}" \
               --header "Authorization: Bearer $token" \
-              --header "Accept: application/vnd.oci.image.manifest.v1+json" \
+              --header "Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json" \
               "https://ghcr.io/v2/$repository/manifests/$IMAGE_TAG"
           )"
 
           if [[ "$manifest_status" == "200" ]]; then
             echo "::error::The container package is publicly readable without authentication."
+            exit 1
+          fi
+
+          if [[ "$manifest_status" != "401" && "$manifest_status" != "403" && "$manifest_status" != "404" ]]; then
+            echo "::error::Unexpected anonymous registry response: $manifest_status."
             exit 1
           fi
