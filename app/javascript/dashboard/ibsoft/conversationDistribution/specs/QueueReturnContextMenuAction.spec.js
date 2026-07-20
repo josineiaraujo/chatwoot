@@ -1,31 +1,22 @@
-import { flushPromises, shallowMount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import fluentIcons from 'shared/components/FluentIcon/icons.json';
 import QueueReturnContextMenuAction from '../components/QueueReturnContextMenuAction.vue';
-import conversationDistributionAPI from '../api';
 
-const alertMock = vi.fn();
-const dispatchMock = vi.fn();
-const teams = [
-  { id: 1, name: 'Comercial' },
-  { id: 2, name: 'Suporte' },
-];
 const conversation = {
   id: 17,
   status: 'open',
   meta: {
     assignee: { id: 7, name: 'Agente' },
-    team: teams[0],
+    team: { id: 1, name: 'Comercial' },
   },
 };
 const store = {
   getters: {
     getConversationById: vi.fn(() => conversation),
     getCurrentUser: { id: 7 },
-    'teams/getTeams': teams,
   },
-  dispatch: dispatchMock,
 };
 
 vi.mock('vue-i18n', () => ({
@@ -36,16 +27,6 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('vuex', () => ({
   useStore: () => store,
-}));
-
-vi.mock('dashboard/composables', () => ({
-  useAlert: message => alertMock(message),
-}));
-
-vi.mock('../api', () => ({
-  default: {
-    returnConversationToQueue: vi.fn(),
-  },
 }));
 
 const mountComponent = () =>
@@ -61,24 +42,6 @@ const mountComponent = () =>
           template:
             '<button class="queue-return-menu-item" type="button" :data-icon="option.icon" @click="$emit(\'click\', $event)">{{ option.label }}</button>',
         },
-        Dialog: {
-          props: ['disableConfirmButton'],
-          emits: ['confirm', 'close'],
-          methods: {
-            open() {},
-            close() {
-              this.$emit('close');
-            },
-          },
-          template:
-            '<div><slot /><button class="confirm-button" type="button" :disabled="disableConfirmButton" @click="$emit(\'confirm\')">confirm</button></div>',
-        },
-        IbsoftSelect: {
-          props: ['modelValue'],
-          emits: ['update:modelValue'],
-          template:
-            '<select class="team-select" :value="modelValue" @change="$emit(\'update:modelValue\', Number($event.target.value))"><slot /></select>',
-        },
       },
     },
   });
@@ -88,10 +51,6 @@ describe('QueueReturnContextMenuAction', () => {
     vi.clearAllMocks();
     store.getters.getConversationById.mockReturnValue(conversation);
     store.getters.getCurrentUser = { id: 7 };
-    conversationDistributionAPI.returnConversationToQueue.mockResolvedValue({
-      data: { queued: true },
-    });
-    dispatchMock.mockResolvedValue();
   });
 
   it('is visible only for the current assignee of an open conversation', () => {
@@ -109,25 +68,11 @@ describe('QueueReturnContextMenuAction', () => {
     );
   });
 
-  it('returns the conversation to the selected team and updates the store', async () => {
+  it('emits an open request without owning the dialog lifecycle', async () => {
     const wrapper = mountComponent();
 
     await wrapper.find('.queue-return-menu-item').trigger('click');
-    await wrapper.find('.team-select').setValue('2');
-    await wrapper.find('.confirm-button').trigger('click');
-    await flushPromises();
 
-    expect(
-      conversationDistributionAPI.returnConversationToQueue
-    ).toHaveBeenCalledWith(17, 2);
-    expect(dispatchMock).toHaveBeenCalledWith('setCurrentChatAssignee', {
-      conversationId: 17,
-      assignee: null,
-    });
-    expect(dispatchMock).toHaveBeenCalledWith('setCurrentChatTeam', {
-      conversationId: 17,
-      team: teams[1],
-    });
-    expect(wrapper.emitted('close')).toEqual([[]]);
+    expect(wrapper.emitted('open')).toEqual([[]]);
   });
 });

@@ -80,6 +80,7 @@ export default {
     'assignLabel',
     'removeLabel',
     'deleteConversation',
+    'returnToQueue',
     'close',
   ],
   setup() {
@@ -394,7 +395,7 @@ export default {
       <QueueReturnContextMenuAction
         v-if="isAllowed([MENU.RETURN_TO_QUEUE])"
         :chat-id="chatId"
-        @close="$emit('close')"
+        @open="$emit('returnToQueue')"
       />
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>
