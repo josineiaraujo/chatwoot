@@ -4,6 +4,11 @@
       "TITLE": "Attention"
     }
   },
+  "CHAT_LIST": {
+    "ASSIGNEE_TYPE_TABS": {
+      "unassigned": "Queue"
+    }
+  },
   "PROFILE_SETTINGS": {
     "FORM": {
       "PASSWORD_SECTION": {
@@ -627,6 +632,7 @@
         "FAILED": "Failed",
         "CANCELLED": "Cancelled",
         "PENDING": "Pending",
+        "PROCESSING": "Processing",
         "SENT": "Sent",
         "SKIPPED": "Skipped"
       },

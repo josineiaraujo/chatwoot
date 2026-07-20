@@ -6,6 +6,8 @@ Este patch ajusta a apresentacao operacional do status `pending` para a
 operacao Ibsoft:
 
 - exibe `pending` como `Automacao` nos filtros/listas operacionais;
+- apresenta a aba operacional `unassigned` como `Fila`, sem alterar o valor
+  interno, as APIs ou os textos tecnicos de configuracao;
 - remove a acao manual de marcar uma conversa como `pending` nos menus de
   atendimento;
 - substitui a aba visivel `Todas` por `Automacoes`, mantendo `Todas` acessivel
@@ -74,6 +76,16 @@ padrao do Chatwoot.
 - Mudancas locais de status feitas pelo header, menu contextual ou acoes em
   massa disparam refresh dos contadores quando envolvem `pending`, mantendo a
   badge `Automacoes` sincronizada com a lista.
+- Eventos em tempo real continuam atualizando `Minhas` e `Nao atribuidas`
+  mesmo quando `Automacoes` esta selecionada. Nesse caso, os contadores
+  operacionais usam o ultimo status normal selecionado, sem substituir o
+  recorte por `pending`.
+- O contador de `Automacoes` ignora respostas antigas e preserva o ultimo valor
+  valido quando uma consulta de atualizacao falha. Atualizacoes consecutivas
+  sao agrupadas por debounce, com espera maxima, para evitar uma consulta de
+  contagem por evento realtime em contas movimentadas.
+- A exclusao local de uma conversa dispara uma atualizacao completa dos
+  contadores no escopo atual.
 - O modal de atalhos aceita `titleKey` opcional para que os atalhos de
   encerramento usem traducoes Ibsoft sem alterar traducoes globais do
   Chatwoot.

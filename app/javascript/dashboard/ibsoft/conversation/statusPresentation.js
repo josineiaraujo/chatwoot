@@ -43,6 +43,18 @@ export const getStatusForConversationTab = (tab, status) => {
   return status;
 };
 
+export const getStatusForOperationalConversationStats = ({
+  activeAssigneeTab,
+  activeStatus,
+  lastNonAutomationStatus,
+}) => {
+  if (isAutomationAssigneeTab(activeAssigneeTab)) {
+    return lastNonAutomationStatus || wootConstants.STATUS_TYPE.OPEN;
+  }
+
+  return activeStatus;
+};
+
 export const getConversationPageFilterKey = ({
   hasAppliedFiltersOrActiveFolders,
   activeAssigneeTab,

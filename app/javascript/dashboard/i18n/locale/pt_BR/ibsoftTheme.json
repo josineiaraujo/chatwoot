@@ -4,6 +4,11 @@
       "TITLE": "Atenção"
     }
   },
+  "CHAT_LIST": {
+    "ASSIGNEE_TYPE_TABS": {
+      "unassigned": "Fila"
+    }
+  },
   "COMPONENTS": {
     "MEDIA": {
       "AUDIO_UNAVAILABLE": "Este áudio não está mais disponível."
@@ -1456,6 +1461,7 @@
         "FAILED": "Falhou",
         "CANCELLED": "Cancelado",
         "PENDING": "Pendente",
+        "PROCESSING": "Processando",
         "SENT": "Enviado",
         "SKIPPED": "Ignorado"
       },
