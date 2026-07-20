@@ -4,6 +4,11 @@
       "TITLE": "Attention"
     }
   },
+  "CHAT_LIST": {
+    "ASSIGNEE_TYPE_TABS": {
+      "unassigned": "Queue"
+    }
+  },
   "PROFILE_SETTINGS": {
     "FORM": {
       "PASSWORD_SECTION": {
@@ -627,6 +632,7 @@
         "FAILED": "Failed",
         "CANCELLED": "Cancelled",
         "PENDING": "Pending",
+        "PROCESSING": "Processing",
         "SENT": "Sent",
         "SKIPPED": "Skipped"
       },
@@ -760,6 +766,25 @@
     },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configure distribution",
+      "QUEUE_RETURN": {
+        "BUTTON": "Return to queue",
+        "TITLE": "Return conversation to queue",
+        "DESCRIPTION": "Remove this conversation from your responsibility and place it back in the distribution queue. You can keep the current team or choose another one.",
+        "TEAM_LABEL": "Destination team",
+        "CONFIRM": "Return to queue",
+        "SUCCESS": "Conversation returned to the {teamName} queue.",
+        "ERROR": "Could not return the conversation to the queue.",
+        "ERRORS": {
+          "queue_return_not_open": "Only open conversations can return to the queue.",
+          "queue_return_actor_not_assignee": "This conversation is no longer assigned to you.",
+          "queue_return_missing_team": "Select a valid team.",
+          "queue_return_distribution_disabled": "Automatic distribution is disabled.",
+          "queue_return_real_assignment_disabled": "Distribution is in simulation mode and cannot change conversations.",
+          "queue_return_native_assignment_enabled": "Disable this team's native auto assignment before returning conversations to the queue.",
+          "queue_return_policy_disabled": "There is no active distribution policy for this team.",
+          "queue_return_source_not_allowed": "This team's policy does not allow manual queue returns."
+        }
+      },
       "ENABLED": {
         "TITLE": "Automatic distribution",
         "DESCRIPTION": "Enable this policy to control how conversations transferred to humans should be distributed."
@@ -1005,7 +1030,8 @@
           "AUTOMATION_HANDOFF_COMPLETED": "Automation handoff completed",
           "AUTOMATION_HANDOFF_SKIPPED": "Automation handoff skipped",
           "AGENT_CLAIM_COMPLETED": "Agent claim completed",
-          "AGENT_CLAIM_SKIPPED": "Agent claim skipped"
+          "AGENT_CLAIM_SKIPPED": "Agent claim skipped",
+          "QUEUE_RETURNED": "Conversation returned to queue"
         },
         "REASONS": {
           "ELIGIBLE_FOR_ASSIGNMENT": "Eligible for assignment",
@@ -1019,7 +1045,8 @@
           "NOT_ELIGIBLE": "Not eligible",
           "CONVERSATION_NOT_FOUND": "Conversation not found",
           "REQUIRED_ASSIGNMENTS_MISSING": "Required conversations were not selected",
-          "AUTOMATION_STALLED": "Stuck automation"
+          "AUTOMATION_STALLED": "Stuck automation",
+          "AGENT_RETURNED_TO_QUEUE": "Agent returned the conversation to the queue"
         }
       },
       "AGENT_ASSIGNMENT": {

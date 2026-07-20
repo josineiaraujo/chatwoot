@@ -4,9 +4,8 @@ class Ibsoft::MessageBroadcast::BroadcastSender
   end
 
   def call
-    return unless broadcast.status.in?(%w[queued running])
+    return unless execution_claim.acquire
 
-    broadcast.update!(status: 'running', started_at: Time.current)
     deliverable_recipients.find_each do |recipient|
       Ibsoft::MessageBroadcast::RecipientSender.new(
         broadcast: broadcast,
@@ -15,7 +14,7 @@ class Ibsoft::MessageBroadcast::BroadcastSender
     end
     finish_broadcast!
   rescue StandardError
-    broadcast.update!(status: 'failed', finished_at: Time.current)
+    fail_broadcast! if broadcast.persisted?
     raise
   end
 
@@ -28,7 +27,20 @@ class Ibsoft::MessageBroadcast::BroadcastSender
   end
 
   def finish_broadcast!
-    status = broadcast.recipients.exists?(status: %w[pending queued failed]) ? 'failed' : 'completed'
+    status = broadcast.recipients.exists?(status: %w[pending queued processing failed]) ? 'failed' : 'completed'
     broadcast.update!(status: status, finished_at: Time.current)
+  end
+
+  def fail_broadcast!
+    # Preserve a terminal state written by another execution.
+    # rubocop:disable Rails/SkipsModelValidations
+    Ibsoft::MessageBroadcast::Broadcast
+      .where(id: broadcast.id, status: 'running')
+      .update_all(status: 'failed', finished_at: Time.current, updated_at: Time.current)
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def execution_claim
+    @execution_claim ||= Ibsoft::MessageBroadcast::BroadcastExecutionClaim.new(broadcast: broadcast)
   end
 end

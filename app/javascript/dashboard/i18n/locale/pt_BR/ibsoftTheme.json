@@ -4,6 +4,11 @@
       "TITLE": "Atenção"
     }
   },
+  "CHAT_LIST": {
+    "ASSIGNEE_TYPE_TABS": {
+      "unassigned": "Fila"
+    }
+  },
   "COMPONENTS": {
     "MEDIA": {
       "AUDIO_UNAVAILABLE": "Este áudio não está mais disponível."
@@ -1456,6 +1461,7 @@
         "FAILED": "Falhou",
         "CANCELLED": "Cancelado",
         "PENDING": "Pendente",
+        "PROCESSING": "Processando",
         "SENT": "Enviado",
         "SKIPPED": "Ignorado"
       },
@@ -1589,6 +1595,25 @@
     },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configurar distribuição",
+      "QUEUE_RETURN": {
+        "BUTTON": "Devolver à fila",
+        "TITLE": "Devolver atendimento à fila",
+        "DESCRIPTION": "Remova este atendimento da sua responsabilidade e coloque-o novamente na fila de distribuição. Você pode manter o departamento atual ou escolher outro.",
+        "TEAM_LABEL": "Departamento de destino",
+        "CONFIRM": "Devolver à fila",
+        "SUCCESS": "Atendimento devolvido à fila de {teamName}.",
+        "ERROR": "Não foi possível devolver o atendimento à fila.",
+        "ERRORS": {
+          "queue_return_not_open": "Somente atendimentos abertos podem voltar para a fila.",
+          "queue_return_actor_not_assignee": "Este atendimento não está mais atribuído a você.",
+          "queue_return_missing_team": "Selecione um departamento válido.",
+          "queue_return_distribution_disabled": "A distribuição automática está desativada.",
+          "queue_return_real_assignment_disabled": "A distribuição está em modo de simulação e não pode alterar atendimentos.",
+          "queue_return_native_assignment_enabled": "Desative a atribuição automática nativa deste departamento antes de devolver atendimentos à fila.",
+          "queue_return_policy_disabled": "Não há uma política de distribuição ativa para este departamento.",
+          "queue_return_source_not_allowed": "A política deste departamento não permite devoluções manuais à fila."
+        }
+      },
       "ENABLED": {
         "TITLE": "Distribuição automática",
         "DESCRIPTION": "Ative esta política para controlar como atendimentos transferidos para humanos devem ser distribuídos."
@@ -1834,7 +1859,8 @@
           "AUTOMATION_HANDOFF_COMPLETED": "Encaminhamento da automação concluído",
           "AUTOMATION_HANDOFF_SKIPPED": "Encaminhamento da automação ignorado",
           "AGENT_CLAIM_COMPLETED": "Assunção pelo agente concluída",
-          "AGENT_CLAIM_SKIPPED": "Assunção pelo agente ignorada"
+          "AGENT_CLAIM_SKIPPED": "Assunção pelo agente ignorada",
+          "QUEUE_RETURNED": "Atendimento devolvido à fila"
         },
         "REASONS": {
           "ELIGIBLE_FOR_ASSIGNMENT": "Elegível para atribuição",
@@ -1848,7 +1874,8 @@
           "NOT_ELIGIBLE": "Não elegível",
           "CONVERSATION_NOT_FOUND": "Conversa não encontrada",
           "REQUIRED_ASSIGNMENTS_MISSING": "Atendimentos obrigatórios não foram selecionados",
-          "AUTOMATION_STALLED": "Automação parada"
+          "AUTOMATION_STALLED": "Automação parada",
+          "AGENT_RETURNED_TO_QUEUE": "Agente devolveu o atendimento à fila"
         }
       },
       "AGENT_ASSIGNMENT": {

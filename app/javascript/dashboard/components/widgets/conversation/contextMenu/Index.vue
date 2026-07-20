@@ -12,6 +12,7 @@ import MenuItemWithSubmenu from './menuItemWithSubmenu.vue';
 import wootConstants from 'dashboard/constants/globals';
 import AgentLoadingPlaceholder from './agentLoadingPlaceholder.vue';
 import { visibleManualConversationStatusOptions } from 'dashboard/ibsoft/conversation/statusPresentation';
+import QueueReturnContextMenuAction from 'dashboard/ibsoft/conversationDistribution/components/QueueReturnContextMenuAction.vue';
 
 const MENU = {
   MARK_AS_READ: 'mark-as-read',
@@ -25,6 +26,7 @@ const MENU = {
   DELETE: 'delete',
   OPEN_NEW_TAB: 'open-new-tab',
   COPY_LINK: 'copy-link',
+  RETURN_TO_QUEUE: 'return-to-queue',
 };
 
 export default {
@@ -32,6 +34,7 @@ export default {
     MenuItem,
     MenuItemWithSubmenu,
     AgentLoadingPlaceholder,
+    QueueReturnContextMenuAction,
   },
   props: {
     chatId: {
@@ -77,6 +80,7 @@ export default {
     'assignLabel',
     'removeLabel',
     'deleteConversation',
+    'returnToQueue',
     'close',
   ],
   setup() {
@@ -318,7 +322,15 @@ export default {
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>
     <template
-      v-if="isAllowed([MENU.PRIORITY, MENU.LABEL, MENU.AGENT, MENU.TEAM])"
+      v-if="
+        isAllowed([
+          MENU.PRIORITY,
+          MENU.LABEL,
+          MENU.AGENT,
+          MENU.TEAM,
+          MENU.RETURN_TO_QUEUE,
+        ])
+      "
     >
       <MenuItemWithSubmenu
         v-if="isAllowed([MENU.PRIORITY])"
@@ -380,6 +392,11 @@ export default {
           @click.stop="$emit('assignTeam', team)"
         />
       </MenuItemWithSubmenu>
+      <QueueReturnContextMenuAction
+        v-if="isAllowed([MENU.RETURN_TO_QUEUE])"
+        :chat-id="chatId"
+        @open="$emit('returnToQueue')"
+      />
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>
     <template v-if="isAllowed([MENU.OPEN_NEW_TAB, MENU.COPY_LINK])">

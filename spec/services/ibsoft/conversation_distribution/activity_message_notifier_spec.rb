@@ -54,4 +54,19 @@ RSpec.describe Ibsoft::ConversationDistribution::ActivityMessageNotifier do
       "Atendimento encaminhado automaticamente da automação para #{target_team.reload.name} por inatividade."
     )
   end
+
+  it 'creates an internal activity message when an agent returns a conversation to the queue' do
+    perform_enqueued_jobs(only: Conversations::ActivityMessageJob) do
+      described_class.new(
+        conversation: conversation,
+        action: :queue_returned,
+        assignee: previous_assignee,
+        target_team: target_team
+      ).perform
+    end
+
+    expect(conversation.messages.activity.last.content).to eq(
+      "Atendimento devolvido por Agente Anterior à fila do departamento #{target_team.reload.name}."
+    )
+  end
 end

@@ -37,6 +37,9 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/automation_handoff_executor.rb`
 - `app/services/ibsoft/conversation_distribution/source_resolver.rb`
 - `app/services/ibsoft/conversation_distribution/source_marker.rb`
+- `app/services/ibsoft/conversation_distribution/queue_return_marker.rb`
+- `app/services/ibsoft/conversation_distribution/queue_return_service.rb`
+- `app/services/ibsoft/conversation_distribution/team_transfer_preparer.rb`
 - `app/services/ibsoft/conversation_distribution/candidate_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/dry_run_preview.rb`
 - `app/services/ibsoft/conversation_distribution/execution_config.rb`
@@ -78,6 +81,8 @@ Frontend isolado:
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/TeamDistributionSettingsModal.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/AgentAssignmentPrompt.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnContextMenuAction.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnDialog.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/PolicyBusinessHourDay.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/EventLogsDashboard.vue`
@@ -319,6 +324,7 @@ Rotas:
 - `GET /event_logs?event_type=:event_type&reason=:reason&page=:page&limit=:limit`
 - `GET /agent_assignments?limit=:limit`
 - `POST /agent_assignments/claim`
+- `POST /conversations/:conversation_id/return_to_queue`
 
 As rotas de configuracao de politicas, dry-run e execucao continuam
 administrativas. As rotas somente leitura de `supervisor_alerts` e `event_logs`
@@ -343,6 +349,12 @@ Filtros iniciais:
 - sem primeira resposta humana (`first_reply_created_at` vazio);
 - respeitando `inbox_id`, `team_id` e `limit` quando enviados.
 
+A unica excecao para a primeira resposta e uma conversa devolvida
+explicitamente a fila pelo proprio agente responsavel. Nesse caso,
+`first_reply_created_at` e preservado e a elegibilidade temporaria e identificada
+por `additional_attributes.ibsoft_distribution_source_reason =
+agent_returned_to_queue`.
+
 O `dry-run` nao altera `Conversation`, nao cria jobs e nao grava eventos. Ele
 retorna os motivos de inelegibilidade quando a conversa esta na fila analisada,
 por exemplo:
@@ -366,6 +378,49 @@ Conversas sem marcador explicito e sem evento de handoff do bot retornam origem
 desconhecida e nao sao distribuidas automaticamente. Essa decisao evita que uma
 conversa apenas aberta, sem agente e com time seja tratada como transferencia
 humana por inferencia ampla.
+
+Quando um usuario transfere uma conversa para outro time pela API/UI, o
+`TeamTransferPreparer` remove o agente atual antes da troca somente quando:
+
+- a politica efetiva do time/canal esta habilitada e aceita
+  `manual_team_transfer`;
+- o job e a atribuicao real Ibsoft estao habilitados;
+- a autoatribuicao nativa do time esta desabilitada;
+- o time de destino e diferente do time atual.
+
+Assim a conversa entra na fila sem agente e pode ser distribuida na rodada
+seguinte. Fora dessas condicoes, o comportamento nativo do Chatwoot e
+preservado para evitar conversas paradas durante configuracao ou modo seguro.
+
+### Devolucao explicita a fila
+
+O agente atualmente responsavel pode clicar com o botao direito sobre a
+conversa e usar a acao `Devolver a fila`. O modal permite manter o departamento
+atual ou selecionar outro.
+A operacao:
+
+- exige conversa aberta e atribuida ao proprio usuario solicitante;
+- exige distribuicao e atribuicao real habilitadas;
+- exige politica efetiva ativa que aceite `manual_team_transfer`;
+- exige autoatribuicao nativa desabilitada no departamento de destino;
+- remove agente humano e bot atribuidos;
+- atualiza `waiting_since` para o momento da nova entrada na fila;
+- preserva `first_reply_created_at` e todo o historico da conversa;
+- remove notificacoes de atencao e participacao obsoletas do agente anterior;
+- registra `queue_returned/agent_returned_to_queue` na auditoria;
+- cria mensagem interna de atividade informando agente e departamento.
+
+A auto-desatribuicao pelo seletor nativo usa o mesmo service quando todas essas
+condicoes sao atendidas. Se a distribuicao privada estiver indisponivel, o
+fluxo nativo de desatribuicao continua funcionando sem marcar a conversa como
+candidata. Selecionar novamente o mesmo departamento no seletor de times nao
+desatribui o agente.
+
+O marcador `agent_returned_to_queue` e temporario. O
+`AssignmentExecutor` o remove atomicamente quando atribui a conversa novamente,
+evitando que uma desatribuicao futura seja considerada elegivel por um marcador
+antigo. O agente anterior pode ser escolhido novamente se continuar online e
+for o melhor candidato segundo a politica.
 
 ## Execucao de atribuicao
 
@@ -797,8 +852,19 @@ Neste incremento inicial, os pontos de acoplamento sao:
   necessario para o guard de rotas do dashboard reconhecer o acesso sem alterar
   `AccountUser.role`.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
-  ponto pequeno para marcar origem Ibsoft quando uma conversa e atribuida a um
-  time via API/UI.
+  ponto pequeno que delega ao `TeamTransferPreparer` a marcacao da origem e a
+  preparacao da fila quando uma conversa e transferida para um time via API/UI,
+  e ao `QueueReturnService` a auto-desatribuicao do agente quando a distribuicao
+  privada estiver disponivel.
+- `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`:
+  registra o componente privado `QueueReturnContextMenuAction` no menu aberto
+  pelo botao direito sobre a conversa. O componente privado controla a
+  visibilidade e emite a solicitacao de abertura.
+- `app/javascript/dashboard/components/ConversationItem.vue`: hospeda o
+  `QueueReturnDialog` privado fora do menu de contexto. Esse ponto e necessario
+  porque o menu nativo e desmontado ao perder o foco; manter o dialog como
+  filho do menu faria o modal ser destruido ao abrir. API, regra e sincronizacao
+  do store continuam no componente privado.
 - `app/services/action_service.rb`: ponto pequeno para marcar origem Ibsoft
   quando uma automacao, macro ou acao de sistema atribui a conversa a um time.
 
@@ -822,6 +888,11 @@ estiver explicitamente ligada.
 - `bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
 - `bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnContextMenuAction.spec.js`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnDialog.spec.js`
+- validar devolucao a fila no mesmo departamento e em outro departamento;
+- validar que a conversa respondida preserva `first_reply_created_at` e volta a
+  ser distribuida;
 - validar build/lint dos arquivos em
   `app/javascript/dashboard/ibsoft/conversationDistribution/`;
 - validar manualmente CRUD de politica por canal e por time;

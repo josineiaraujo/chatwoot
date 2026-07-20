@@ -25,7 +25,7 @@ class Ibsoft::ConversationDistribution::CandidateEvaluator
       items << 'not_open' unless conversation.open?
       items << 'human_assignee_present' if conversation.assignee_id.present?
       items << 'missing_team' if conversation.team_id.blank?
-      items << 'first_human_reply_present' if conversation.first_reply_created_at.present?
+      items << 'first_human_reply_present' if first_human_reply_blocks_assignment?
       items << 'missing_waiting_since' if conversation.waiting_since.blank?
       items << 'policy_disabled' unless policy_enabled?
       items << source_reason
@@ -34,6 +34,11 @@ class Ibsoft::ConversationDistribution::CandidateEvaluator
 
   def policy_enabled?
     policy[:enabled] || policy['enabled']
+  end
+
+  def first_human_reply_blocks_assignment?
+    conversation.first_reply_created_at.present? &&
+      !Ibsoft::ConversationDistribution::QueueReturnMarker.marked?(conversation)
   end
 
   def source_reason

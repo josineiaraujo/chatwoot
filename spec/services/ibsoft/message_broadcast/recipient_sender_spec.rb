@@ -81,4 +81,24 @@ RSpec.describe Ibsoft::MessageBroadcast::RecipientSender do
     expect(existing_conversation.reload).to be_open
     expect(existing_conversation.assignee).to eq(other_agent)
   end
+
+  it 'does not send an already processed recipient twice', :aggregate_failures do
+    sender = described_class.new(broadcast: broadcast, recipient: recipient)
+
+    sender.call
+
+    expect do
+      expect(sender.call).to be(false)
+    end.not_to change(Message, :count)
+    expect(channel).to have_received(:send_template).once
+    expect(recipient.reload.status).to eq('sent')
+  end
+
+  it 'does not send a recipient claimed by another worker' do
+    recipient.update!(status: 'processing')
+
+    expect do
+      expect(described_class.new(broadcast: broadcast, recipient: recipient).call).to be(false)
+    end.not_to change(Message, :count)
+  end
 end

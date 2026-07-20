@@ -52,14 +52,21 @@ import {
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
-import { fetchAutomationConversationCount } from 'dashboard/ibsoft/conversation/automationConversationStats';
-import { refreshConversationStatsAfterStatusChange } from 'dashboard/ibsoft/conversation/statusStatsRefresh';
+import {
+  createAutomationConversationCountRefresher,
+  fetchAutomationConversationCount,
+} from 'dashboard/ibsoft/conversation/automationConversationStats';
+import {
+  emitConversationStatsRefresh,
+  refreshConversationStatsAfterStatusChange,
+} from 'dashboard/ibsoft/conversation/statusStatsRefresh';
 import {
   ALL_ASSIGNEE_TAB,
   PENDING_STATUS,
   buildOperationalAssigneeTabItems,
   getAssigneeTypeForConversationTab,
   getConversationPageFilterKey,
+  getStatusForOperationalConversationStats,
   getDefaultAssigneeTabForConversationType,
   getStatusForConversationTab,
   isAutomationAssigneeTab,
@@ -92,7 +99,6 @@ const lastNonAutomationStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
 const automationConversationCount = ref(0);
-let automationConversationStatsRequestId = 0;
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
 const chatsOnView = ref([]);
@@ -308,7 +314,14 @@ const conversationFilters = computed(() => {
 const conversationStatsFilters = computed(() => {
   const { page, pageFilterKey, preserveConversationStats, ...statsFilters } =
     conversationFilters.value;
-  return statsFilters;
+  return {
+    ...statsFilters,
+    status: getStatusForOperationalConversationStats({
+      activeAssigneeTab: activeAssigneeTab.value,
+      activeStatus: activeStatus.value,
+      lastNonAutomationStatus: lastNonAutomationStatus.value,
+    }),
+  };
 });
 
 const activeTeam = computed(() => {
@@ -625,26 +638,20 @@ function fetchConversations() {
   store.dispatch('fetchAllConversations').then(emitConversationLoaded);
 }
 
-async function refreshAutomationConversationCount() {
-  automationConversationStatsRequestId += 1;
-  const requestId = automationConversationStatsRequestId;
+const refreshAutomationCount = createAutomationConversationCountRefresher({
+  fetchCount: fetchAutomationConversationCount,
+  onCount: count => {
+    automationConversationCount.value = count;
+  },
+});
 
-  try {
-    const count = await fetchAutomationConversationCount({
-      inboxId: props.conversationInbox ? props.conversationInbox : undefined,
-      labels: props.label ? [props.label] : undefined,
-      teamId: props.teamId || undefined,
-      conversationType: props.conversationType || undefined,
-    });
-
-    if (requestId === automationConversationStatsRequestId) {
-      automationConversationCount.value = count;
-    }
-  } catch (error) {
-    if (requestId === automationConversationStatsRequestId) {
-      automationConversationCount.value = 0;
-    }
-  }
+function refreshAutomationConversationCount() {
+  return refreshAutomationCount({
+    inboxId: props.conversationInbox ? props.conversationInbox : undefined,
+    labels: props.label ? [props.label] : undefined,
+    teamId: props.teamId || undefined,
+    conversationType: props.conversationType || undefined,
+  });
 }
 
 function resetAndFetchData() {
@@ -912,9 +919,7 @@ function toggleSelectAll(check) {
 
 useEmitter('fetch_conversation_stats', () => {
   if (hasAppliedFiltersOrActiveFolders.value) return;
-  if (!isAutomationAssigneeTab(activeAssigneeTab.value)) {
-    store.dispatch('conversationStats/get', conversationStatsFilters.value);
-  }
+  store.dispatch('conversationStats/get', conversationStatsFilters.value);
   refreshAutomationConversationCount();
 });
 
@@ -936,6 +941,7 @@ const selectedConversationId = ref(null);
 async function deleteConversation() {
   try {
     await store.dispatch('deleteConversation', selectedConversationId.value);
+    emitConversationStatsRefresh();
     redirectToConversationList();
     selectedConversationId.value = null;
     deleteConversationDialogRef.value.close();

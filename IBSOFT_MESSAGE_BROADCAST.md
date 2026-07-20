@@ -56,6 +56,9 @@ Services do modulo:
 - `app/services/ibsoft/message_broadcast/template_catalog.rb`
 - `app/services/ibsoft/message_broadcast/template_parameter_builder.rb`
 - `app/services/ibsoft/message_broadcast/template_content_renderer.rb`
+- `app/services/ibsoft/message_broadcast/queue_broadcast.rb`
+- `app/services/ibsoft/message_broadcast/broadcast_execution_claim.rb`
+- `app/services/ibsoft/message_broadcast/recipient_delivery_claim.rb`
 - `app/services/ibsoft/message_broadcast/recipient_sender.rb`
 - `app/services/ibsoft/message_broadcast/broadcast_sender.rb`
 
@@ -451,6 +454,29 @@ evitar o envio duplicado pelo callback nativo; em seguida o service chama o
 envio de template do `Channel::Whatsapp` e troca o `source_id` pelo id retornado
 pela Meta.
 
+### Concorrencia e claims de envio
+
+O fluxo usa transicoes condicionais atomicas no PostgreSQL e nao mantem
+transacao aberta durante chamadas externas:
+
+- `QueueBroadcast` adquire somente `draft -> queued`; dois cliques ou duas
+  requisicoes concorrentes agendam apenas um job;
+- `BroadcastExecutionClaim` adquire somente `queued -> running`; um job
+  duplicado nao executa um broadcast que outro worker ja iniciou;
+- `RecipientDeliveryClaim` adquire somente `pending/queued -> processing`;
+  apenas um worker pode enviar para cada destinatario;
+- destinatarios em estado terminal (`sent`, `failed` ou `skipped`) nunca sao
+  readquiridos;
+- uma excecao inesperada depois do claim marca o destinatario e o broadcast
+  como `failed`.
+
+Essas regras protegem contra cliques repetidos, jobs duplicados e workers
+concorrentes em uma instalacao com autoscaling. Nao existe retry automatico.
+Se o processo for encerrado de forma abrupta depois que a Meta aceitar a
+mensagem e antes da confirmacao no banco, o destinatario pode permanecer
+`processing`. Ele deve ser reconciliado manualmente; nao e reenviado
+automaticamente porque isso poderia duplicar a mensagem no cliente.
+
 Antes de criar uma nova conversa, o `RecipientSender` procura uma conversa
 aberta do mesmo contato no mesmo canal. Se ela existir, o disparo e enviado
 nessa conversa e a configuracao `close_after_send` e ignorada para esse
@@ -490,7 +516,11 @@ Backend:
 
 ```bash
 RAILS_ENV=test bundle exec rspec \
+  spec/services/ibsoft/message_broadcast/broadcast_execution_claim_spec.rb \
+  spec/services/ibsoft/message_broadcast/broadcast_sender_spec.rb \
   spec/services/ibsoft/message_broadcast/phone_selector_spec.rb \
+  spec/services/ibsoft/message_broadcast/queue_broadcast_spec.rb \
+  spec/services/ibsoft/message_broadcast/recipient_delivery_claim_spec.rb \
   spec/services/ibsoft/message_broadcast/recipient_search_spec.rb \
   spec/services/ibsoft/message_broadcast/recipient_sender_spec.rb \
   spec/services/ibsoft/erp/adapters/ixc/customer_search_spec.rb \
@@ -521,3 +551,5 @@ No ambiente Docker local, executar dentro do container `vite`.
   contrato de busca, sem persistir payload bruto do ERP.
 - Nao existe retry automatico de destinatario; essa politica continua fora do
   escopo da primeira versao.
+- O estado `processing` deixado por encerramento abrupto do worker exige
+  reconciliacao manual antes de qualquer futura politica de retry.

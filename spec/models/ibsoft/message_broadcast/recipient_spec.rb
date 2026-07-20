@@ -11,4 +11,10 @@ RSpec.describe Ibsoft::MessageBroadcast::Recipient do
 
     expect(duplicate).not_to be_valid
   end
+
+  it 'accepts the processing state used by delivery claims' do
+    recipient = build(:ibsoft_message_broadcast_recipient, status: 'processing')
+
+    expect(recipient).to be_valid
+  end
 end

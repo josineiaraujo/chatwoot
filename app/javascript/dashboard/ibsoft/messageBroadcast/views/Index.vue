@@ -1191,6 +1191,9 @@ const statusLabel = status => {
   if (status === 'pending') {
     return t('IBSOFT_THEME.MESSAGE_BROADCAST.STATUS.PENDING');
   }
+  if (status === 'processing') {
+    return t('IBSOFT_THEME.MESSAGE_BROADCAST.STATUS.PROCESSING');
+  }
   if (status === 'sent') {
     return t('IBSOFT_THEME.MESSAGE_BROADCAST.STATUS.SENT');
   }

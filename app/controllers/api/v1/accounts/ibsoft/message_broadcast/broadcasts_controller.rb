@@ -14,10 +14,10 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::BroadcastsController < Api::V
   end
 
   def send_broadcast
-    return render_invalid_status unless @broadcast.status == 'draft'
-    return render_empty_recipients unless @broadcast.recipients.exists?(status: 'pending')
+    queue_result = queue_broadcast!(@broadcast)
+    return render_empty_recipients if queue_result == Ibsoft::MessageBroadcast::QueueBroadcast::RESULT_WITHOUT_RECIPIENTS
+    return render_invalid_status unless queue_result == Ibsoft::MessageBroadcast::QueueBroadcast::RESULT_QUEUED
 
-    queue_broadcast!(@broadcast)
     Ibsoft::MessageBroadcast::SendBroadcastJob.perform_later(@broadcast.id)
 
     render json: broadcast_payload(@broadcast.reload)
@@ -99,10 +99,10 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::BroadcastsController < Api::V
   end
 
   def queue_broadcast!(broadcast)
-    broadcast.transaction do
-      broadcast.recipients.where(status: 'pending').find_each { |recipient| recipient.update!(status: 'queued') }
-      broadcast.update!(status: 'queued', sent_by: Current.user)
-    end
+    Ibsoft::MessageBroadcast::QueueBroadcast.new(
+      broadcast: broadcast,
+      sent_by: Current.user
+    ).call
   end
 
   def send_now?

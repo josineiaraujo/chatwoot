@@ -116,4 +116,17 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Broadcasts', type: 
     expect(broadcast.recipients.pluck(:status)).to contain_exactly('queued')
     expect(Ibsoft::MessageBroadcast::SendBroadcastJob).to have_received(:perform_later).with(broadcast.id)
   end
+
+  it 'does not enqueue the same draft twice', :aggregate_failures do
+    broadcast = create(:ibsoft_message_broadcast, account: account, inbox: inbox, created_by: admin)
+    create(:ibsoft_message_broadcast_recipient, broadcast: broadcast)
+    allow(Ibsoft::MessageBroadcast::SendBroadcastJob).to receive(:perform_later)
+
+    post "#{base_url}/#{broadcast.id}/send_broadcast", headers: admin_headers, as: :json
+    post "#{base_url}/#{broadcast.id}/send_broadcast", headers: admin_headers, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.parsed_body['error']).to eq('broadcast_not_draft')
+    expect(Ibsoft::MessageBroadcast::SendBroadcastJob).to have_received(:perform_later).once
+  end
 end
