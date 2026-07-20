@@ -28,4 +28,22 @@ RSpec.describe Ibsoft::ConversationDistribution::CandidateFinder do
 
     expect(result.length).to eq(2)
   end
+
+  it 'includes a replied conversation explicitly returned to the queue' do
+    returned = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      first_reply_created_at: 5.minutes.ago,
+      additional_attributes: {
+        'ibsoft_distribution_source' => 'manual_team_transfer',
+        'ibsoft_distribution_source_reason' => 'agent_returned_to_queue'
+      }
+    )
+
+    result = described_class.new(account: account).perform
+
+    expect(result).to contain_exactly(returned)
+  end
 end

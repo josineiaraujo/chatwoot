@@ -14,8 +14,8 @@ class Ibsoft::ConversationDistribution::CandidateFinder
                    .includes(:inbox, :team)
                    .open
                    .unassigned
-                   .where(first_reply_created_at: nil)
                    .where.not(team_id: nil)
+    scope = Ibsoft::ConversationDistribution::QueueReturnMarker.apply_first_reply_scope(scope)
 
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
     scope = scope.where(team_id: team_id) if team_id.present?

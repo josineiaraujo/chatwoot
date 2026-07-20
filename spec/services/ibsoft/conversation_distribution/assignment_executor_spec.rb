@@ -87,6 +87,26 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(event.metadata.dig('candidate', 'source')).to eq('manual_team_transfer')
   end
 
+  it 'assigns a replied conversation returned to the queue and consumes the temporary marker' do
+    conversation.update!(first_reply_created_at: 20.minutes.ago)
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: conversation,
+      source: 'manual_team_transfer',
+      reason: 'agent_returned_to_queue'
+    ).perform
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:team_member, team: team, user: agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(agent)
+    expect(conversation.first_reply_created_at).to be_present
+    expect(conversation.additional_attributes['ibsoft_distribution_source_reason']).to be_nil
+  end
+
   it 'sends assignment confirmation when the policy enables it' do
     Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
                                                    .distribution_policy

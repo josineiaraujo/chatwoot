@@ -13,6 +13,9 @@ class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Account
   private
 
   def set_agent
+    queue_return = return_to_queue_on_self_unassignment
+    return render json: nil if queue_return[:queued]
+
     resource = Conversations::AssignmentService.new(
       conversation: @conversation,
       assignee_id: params[:assignee_id],
@@ -36,9 +39,10 @@ class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Account
   def set_team
     @team = Current.account.teams.find_by(id: params[:team_id])
     if @team.present?
-      Ibsoft::ConversationDistribution::SourceMarker.new(
-        conversation: @conversation
-      ).assign
+      Ibsoft::ConversationDistribution::TeamTransferPreparer.new(
+        conversation: @conversation,
+        team: @team
+      ).prepare
     end
     @conversation.update!(team: @team)
     render json: @team
@@ -46,5 +50,16 @@ class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Account
 
   def agent_bot_assignment?
     params[:assignee_type].to_s == 'AgentBot'
+  end
+
+  def return_to_queue_on_self_unassignment
+    return { queued: false } unless params.key?(:assignee_id) && params[:assignee_id].blank?
+
+    Ibsoft::ConversationDistribution::QueueReturnService.new(
+      conversation: @conversation,
+      actor: Current.user,
+      team: @conversation.team,
+      strict: false
+    ).perform
   end
 end

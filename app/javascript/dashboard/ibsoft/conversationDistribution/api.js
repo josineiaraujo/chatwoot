@@ -75,6 +75,13 @@ class ConversationDistributionAPI extends ApiClient {
       conversation_ids: conversationIds,
     });
   }
+
+  returnConversationToQueue(conversationId, teamId) {
+    return axios.post(
+      `${this.url}/conversations/${conversationId}/return_to_queue`,
+      { team_id: teamId }
+    );
+  }
 }
 
 export default new ConversationDistributionAPI();

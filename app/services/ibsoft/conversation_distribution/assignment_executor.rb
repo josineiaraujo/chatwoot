@@ -150,21 +150,28 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
 
   def claim_and_assign(conversation, assignee)
     Conversation.transaction do
-      locked_conversation = account.conversations
-                                   .open
-                                   .where(id: conversation.id, assignee_id: nil, first_reply_created_at: nil)
-                                   .lock('FOR UPDATE SKIP LOCKED')
-                                   .first
+      claim_scope = account.conversations
+                           .open
+                           .where(id: conversation.id, assignee_id: nil)
+      claim_scope = Ibsoft::ConversationDistribution::QueueReturnMarker.apply_first_reply_scope(claim_scope)
+      locked_conversation = claim_scope.lock('FOR UPDATE SKIP LOCKED').first
       next if locked_conversation.blank?
 
       previous_assignee = locked_conversation.assignee
-      locked_conversation.update!(assignee: assignee)
+      locked_conversation.update!(
+        assignee: assignee,
+        additional_attributes: consumed_queue_return_attributes(locked_conversation)
+      )
 
       {
         conversation: locked_conversation,
         previous_assignee: previous_assignee
       }
     end
+  end
+
+  def consumed_queue_return_attributes(conversation)
+    Ibsoft::ConversationDistribution::QueueReturnMarker.consume(conversation.additional_attributes || {})
   end
 
   def skipped_result(conversation, candidate, reason, decision: nil)

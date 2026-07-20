@@ -332,6 +332,7 @@ Rails.application.routes.draw do
               resources :agent_assignments, only: [:index] do
                 post :claim, on: :collection
               end
+              post 'conversations/:conversation_id/return_to_queue', to: 'queue_returns#create'
               get :effective_policy, to: 'effective_policies#show'
             end
 
