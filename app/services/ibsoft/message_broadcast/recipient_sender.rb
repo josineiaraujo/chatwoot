@@ -10,6 +10,8 @@ class Ibsoft::MessageBroadcast::RecipientSender
   end
 
   def call
+    delivery_claim = Ibsoft::MessageBroadcast::RecipientDeliveryClaim.new(recipient: recipient)
+    return false unless delivery_claim.acquire
     return skip_without_phone! if candidate_phones.blank?
 
     candidate_phones.each do |phone_candidate|
@@ -17,6 +19,9 @@ class Ibsoft::MessageBroadcast::RecipientSender
     end
 
     fail_without_delivery!
+  rescue StandardError => e
+    delivery_claim&.fail(e)
+    raise
   end
 
   private
@@ -37,9 +42,7 @@ class Ibsoft::MessageBroadcast::RecipientSender
     { kind: kind, phone_number: "+#{source_id}", source_id: source_id }
   end
 
-  def normalized_source_id(phone)
-    phone.to_s.gsub(/\D+/, '').presence
-  end
+  def normalized_source_id(phone) = phone.to_s.gsub(/\D+/, '').presence
 
   def send_to_phone(phone_candidate)
     @conversation = find_or_create_conversation(phone_candidate)
@@ -100,9 +103,7 @@ class Ibsoft::MessageBroadcast::RecipientSender
     ).perform
   end
 
-  def contact_identifier
-    "ibsoft-erp-#{broadcast.erp_connection.provider}-#{recipient.external_customer_id}"
-  end
+  def contact_identifier = "ibsoft-erp-#{broadcast.erp_connection.provider}-#{recipient.external_customer_id}"
 
   def create_message
     Messages::MessageBuilder.new(

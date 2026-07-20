@@ -35,7 +35,7 @@
 class Ibsoft::MessageBroadcast::Recipient < ApplicationRecord
   self.table_name = 'ibsoft_message_broadcast_recipients'
 
-  STATUSES = %w[pending queued sent failed skipped].freeze
+  STATUSES = %w[pending queued processing sent failed skipped].freeze
   PHONE_STATUSES = %w[pending primary fallback unavailable invalid].freeze
 
   belongs_to :broadcast,
