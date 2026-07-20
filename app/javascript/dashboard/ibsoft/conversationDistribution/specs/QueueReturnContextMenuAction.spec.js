@@ -1,6 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import fluentIcons from 'shared/components/FluentIcon/icons.json';
 import QueueReturnContextMenuAction from '../components/QueueReturnContextMenuAction.vue';
 import conversationDistributionAPI from '../api';
 
@@ -58,7 +59,7 @@ const mountComponent = () =>
           props: ['option'],
           emits: ['click'],
           template:
-            '<button class="queue-return-menu-item" type="button" @click="$emit(\'click\', $event)">{{ option.label }}</button>',
+            '<button class="queue-return-menu-item" type="button" :data-icon="option.icon" @click="$emit(\'click\', $event)">{{ option.label }}</button>',
         },
         Dialog: {
           props: ['disableConfirmButton'],
@@ -94,9 +95,12 @@ describe('QueueReturnContextMenuAction', () => {
   });
 
   it('is visible only for the current assignee of an open conversation', () => {
-    expect(mountComponent().find('.queue-return-menu-item').exists()).toBe(
-      true
-    );
+    const menuItem = mountComponent().find('.queue-return-menu-item');
+
+    expect(menuItem.exists()).toBe(true);
+    expect(
+      fluentIcons[`${menuItem.attributes('data-icon')}-outline`]
+    ).toBeTruthy();
 
     store.getters.getCurrentUser = { id: 99 };
 
