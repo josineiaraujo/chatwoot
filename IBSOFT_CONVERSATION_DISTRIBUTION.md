@@ -82,6 +82,7 @@ Frontend isolado:
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/TeamDistributionSettingsModal.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/AgentAssignmentPrompt.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnContextMenuAction.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnDialog.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/PolicyBusinessHourDay.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/EventLogsDashboard.vue`
@@ -857,8 +858,13 @@ Neste incremento inicial, os pontos de acoplamento sao:
   privada estiver disponivel.
 - `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`:
   registra o componente privado `QueueReturnContextMenuAction` no menu aberto
-  pelo botao direito sobre a conversa. O componente privado controla
-  visibilidade, modal, API e sincronizacao do store.
+  pelo botao direito sobre a conversa. O componente privado controla a
+  visibilidade e emite a solicitacao de abertura.
+- `app/javascript/dashboard/components/ConversationItem.vue`: hospeda o
+  `QueueReturnDialog` privado fora do menu de contexto. Esse ponto e necessario
+  porque o menu nativo e desmontado ao perder o foco; manter o dialog como
+  filho do menu faria o modal ser destruido ao abrir. API, regra e sincronizacao
+  do store continuam no componente privado.
 - `app/services/action_service.rb`: ponto pequeno para marcar origem Ibsoft
   quando uma automacao, macro ou acao de sistema atribui a conversa a um time.
 
@@ -883,6 +889,7 @@ estiver explicitamente ligada.
 - `bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnContextMenuAction.spec.js`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnDialog.spec.js`
 - validar devolucao a fila no mesmo departamento e em outro departamento;
 - validar que a conversa respondida preserva `first_reply_created_at` e volta a
   ser distribuida;

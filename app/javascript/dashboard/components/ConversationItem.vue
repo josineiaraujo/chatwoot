@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, inject } from 'vue';
+import { computed, ref, watch, inject, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
@@ -7,6 +7,7 @@ import ConversationCard from './widgets/conversation/ConversationCard.vue';
 import ConversationCardExpanded from 'dashboard/components-next/Conversation/ConversationCard/ConversationCardExpanded.vue';
 import ContextMenu from 'dashboard/components/ui/ContextMenu.vue';
 import ConversationContextMenu from './widgets/conversation/contextMenu/Index.vue';
+import QueueReturnDialog from 'dashboard/ibsoft/conversationDistribution/components/QueueReturnDialog.vue';
 
 const props = defineProps({
   source: { type: Object, required: true },
@@ -38,6 +39,7 @@ const deleteConversation = inject('deleteConversation');
 // --- Context menu state (shared by both layouts) ---
 const showContextMenu = ref(false);
 const contextMenu = ref({ x: null, y: null });
+const queueReturnDialogRef = ref(null);
 
 // Reset context menu state when the row is recycled to a different conversation.
 watch(
@@ -176,6 +178,12 @@ const onDeleteConversation = () => {
   deleteConversation(props.source.id);
   closeContextMenu();
 };
+
+const onReturnToQueue = async () => {
+  closeContextMenu();
+  await nextTick();
+  queueReturnDialogRef.value?.open();
+};
 </script>
 
 <template>
@@ -238,7 +246,10 @@ const onDeleteConversation = () => {
       @mark-as-read="onMarkAsRead"
       @assign-priority="onAssignPriority"
       @delete-conversation="onDeleteConversation"
+      @return-to-queue="onReturnToQueue"
       @close="closeContextMenu"
     />
   </ContextMenu>
+
+  <QueueReturnDialog ref="queueReturnDialogRef" :chat-id="source.id" />
 </template>
