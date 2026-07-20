@@ -91,6 +91,9 @@ const eventTypeLabels = computed(() => ({
   agent_claim_skipped: t(
     'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.EVENT_LOGS.EVENT_TYPES.AGENT_CLAIM_SKIPPED'
   ),
+  queue_returned: t(
+    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.EVENT_LOGS.EVENT_TYPES.QUEUE_RETURNED'
+  ),
 }));
 
 const reasonLabels = computed(() => ({
@@ -129,6 +132,9 @@ const reasonLabels = computed(() => ({
   ),
   automation_stalled: t(
     'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.EVENT_LOGS.REASONS.AUTOMATION_STALLED'
+  ),
+  agent_returned_to_queue: t(
+    'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.EVENT_LOGS.REASONS.AGENT_RETURNED_TO_QUEUE'
   ),
 }));
 

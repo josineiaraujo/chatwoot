@@ -28,7 +28,7 @@ class Ibsoft::ConversationDistribution::SourceMarker
     attributes = (conversation.additional_attributes || {}).deep_dup
     attributes[ATTRIBUTE_KEY] = resolved_source
     attributes[MARKED_AT_KEY] = Time.current.iso8601
-    attributes[REASON_KEY] = reason if reason.present?
+    reason.present? ? attributes[REASON_KEY] = reason : attributes.delete(REASON_KEY)
     attributes
   end
 
