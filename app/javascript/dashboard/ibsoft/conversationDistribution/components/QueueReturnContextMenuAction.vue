@@ -60,7 +60,7 @@ const disableConfirmButton = computed(
 );
 const menuOption = computed(() => ({
   key: 'return-to-queue',
-  icon: 'arrow-undo',
+  icon: 'arrow-reply',
   label: t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.BUTTON'),
 }));
 
