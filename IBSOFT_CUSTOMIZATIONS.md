@@ -231,6 +231,10 @@ Objetivo:
 - Consultar templates WhatsApp Cloud diretamente pela API da Meta no canal
   selecionado, exibindo preview do conteudo e gerando o mapeamento de
   variaveis automaticamente.
+- Proteger o envio contra concorrencia com transicoes atomicas no PostgreSQL:
+  apenas uma requisicao enfileira o rascunho, apenas um worker executa o
+  broadcast e apenas um worker adquire cada destinatario. O estado operacional
+  `processing` nao exige migration porque a coluna `status` ja e textual.
 
 Arquivos privados principais:
 
@@ -843,6 +847,8 @@ Documento detalhado:
 Objetivo:
 
 - Exibir `pending` como `Automacao` nos pontos operacionais.
+- Apresentar a aba operacional `Nao atribuidas` como `Fila`, preservando o
+  estado interno `unassigned` e os textos tecnicos em outras areas.
 - Remover a opcao manual de marcar conversa como pendente nos menus de
   atendimento, preservando APIs, macros e configuracoes de automacao.
 - Exibir a aba primaria `Automacoes`, mantendo `Todas` acessivel no menu.
@@ -855,6 +861,11 @@ Objetivo:
   alterar o locale original do Chatwoot.
 - Manter a contagem da aba `Automacoes` sincronizada quando uma conversa entra
   ou sai de `pending` por acoes locais de status.
+- Manter `Minhas` e `Nao atribuidas` sincronizadas por eventos realtime mesmo
+  enquanto `Automacoes` estiver selecionada, sem usar `pending` como recorte
+  desses contadores operacionais.
+- Agrupar rajadas de atualizacao do contador de `Automacoes`, ignorar respostas
+  antigas e preservar o ultimo valor valido em falhas transitorias da API.
 - Forcar conversas iniciadas manualmente por agente pela tela de nova mensagem
   a nascerem como `open`, mesmo em caixas com bot ativo, sem alterar o fluxo de
   clientes que entram de fora e devem continuar indo para `pending`.
@@ -896,8 +907,8 @@ Pontos de acoplamento no Chatwoot original:
   `ibsoft_protocol` para filtros nativos.
 - `app/javascript/dashboard/components/ChatList.vue`: conecta tabs
   operacionais, contagem de automacoes, refresh de contadores em mudancas de
-  status, mapeamento de `Automacoes` e aba inicial `Todas` para a visualizacao
-  de `Mencoes`.
+  status e exclusoes locais, mapeamento de `Automacoes` e aba inicial `Todas`
+  para a visualizacao de `Mencoes`.
 - `app/javascript/dashboard/components/ChatListHeader.vue`: usa helper Ibsoft
   para label de status.
 - `app/javascript/dashboard/components-next/filter/provider.js`: registra o
@@ -947,6 +958,7 @@ Specs relacionadas:
 - `spec/finders/conversation_finder_spec.rb`
 - `spec/services/search_service_spec.rb`
 - `app/javascript/dashboard/ibsoft/conversation/specs/statusPresentation.spec.js`
+- `app/javascript/dashboard/ibsoft/conversation/specs/automationConversationStats.spec.js`
 
 Risco principal:
 
