@@ -393,6 +393,11 @@
       "REQUIRED_ATTRIBUTES_DESCRIPTION": "Fill the required attributes before closing this service.",
       "CLOSE_AND_NEXT_SHORTCUT": "Close and move to next"
     },
+    "CONVERSATION_REPLY_GUARD": {
+      "ASSIGN_MESSAGE": "Would you like to take this conversation?",
+      "HANDOFF_MESSAGE": "This conversation is with an assistant. Would you like to take it?",
+      "ACTION": "Take over conversation"
+    },
     "SIDEBAR": {
       "COLLAPSE": "Collapse menu",
       "EXPAND": "Expand menu"

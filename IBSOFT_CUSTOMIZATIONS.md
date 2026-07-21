@@ -871,10 +871,14 @@ Objetivo:
   clientes que entram de fora e devem continuar indo para `pending`.
 - Abrir a visualizacao `Mencoes` com a aba `Todas` selecionada, garantindo que
   mencoes em conversas atribuidas a outro agente tambem aparecam na lista.
+- Exigir que o agente assuma ou retome explicitamente a conversa antes de
+  enviar uma resposta publica, preservando notas privadas e rascunhos.
 
 Arquivos privados principais:
 
 - `app/javascript/dashboard/ibsoft/conversation/`
+- `app/javascript/dashboard/ibsoft/conversation/replyAssignmentGuard.js`
+- `app/javascript/dashboard/ibsoft/conversation/components/ReplyAssignmentGuardBanner.vue`
 - `app/services/ibsoft/conversation/protocol.rb`
 - `app/services/ibsoft/conversation/protocol_filter_payload.rb`
 - `app/services/ibsoft/conversation/protocol_search.rb`
@@ -911,6 +915,10 @@ Pontos de acoplamento no Chatwoot original:
   para a visualizacao de `Mencoes`.
 - `app/javascript/dashboard/components/ChatListHeader.vue`: usa helper Ibsoft
   para label de status.
+- `app/javascript/dashboard/components/widgets/conversation/ReplyBox.vue`:
+  conecta o guard privado que bloqueia texto, anexos, audio e templates ate a
+  atribuicao/retomada ser confirmada. Nenhuma store, API ou regra backend foi
+  alterada para esse comportamento.
 - `app/javascript/dashboard/components-next/filter/provider.js`: registra o
   filtro `Protocolo`.
 - `app/javascript/dashboard/components/widgets/conversation/advancedFilterItems/index.js`:
@@ -1314,6 +1322,7 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/components/buttons/ResolveAction.vue`
 - `app/javascript/dashboard/components/widgets/conversation/ConversationBasicFilter.vue`
 - `app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue`
+- `app/javascript/dashboard/components/widgets/conversation/ReplyBox.vue`
 - `app/javascript/dashboard/components/widgets/conversation/advancedFilterItems/index.js`
 - `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`
 - `app/javascript/dashboard/components/widgets/conversation/conversationBulkActions/BulkUpdateActions.vue`

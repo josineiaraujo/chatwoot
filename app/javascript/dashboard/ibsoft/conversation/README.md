@@ -19,6 +19,10 @@ operacao Ibsoft:
   contrato publico de conversa;
 - apresenta a acao `resolved` como `Encerrar atendimento` nos pontos
   operacionais do atendimento.
+- impede resposta publica antes de o agente assumir uma conversa sem
+  responsavel, atribuida a outro agente ou ainda mantida em automacao;
+- permite notas privadas sem assumir a conversa e preserva o rascunho enquanto
+  a atribuicao ou a retomada e confirmada.
 
 As APIs, macros e telas de configuracao de automacao continuam usando o contrato
 padrao do Chatwoot.
@@ -43,6 +47,11 @@ padrao do Chatwoot.
 - `components/OperationalChatTypeTabs.vue`: envolve o `ChatTypeTabs` original,
   troca a aba primaria `Todas` por `Automacoes` e adiciona o menu secundario
   para acessar `Todas`.
+- `replyAssignmentGuard.js`: concentra a matriz de decisao para bloquear
+  respostas publicas, sem acoplar a regra ao componente nativo do composer.
+- `components/ReplyAssignmentGuardBanner.vue`: executa explicitamente a
+  atribuicao e, quando necessario, a abertura da conversa. A acao confirma o
+  estado atualizado na store antes de liberar o composer.
 
 ## Pontos de acoplamento no Chatwoot
 
@@ -94,6 +103,27 @@ padrao do Chatwoot.
   para sobrescrever traducoes sem editar os arquivos originais do Chatwoot.
 - A chave `conversations.activity.status.open` em pt-BR e sobrescrita para
   `Conversa foi aberta por %{user_name}`, evitando o termo `reaberta`.
+- `app/javascript/dashboard/components/widgets/conversation/ReplyBox.vue`
+  conecta o guard privado ao editor e aos caminhos de texto, anexo, audio e
+  template. Este e o unico ponto novo no core para a protecao de resposta; o
+  `ReplyBoxBanner.vue` original, as stores e as APIs nativas permanecem
+  intocados.
+
+## Regra de assumir antes de responder
+
+- Conversa `open` atribuida ao agente atual: resposta liberada normalmente.
+- Conversa `open` sem agente ou atribuida a outra pessoa: exige a acao
+  explicita `Assumir atendimento`.
+- Conversa `pending` atribuida ao agente atual: exige apenas marcar como
+  aberta.
+- Conversa `pending` sem agente ou atribuida a outra pessoa: atribui primeiro
+  e abre em seguida.
+- Nota privada: permanece disponivel sem alterar responsavel ou status.
+- Falha na atribuicao ou na abertura: o composer continua bloqueado e o texto
+  salvo no rascunho nao e removido.
+- O bloqueio tambem protege colagem de arquivo, gravacao de audio, templates e
+  a chamada final de envio, evitando corrida entre a interface e eventos
+  realtime.
 
 ## Regras de manutencao
 
@@ -114,5 +144,6 @@ padrao do Chatwoot.
 - `node --check app/javascript/dashboard/ibsoft/conversation/automationConversationStats.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/protocol.js`
+- `pnpm test app/javascript/dashboard/ibsoft/conversation/specs/replyAssignmentGuard.spec.js app/javascript/dashboard/ibsoft/conversation/specs/ReplyAssignmentGuardBanner.spec.js app/javascript/dashboard/ibsoft/conversation/specs/ReplyBoxAssignmentGuard.spec.js`
 - `bundle exec rspec spec/services/search_service_spec.rb spec/finders/conversation_finder_spec.rb spec/controllers/api/v1/accounts/search_controller_spec.rb`
 - ESLint deve ser executado quando `node_modules` estiver instalado.

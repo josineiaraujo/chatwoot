@@ -1222,6 +1222,11 @@
       "REQUIRED_ATTRIBUTES_DESCRIPTION": "Preencha os atributos obrigatórios antes de encerrar este atendimento.",
       "CLOSE_AND_NEXT_SHORTCUT": "Encerrar e ir para o próximo"
     },
+    "CONVERSATION_REPLY_GUARD": {
+      "ASSIGN_MESSAGE": "Deseja assumir esta conversa?",
+      "HANDOFF_MESSAGE": "Esta conversa está com um assistente. Deseja assumir?",
+      "ACTION": "Assumir atendimento"
+    },
     "SIDEBAR": {
       "COLLAPSE": "Recolher menu",
       "EXPAND": "Expandir menu"
