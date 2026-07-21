@@ -15,7 +15,8 @@ import CopilotReplyBottomPanel from 'dashboard/components/widgets/WootWriter/Cop
 import ArticleSearchPopover from 'dashboard/routes/dashboard/helpcenter/components/ArticleSearch/SearchPopover.vue';
 import CopilotEditorSection from './CopilotEditorSection.vue';
 import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
-import ReplyBoxBanner from './ReplyBoxBanner.vue';
+import ReplyAssignmentGuardBanner from 'dashboard/ibsoft/conversation/components/ReplyAssignmentGuardBanner.vue';
+import { getReplyAssignmentGuardState } from 'dashboard/ibsoft/conversation/replyAssignmentGuard';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
@@ -66,7 +67,7 @@ export default {
     ArticleSearchPopover,
     AttachmentPreview,
     AudioRecorder,
-    ReplyBoxBanner,
+    ReplyAssignmentGuardBanner,
     EmojiIconPicker,
     MessageSignatureMissingAlert,
     ReplyBottomPanel,
@@ -228,7 +229,7 @@ export default {
       return this.maxLength - this.message.length;
     },
     isReplyButtonDisabled() {
-      if (this.isEditorDisabled) return true;
+      if (this.isEditorDisabled || this.isReplyAssignmentRequired) return true;
       if (this.isATwitterInbox) return true;
       if (this.hasAttachments || this.hasRecordedAudio) return false;
 
@@ -444,6 +445,16 @@ export default {
         !this.isOnPrivateNote &&
         !this.currentChat.can_reply
       );
+    },
+    replyAssignmentGuardState() {
+      return getReplyAssignmentGuardState({
+        conversation: this.currentChat,
+        currentUserId: this.currentUser?.id,
+        isPrivateNote: this.isOnPrivateNote,
+      });
+    },
+    isReplyAssignmentRequired() {
+      return this.replyAssignmentGuardState.isBlocked;
     },
   },
   watch: {
@@ -714,7 +725,7 @@ export default {
       if (this.newConversationModalActive) return;
 
       // Don't handle paste if editor is disabled
-      if (this.isEditorDisabled) return;
+      if (this.isEditorDisabled || this.isReplyAssignmentRequired) return;
       if (!this.showFileUpload && !this.isOnPrivateNote) return;
 
       // Filter valid files (non-zero size)
@@ -766,7 +777,7 @@ export default {
       this.showContentTemplatesModal = false;
     },
     confirmOnSendReply() {
-      if (this.isReplyButtonDisabled) {
+      if (this.isReplyButtonDisabled || this.isReplyAssignmentRequired) {
         return;
       }
       if (!this.showMentions) {
@@ -888,6 +899,8 @@ export default {
       editorMessage = '',
       copilotAcceptedMessage = ''
     ) {
+      if (this.isReplyAssignmentRequired) return;
+
       try {
         await this.$store.dispatch(
           'createPendingMessageAndSend',
@@ -907,6 +920,8 @@ export default {
       }
     },
     async onSendWhatsAppReply(messagePayload) {
+      if (this.isReplyAssignmentRequired) return;
+
       this.sendMessage({
         conversationId: this.currentChat.id,
         ...messagePayload,
@@ -914,6 +929,8 @@ export default {
       this.hideWhatsappTemplatesModal();
     },
     async onSendContentTemplateReply(messagePayload) {
+      if (this.isReplyAssignmentRequired) return;
+
       this.sendMessage({
         conversationId: this.currentChat.id,
         ...messagePayload,
@@ -1244,7 +1261,7 @@ export default {
 </script>
 
 <template>
-  <ReplyBoxBanner :message="message" :is-on-private-note="isOnPrivateNote" />
+  <ReplyAssignmentGuardBanner :is-on-private-note="isOnPrivateNote" />
   <div ref="replyEditor" class="reply-box" :class="replyBoxClass">
     <ReplyTopPanel
       :mode="replyType"
@@ -1335,7 +1352,7 @@ export default {
           :placeholder="messagePlaceHolder"
           :update-selection-with="updateEditorSelectionWith"
           :min-height="4"
-          :disabled="isEditorDisabled"
+          :disabled="isEditorDisabled || isReplyAssignmentRequired"
           enable-variables
           :variables="messageVariables"
           :signature="messageSignature"
@@ -1404,14 +1421,18 @@ export default {
         key="reply-bottom-panel"
         :conversation-id="conversationId"
         :enable-multiple-file-upload="enableMultipleFileUpload"
-        :enable-whats-app-templates="showWhatsappTemplates"
-        :enable-content-templates="showContentTemplates"
+        :enable-whats-app-templates="
+          showWhatsappTemplates && !isReplyAssignmentRequired
+        "
+        :enable-content-templates="
+          showContentTemplates && !isReplyAssignmentRequired
+        "
         :inbox="inbox"
         :is-on-private-note="isOnPrivateNote"
         :is-recording-audio="isRecordingAudio"
         :is-send-disabled="isReplyButtonDisabled"
         :is-note="isPrivate"
-        :is-editor-disabled="isEditorDisabled"
+        :is-editor-disabled="isEditorDisabled || isReplyAssignmentRequired"
         :on-file-upload="onFileUpload"
         :on-send="onSendReply"
         :conversation-type="conversationType"
