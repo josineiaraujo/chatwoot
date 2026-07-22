@@ -6,6 +6,7 @@ pt_BR:
         agent_claim_completed: 'Atendimento assumido por %{assignee_name} a partir da fila de distribuição.'
         automation_handoff_completed: 'Atendimento encaminhado automaticamente da automação para %{target_team_name} por inatividade.'
         queue_returned: 'Atendimento devolvido por %{assignee_name} à fila do departamento %{target_team_name}.'
+        queue_transferred: 'Atendimento transferido por %{assignee_name} para a fila do departamento %{target_team_name}.'
         redistribution_completed: 'Atendimento redistribuído automaticamente de %{previous_assignee_name} para %{assignee_name} pela redistribuição automática por exceder o tempo de espera.'
         unknown_assignee: 'Não informado'
         unknown_team: 'departamento não informado'

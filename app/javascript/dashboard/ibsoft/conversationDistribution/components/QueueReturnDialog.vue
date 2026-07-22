@@ -7,6 +7,7 @@ import { useAlert } from 'dashboard/composables';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
 import conversationDistributionAPI from '../api';
+import { syncManualAssignmentState } from '../manualAssignmentStateSync';
 
 const props = defineProps({
   chatId: {
@@ -20,9 +21,11 @@ const store = useStore();
 const dialogRef = ref(null);
 const selectedTeamId = ref(null);
 const isSubmitting = ref(false);
+const activeChatId = ref(null);
 
 const conversation = computed(
-  () => store.getters.getConversationById(props.chatId) || {}
+  () =>
+    store.getters.getConversationById(activeChatId.value || props.chatId) || {}
 );
 const teams = computed(() => store.getters['teams/getTeams'] || []);
 const currentTeam = computed(() => conversation.value?.meta?.team || null);
@@ -42,11 +45,19 @@ const selectedTeam = computed(
       team => team.id === Number(selectedTeamId.value)
     ) || null
 );
+const alreadyInSelectedQueue = computed(
+  () =>
+    conversation.value.status === 'open' &&
+    !conversation.value?.meta?.assignee &&
+    currentTeam.value?.id === selectedTeam.value?.id
+);
 const disableConfirmButton = computed(
-  () => !selectedTeam.value || isSubmitting.value
+  () =>
+    !selectedTeam.value || isSubmitting.value || alreadyInSelectedQueue.value
 );
 
 const open = () => {
+  activeChatId.value = props.chatId;
   selectedTeamId.value = currentTeam.value?.id || null;
   dialogRef.value?.open();
 };
@@ -78,6 +89,15 @@ const errorMessage = error => {
     queue_return_source_not_allowed: t(
       'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.ERRORS.queue_return_source_not_allowed'
     ),
+    queue_return_resolved: t(
+      'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.ERRORS.queue_return_resolved'
+    ),
+    queue_return_assigned_forbidden: t(
+      'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.ERRORS.queue_return_assigned_forbidden'
+    ),
+    queue_return_already_queued: t(
+      'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.ERRORS.queue_return_already_queued'
+    ),
   };
 
   return (
@@ -86,30 +106,38 @@ const errorMessage = error => {
   );
 };
 
-const returnToQueue = async () => {
-  if (!selectedTeam.value) return;
+const transferToQueue = async () => {
+  if (isSubmitting.value) return;
+
+  const team = selectedTeam.value;
+  const conversationId = activeChatId.value;
+  if (!team || !conversationId) return;
 
   try {
     isSubmitting.value = true;
-    await conversationDistributionAPI.returnConversationToQueue(
-      props.chatId,
-      selectedTeam.value.id
-    );
+    const { data } =
+      await conversationDistributionAPI.returnConversationToQueue(
+        conversationId,
+        team.id
+      );
 
-    await Promise.all([
-      store.dispatch('setCurrentChatAssignee', {
-        conversationId: props.chatId,
+    syncManualAssignmentState(
+      {
+        commit: store.commit,
+        conversation: store.getters.getConversationById(conversationId),
+      },
+      {
+        conversationId,
         assignee: null,
-      }),
-      store.dispatch('setCurrentChatTeam', {
-        conversationId: props.chatId,
-        team: selectedTeam.value,
-      }),
-    ]);
+        team: data.team || team,
+        status: data.status,
+        snoozedUntil: data.snoozed_until,
+      }
+    );
     dialogRef.value?.close();
     useAlert(
       t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.SUCCESS', {
-        teamName: selectedTeam.value.name,
+        teamName: team.name,
       })
     );
   } catch (error) {
@@ -136,7 +164,7 @@ defineExpose({ open });
     "
     :is-loading="isSubmitting"
     :disable-confirm-button="disableConfirmButton"
-    @confirm="returnToQueue"
+    @confirm="transferToQueue"
   >
     <label class="grid min-w-0 gap-1">
       <span class="text-label-small text-n-slate-11">
@@ -149,6 +177,16 @@ defineExpose({ open });
           {{ team.name }}
         </option>
       </IbsoftSelect>
+      <span
+        v-if="alreadyInSelectedQueue"
+        class="text-body-small text-n-slate-11"
+      >
+        {{
+          t(
+            'IBSOFT_THEME.CONVERSATION_DISTRIBUTION.QUEUE_RETURN.ALREADY_QUEUED'
+          )
+        }}
+      </span>
     </label>
   </Dialog>
 </template>

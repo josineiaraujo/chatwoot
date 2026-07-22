@@ -5,9 +5,18 @@ class Ibsoft::ConversationDistribution::TeamTransferPreparer
   end
 
   def prepare
+    return conversation unless distribution_candidate?
+
     mark_distribution_source
-    clear_assignees if enqueue_for_ibsoft_distribution?
+    @prepared_for_distribution = enqueue_for_ibsoft_distribution?
+    return conversation unless prepared_for_distribution?
+
+    clear_assignees
     conversation
+  end
+
+  def prepared_for_distribution?
+    @prepared_for_distribution == true
   end
 
   private
@@ -15,7 +24,10 @@ class Ibsoft::ConversationDistribution::TeamTransferPreparer
   attr_reader :conversation, :team
 
   def mark_distribution_source
-    Ibsoft::ConversationDistribution::SourceMarker.new(conversation: conversation).assign
+    Ibsoft::ConversationDistribution::SourceMarker.new(
+      conversation: conversation,
+      source: distribution_source
+    ).assign
   end
 
   def clear_assignees
@@ -24,12 +36,19 @@ class Ibsoft::ConversationDistribution::TeamTransferPreparer
   end
 
   def enqueue_for_ibsoft_distribution?
-    return false if team.blank? || conversation.team_id == team.id
-    return false unless Ibsoft::ConversationDistribution::ExecutionConfig.job_enabled?
-    return false unless Ibsoft::ConversationDistribution::ExecutionConfig.real_assignment_enabled?
+    return false unless distribution_execution_enabled?
     return false if team.allow_auto_assign?
 
     policy_enabled? && source_allowed?
+  end
+
+  def distribution_candidate?
+    team.present? && (conversation.team_id != team.id || conversation.assignee_id.blank?)
+  end
+
+  def distribution_execution_enabled?
+    Ibsoft::ConversationDistribution::ExecutionConfig.job_enabled? &&
+      Ibsoft::ConversationDistribution::ExecutionConfig.real_assignment_enabled?
   end
 
   def policy_enabled?
@@ -45,7 +64,10 @@ class Ibsoft::ConversationDistribution::TeamTransferPreparer
   end
 
   def distribution_source
-    conversation.additional_attributes[Ibsoft::ConversationDistribution::SourceResolver::ATTRIBUTE_KEY]
+    return 'system_team_transfer' if Current.executed_by.present?
+    return 'system_team_transfer' if Current.user.is_a?(AgentBot)
+
+    'manual_team_transfer'
   end
 
   def effective_policy

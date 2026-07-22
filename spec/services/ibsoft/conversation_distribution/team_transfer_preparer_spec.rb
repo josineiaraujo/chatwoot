@@ -62,12 +62,14 @@ RSpec.describe Ibsoft::ConversationDistribution::TeamTransferPreparer do
     described_class.new(conversation: conversation, team: target_team).prepare
 
     expect(conversation.assignee).to eq(agent)
+    expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
   end
 
   it 'preserves the assignee when the same team is selected again' do
     described_class.new(conversation: conversation, team: source_team).prepare
 
     expect(conversation.assignee).to eq(agent)
+    expect(conversation.additional_attributes['ibsoft_distribution_source']).to be_nil
   end
 
   it 'preserves native assignment behavior while target team auto assignment is enabled' do

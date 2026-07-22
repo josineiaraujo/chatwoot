@@ -6,7 +6,8 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::QueueReturnsControlle
     result = Ibsoft::ConversationDistribution::QueueReturnService.new(
       conversation: @conversation,
       actor: Current.user,
-      team: target_team
+      team: target_team,
+      mode: :manual_transfer
     ).perform
 
     render json: response_payload(result)
@@ -24,6 +25,8 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::QueueReturnsControlle
       conversation_id: result[:conversation_id],
       display_id: result[:display_id],
       event_id: result[:event_id],
+      status: @conversation.status,
+      snoozed_until: @conversation.snoozed_until,
       team: {
         id: result[:team].id,
         name: result[:team].name

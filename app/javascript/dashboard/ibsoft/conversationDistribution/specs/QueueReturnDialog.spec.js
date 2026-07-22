@@ -24,6 +24,7 @@ const store = {
     'teams/getTeams': teams,
   },
   dispatch: dispatchMock,
+  commit: vi.fn(),
 };
 
 vi.mock('vue-i18n', () => ({
@@ -78,7 +79,12 @@ describe('QueueReturnDialog', () => {
     vi.clearAllMocks();
     store.getters.getConversationById.mockReturnValue(conversation);
     conversationDistributionAPI.returnConversationToQueue.mockResolvedValue({
-      data: { queued: true },
+      data: {
+        queued: true,
+        status: 'open',
+        snoozed_until: null,
+        team: teams[1],
+      },
     });
     dispatchMock.mockResolvedValue();
   });
@@ -94,13 +100,79 @@ describe('QueueReturnDialog', () => {
     expect(
       conversationDistributionAPI.returnConversationToQueue
     ).toHaveBeenCalledWith(17, 2);
-    expect(dispatchMock).toHaveBeenCalledWith('setCurrentChatAssignee', {
+    expect(store.commit).toHaveBeenCalledWith('ASSIGN_AGENT', {
       conversationId: 17,
       assignee: null,
     });
-    expect(dispatchMock).toHaveBeenCalledWith('setCurrentChatTeam', {
+    expect(store.commit).toHaveBeenCalledWith('ASSIGN_TEAM', {
       conversationId: 17,
       team: teams[1],
     });
+    expect(store.commit).toHaveBeenCalledWith('CHANGE_CONVERSATION_STATUS', {
+      conversationId: 17,
+      status: 'open',
+      snoozedUntil: null,
+    });
+  });
+
+  it('disables confirmation for a conversation already in the selected queue', async () => {
+    store.getters.getConversationById.mockReturnValue({
+      ...conversation,
+      status: 'open',
+      meta: { ...conversation.meta, assignee: null },
+    });
+    const wrapper = mountComponent();
+
+    wrapper.vm.open();
+
+    expect(
+      wrapper.find('.confirm-button').attributes('disabled')
+    ).toBeDefined();
+
+    await wrapper.find('.team-select').setValue('2');
+
+    expect(
+      wrapper.find('.confirm-button').attributes('disabled')
+    ).toBeUndefined();
+  });
+
+  it('keeps the original conversation and team while the request is running', async () => {
+    let resolveRequest;
+    conversationDistributionAPI.returnConversationToQueue.mockReturnValue(
+      new Promise(resolve => {
+        resolveRequest = resolve;
+      })
+    );
+    const wrapper = mountComponent();
+
+    wrapper.vm.open();
+    await wrapper.find('.team-select').setValue('2');
+    await wrapper.find('.confirm-button').trigger('click');
+    await wrapper.find('.team-select').setValue('1');
+    await wrapper.setProps({ chatId: 99 });
+    await wrapper.find('.confirm-button').trigger('click');
+
+    expect(
+      conversationDistributionAPI.returnConversationToQueue
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      conversationDistributionAPI.returnConversationToQueue
+    ).toHaveBeenCalledWith(17, 2);
+
+    resolveRequest({
+      data: {
+        queued: true,
+        status: 'open',
+        snoozed_until: null,
+        team: teams[1],
+      },
+    });
+    await flushPromises();
+
+    expect(store.commit).toHaveBeenCalledWith('ASSIGN_TEAM', {
+      conversationId: 17,
+      team: teams[1],
+    });
+    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('Suporte'));
   });
 });

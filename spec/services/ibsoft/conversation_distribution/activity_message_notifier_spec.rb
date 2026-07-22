@@ -69,4 +69,19 @@ RSpec.describe Ibsoft::ConversationDistribution::ActivityMessageNotifier do
       "Atendimento devolvido por Agente Anterior à fila do departamento #{target_team.reload.name}."
     )
   end
+
+  it 'creates an internal activity message when an agent transfers a conversation to a queue' do
+    perform_enqueued_jobs(only: Conversations::ActivityMessageJob) do
+      described_class.new(
+        conversation: conversation,
+        action: :queue_transferred,
+        assignee: assignee,
+        target_team: target_team
+      ).perform
+    end
+
+    expect(conversation.messages.activity.last.content).to eq(
+      "Atendimento transferido por Agente Novo para a fila do departamento #{target_team.reload.name}."
+    )
+  end
 end

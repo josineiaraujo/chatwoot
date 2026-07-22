@@ -1,6 +1,7 @@
 class Ibsoft::ConversationDistribution::QueueReturnService
   EVENT_TYPE = 'queue_returned'.freeze
   SOURCE = 'manual_team_transfer'.freeze
+  MODES = %i[self_return manual_transfer].freeze
 
   class Error < StandardError
     attr_reader :code
@@ -11,11 +12,12 @@ class Ibsoft::ConversationDistribution::QueueReturnService
     end
   end
 
-  def initialize(conversation:, actor:, team:, strict: true)
+  def initialize(conversation:, actor:, team:, strict: true, mode: :self_return)
     @conversation = conversation
     @actor = actor
     @team = team
     @strict = strict
+    @mode = mode.to_sym
   end
 
   def perform
@@ -40,16 +42,30 @@ class Ibsoft::ConversationDistribution::QueueReturnService
 
   private
 
-  attr_reader :conversation, :actor, :team, :strict
+  attr_reader :conversation, :actor, :team, :strict, :mode
 
   def validation_error
     conversation_validation_error || execution_validation_error || policy_validation_error
   end
 
   def conversation_validation_error
+    return 'queue_return_invalid_mode' unless MODES.include?(mode)
+    return 'queue_return_missing_team' if team.blank? || team.account_id != conversation.account_id
+
+    manual_transfer? ? manual_transfer_validation_error : self_return_validation_error
+  end
+
+  def manual_transfer_validation_error
+    return 'queue_return_resolved' if conversation.resolved?
+    return 'queue_return_already_queued' if Ibsoft::ConversationDistribution::QueueReturnMarker.waiting_in?(conversation, team)
+
+    permission = Ibsoft::ConversationDistribution::ManualTransferPermission.new(conversation: conversation, actor: actor)
+    return 'queue_return_assigned_forbidden' unless permission.allowed?
+  end
+
+  def self_return_validation_error
     return 'queue_return_not_open' unless conversation.open?
     return 'queue_return_actor_not_assignee' unless conversation.assignee == actor
-    return 'queue_return_missing_team' if team.blank? || team.account_id != conversation.account_id
   end
 
   def execution_validation_error
@@ -73,6 +89,7 @@ class Ibsoft::ConversationDistribution::QueueReturnService
       team: team,
       assignee: nil,
       assignee_agent_bot: nil,
+      status: :open,
       waiting_since: queue_entered_at
     )
     conversation.save!
@@ -136,7 +153,8 @@ class Ibsoft::ConversationDistribution::QueueReturnService
     {
       attention_notifications: sync_attention_notifications(previous_assignee),
       previous_assignee_participation: cleanup_previous_assignee_participation(previous_assignee),
-      activity_message: notify_activity(previous_assignee)
+      activity_message: notify_activity(previous_assignee),
+      distribution_job: enqueue_distribution
     }
   end
 
@@ -159,11 +177,20 @@ class Ibsoft::ConversationDistribution::QueueReturnService
   def notify_activity(previous_assignee)
     Ibsoft::ConversationDistribution::ActivityMessageNotifier.new(
       conversation: conversation,
-      action: :queue_returned,
-      assignee: previous_assignee,
+      action: manual_transfer? ? :queue_transferred : :queue_returned,
+      assignee: manual_transfer? ? actor : previous_assignee,
       target_team: team
     ).perform
   end
+
+  def enqueue_distribution
+    Ibsoft::ConversationDistribution::ScopedWatchdogEnqueuer.new(
+      conversation: conversation,
+      team: team
+    ).perform
+  end
+
+  def manual_transfer? = mode == :manual_transfer
 
   def effective_policy
     @effective_policy ||= Ibsoft::ConversationDistribution::EffectivePolicyResolver.new(
