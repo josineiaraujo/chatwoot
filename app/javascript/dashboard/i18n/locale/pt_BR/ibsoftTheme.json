@@ -898,6 +898,7 @@
         "INTEGRATIONS": "Integrações",
         "ACCOUNT": "Conta",
         "ERP": "ERPs",
+        "MESSAGE_SIGNATURE": "Assinatura de mensagens",
         "ATTENDANCE": "Ajustes de entrada",
         "POLICIES": "Políticas de distribuição",
         "AGENTS": "Agentes",
@@ -979,6 +980,36 @@
         "DELETE_CANCEL": "Cancelar",
         "DELETE_SUCCESS": "Canal removido com sucesso.",
         "DELETE_ERROR": "Não foi possível remover o canal."
+      },
+      "MESSAGE_SIGNATURE": {
+        "TITLE": "Assinatura de mensagens",
+        "DESCRIPTION": "Identifique automaticamente o agente no início das mensagens enviadas pelos canais selecionados.",
+        "SEARCH_PLACEHOLDER": "Pesquisar canais",
+        "SAVE": "Salvar assinatura",
+        "SAVED": "Configuração de assinatura salva com sucesso.",
+        "ENABLE": {
+          "TITLE": "Ativar assinatura no cabeçalho",
+          "DESCRIPTION": "Adiciona o nome do agente em destaque antes do conteúdo de cada mensagem enviada por ele. Mensagens automáticas, notas privadas e modelos não são alterados."
+        },
+        "CHANNELS": {
+          "TITLE": "Canais com assinatura",
+          "DESCRIPTION": "Selecione onde a identificação do agente deve ser incluída.",
+          "COUNT_ONE": "{count} canal selecionado",
+          "COUNT_MANY": "{count} canais selecionados",
+          "EMPTY": "Nenhum canal de comunicação está disponível.",
+          "NO_RESULTS": "Nenhum canal encontrado para esta busca."
+        },
+        "PREVIEW": {
+          "TITLE": "Pré-visualização",
+          "DESCRIPTION": "A assinatura usa sempre o nome atual do agente que enviou a mensagem.",
+          "AGENT": "Nome do agente",
+          "BODY": "Olá! Como posso ajudar?"
+        },
+        "ERRORS": {
+          "LOAD": "Não foi possível carregar a configuração de assinatura.",
+          "SAVE": "Não foi possível salvar a configuração de assinatura.",
+          "CHANNEL_REQUIRED": "Selecione pelo menos um canal antes de ativar a assinatura."
+        }
       },
       "CHANNEL_OPERATIONS": {
         "BUTTON": "Regras",
@@ -1600,18 +1631,44 @@
     },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configurar distribuição",
+      "TRANSFER": {
+        "BUTTON": "Transferir atendimento",
+        "AGENT_OPTION": "Para um agente",
+        "QUEUE_OPTION": "Para a fila de um departamento",
+        "CONFIRM": "Transferir atendimento",
+        "AGENT": {
+          "TITLE": "Transferir para um agente",
+          "DESCRIPTION": "Escolha o agente que passará a ser responsável por este atendimento.",
+          "LABEL": "Agente de destino",
+          "PLACEHOLDER": "Selecione um agente",
+          "SEARCH": "Pesquisar agentes",
+          "EMPTY": "Nenhum agente encontrado",
+          "SUCCESS": "Atendimento transferido para {agentName}.",
+          "ERROR": "Não foi possível transferir o atendimento para o agente.",
+          "ERRORS": {
+            "LOAD_FAILED": "Não foi possível atualizar os agentes disponíveis neste canal.",
+            "NOT_FOUND": "O agente não está mais disponível neste canal de comunicação.",
+            "INVALID_TARGET": "O agente selecionado é inválido. Atualize a lista e tente novamente.",
+            "RESOLVED": "Atendimentos encerrados não podem ser transferidos.",
+            "FORBIDDEN": "Este atendimento foi atribuído a outro agente e não pode mais ser transferido por você."
+          }
+        }
+      },
       "QUEUE_RETURN": {
-        "BUTTON": "Devolver à fila",
-        "TITLE": "Devolver atendimento à fila",
-        "DESCRIPTION": "Remova este atendimento da sua responsabilidade e coloque-o novamente na fila de distribuição. Você pode manter o departamento atual ou escolher outro.",
+        "TITLE": "Transferir para a fila de um departamento",
+        "DESCRIPTION": "Escolha o departamento que receberá o atendimento. O responsável atual será removido e a distribuição automática escolherá um novo agente.",
         "TEAM_LABEL": "Departamento de destino",
-        "CONFIRM": "Devolver à fila",
-        "SUCCESS": "Atendimento devolvido à fila de {teamName}.",
-        "ERROR": "Não foi possível devolver o atendimento à fila.",
+        "CONFIRM": "Transferir atendimento",
+        "SUCCESS": "Atendimento transferido para a fila de {teamName}.",
+        "ERROR": "Não foi possível transferir o atendimento para a fila.",
+        "ALREADY_QUEUED": "Este atendimento já está na fila deste departamento. Escolha outro departamento para transferir.",
         "ERRORS": {
           "queue_return_not_open": "Somente atendimentos abertos podem voltar para a fila.",
           "queue_return_actor_not_assignee": "Este atendimento não está mais atribuído a você.",
           "queue_return_missing_team": "Selecione um departamento válido.",
+          "queue_return_resolved": "Atendimentos encerrados não podem ser transferidos.",
+          "queue_return_assigned_forbidden": "Somente o agente responsável ou um administrador pode transferir este atendimento.",
+          "queue_return_already_queued": "Este atendimento já está na fila do departamento selecionado.",
           "queue_return_distribution_disabled": "A distribuição automática está desativada.",
           "queue_return_real_assignment_disabled": "A distribuição está em modo de simulação e não pode alterar atendimentos.",
           "queue_return_native_assignment_enabled": "Desative a atribuição automática nativa deste departamento antes de devolver atendimentos à fila.",

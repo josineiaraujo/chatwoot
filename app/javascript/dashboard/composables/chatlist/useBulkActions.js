@@ -63,6 +63,20 @@ export function useBulkActions() {
   // Same method used in context menu, conversationId being passed from there.
   async function onAssignAgent(agent, conversationId = null) {
     try {
+      if (conversationId) {
+        await store.dispatch('assignAgent', {
+          conversationId,
+          agentId: agent.id,
+        });
+        useAlert(
+          t('CONVERSATION.CARD_CONTEXT_MENU.API.AGENT_ASSIGNMENT.SUCCESFUL', {
+            agentName: agent.name,
+            conversationId,
+          })
+        );
+        return;
+      }
+
       await store.dispatch('bulkActions/process', {
         type: 'Conversation',
         ids: conversationId || selectedConversations.value,
@@ -71,16 +85,7 @@ export function useBulkActions() {
         },
       });
       store.dispatch('bulkActions/clearSelectedConversationIds');
-      if (conversationId) {
-        useAlert(
-          t('CONVERSATION.CARD_CONTEXT_MENU.API.AGENT_ASSIGNMENT.SUCCESFUL', {
-            agentName: agent.name,
-            conversationId,
-          })
-        );
-      } else {
-        useAlert(t('BULK_ACTION.ASSIGN_SUCCESFUL'));
-      }
+      useAlert(t('BULK_ACTION.ASSIGN_SUCCESFUL'));
     } catch (err) {
       useAlert(t('BULK_ACTION.ASSIGN_FAILED'));
     }
@@ -166,11 +171,12 @@ export function useBulkActions() {
     let conversationIds = selectedConversations.value;
     let skippedCount = 0;
     const isClosingService = status === wootConstants.STATUS_TYPE.RESOLVED;
-    const shouldRefreshConversationStats = selectedConversations.value.some(id =>
-      shouldRefreshAutomationConversationStats({
-        previousStatus: store.getters.getConversationById(id)?.status,
-        nextStatus: status,
-      })
+    const shouldRefreshConversationStats = selectedConversations.value.some(
+      id =>
+        shouldRefreshAutomationConversationStats({
+          previousStatus: store.getters.getConversationById(id)?.status,
+          nextStatus: status,
+        })
     );
 
     // If resolving, check for required attributes
@@ -199,9 +205,7 @@ export function useBulkActions() {
       if (skippedCount > 0 && validIds.length === 0) {
         // All conversations have missing attributes
         useAlert(
-          t(
-            'IBSOFT_THEME.CONVERSATION_ACTIONS.ALL_MISSING_REQUIRED_ATTRIBUTES'
-          )
+          t('IBSOFT_THEME.CONVERSATION_ACTIONS.ALL_MISSING_REQUIRED_ATTRIBUTES')
         );
         return;
       }

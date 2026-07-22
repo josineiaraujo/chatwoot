@@ -18,6 +18,8 @@ Documento operacional de variaveis de ambiente:
   rotas, tela administrativa e pontos de acoplamento.
 - `IBSOFT_MESSAGE_BROADCAST.md`: documenta a base privada de disparo de
   mensagens, buscas IXC, tabelas, selecao de telefones e testes.
+- `IBSOFT_MESSAGE_SIGNATURE.md`: documenta a assinatura privada no cabecalho,
+  configuracao por conta/canal, neutralizacao da assinatura nativa e testes.
 
 ## Como usar antes de sincronizar com upstream
 
@@ -274,6 +276,54 @@ Validacao recomendada:
 
 - `RAILS_ENV=test bundle exec rspec spec/services/ibsoft/message_broadcast spec/services/ibsoft/erp/adapters/ixc/customer_search_spec.rb spec/requests/api/v1/accounts/ibsoft/message_broadcast spec/models/ibsoft/message_broadcast`
 - `./node_modules/.bin/vitest run app/javascript/dashboard/ibsoft/messageBroadcast/specs/Index.spec.js app/javascript/dashboard/ibsoft/messageBroadcast/specs/LookupSelects.spec.js --no-cache --no-coverage --logHeapUsage`
+
+### 0.0.3. Assinatura de mensagens
+
+Documento detalhado: `IBSOFT_MESSAGE_SIGNATURE.md`.
+
+Objetivo:
+
+- Adicionar o nome do agente em destaque no cabecalho de mensagens publicas
+  enviadas por humanos.
+- Preservar sem assinatura mensagens enviadas por integracoes externas com
+  `api_access_token`.
+- Permitir ativacao geral por conta e selecao dos canais de comunicacao.
+- Substituir funcionalmente o rodape nativo sem apagar a coluna ou o codigo do
+  Chatwoot.
+- Operar sem tabela, migration, worker, Redis ou variavel de ambiente.
+
+Arquivos privados principais:
+
+- `app/services/ibsoft/message_signature/`
+- `app/controllers/api/v1/accounts/ibsoft/message_signature/`
+- `app/javascript/dashboard/ibsoft/messageSignature/`
+- `config/initializers/ibsoft_message_signature.rb`
+- `config/locales/ibsoft_message_signature.*.yml`
+- `spec/**/ibsoft/message_signature/`
+
+Persistencia:
+
+- chave `ibsoft_message_signature` dentro de `accounts.settings`;
+- nenhuma tabela ou migration adicional.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra a API privada de configuracao.
+- `Messages::MessageBuilder`: recebe a extensao privada por initializer, sem
+  edicao do builder.
+- `Api::BaseController`: recebe por initializer o contexto privado que
+  diferencia sessao do dashboard e token da API publica.
+- `app/javascript/dashboard/store/modules/auth.js`: delega o getter da
+  assinatura nativa ao neutralizador privado.
+- `app/javascript/dashboard/ibsoft/chathubSettings/settingsSections.js`:
+  registra a tela administrativa.
+- `app/javascript/dashboard/ibsoft/theme/_dark-overrides.scss`: oculta os dois
+  controles nativos, preservando seu codigo.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/services/ibsoft/message_signature spec/requests/api/v1/accounts/ibsoft/message_signature`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/messageSignature/specs app/javascript/dashboard/ibsoft/chathubSettings/specs/settingsSections.spec.js app/javascript/dashboard/store/modules/specs/auth/getters.spec.js`
 
 ### 0.1. Perfis e permissoes Ibsoft
 
@@ -576,6 +626,24 @@ Pontos de acoplamento no Chatwoot original:
   quando ele estiver registrado como supervisor Ibsoft.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
   marca origem Ibsoft quando uma conversa e atribuida a time via API/UI.
+- `app/javascript/dashboard/store/modules/conversations/actions.js`: delega as
+  atribuicoes individuais de agente e departamento do dashboard ao endpoint
+  privado `manual_assignment`, sincronizando o estado confirmado pelo backend
+  por meio de `manualAssignmentStateSync.js`. Conversas que sairam da lista
+  durante a requisicao nao recebem mutacoes tardias.
+- `app/javascript/dashboard/routes/dashboard/conversation/ConversationAction.vue`,
+  `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`
+  e `app/javascript/dashboard/composables/commands/useConversationHotKeys.js`:
+  conectam os controles individuais ao fluxo privado e bloqueiam transferencias
+  quando a conversa esta encerrada. No menu de contexto, agente e departamento
+  foram consolidados em `Transferir atendimento`, com modais privados para
+  escolher o agente ou a fila do departamento. Se ja houver agente humano
+  responsavel, somente ele ou um administrador pode transferir; a regra e
+  repetida no backend por `ManualTransferPermission`. Conversas atribuidas a
+  bot permanecem transferiveis conforme `meta.assignee_type=AgentBot`.
+- `app/javascript/dashboard/composables/chatlist/useBulkActions.js`: usa o
+  fluxo privado apenas quando a acao veio do menu contextual de uma conversa;
+  atribuicoes realmente em massa continuam nativas.
 - `app/services/action_service.rb`: marca origem Ibsoft quando uma acao,
   automacao ou macro atribui a conversa a um time.
 
@@ -585,6 +653,19 @@ Estado atual:
   efetiva.
 - Endpoint administrativo `GET /dry_runs` para pre-visualizar, sem escrita, as
   conversas candidatas a distribuicao.
+- Endpoint operacional
+  `POST /conversations/:conversation_id/manual_assignment` para atribuicoes
+  individuais do dashboard. Ele abre conversas pendentes ou adiadas, rejeita
+  conversas encerradas sob lock, rejeita IDs malformados, exige que agentes de
+  destino sejam atribuiveis ao canal e agenda uma
+  rodada escopada quando a transferencia para departamento realmente entra na
+  distribuicao privada. A atribuicao direta a agente nao entra na distribuicao.
+  A validacao do destino usa consultas pontuais para o `AccountUser` e para a
+  associacao ao canal, sem carregar toda a lista de agentes atribuiveis.
+  Transferencias removem notificacoes e participacao obsoletas do responsavel
+  anterior. Falha transitoria ao enfileirar a rodada imediata nao desfaz a
+  transferencia confirmada; o erro fica no log e o watchdog periodico serve de
+  recuperacao.
 - Endpoint administrativo `POST /executions` para executar a atribuicao com
   auditoria. Por padrao, a execucao real fica bloqueada pela env
   `IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=false`.
@@ -871,8 +952,10 @@ Objetivo:
   clientes que entram de fora e devem continuar indo para `pending`.
 - Abrir a visualizacao `Mencoes` com a aba `Todas` selecionada, garantindo que
   mencoes em conversas atribuidas a outro agente tambem aparecam na lista.
-- Exigir que o agente assuma ou retome explicitamente a conversa antes de
-  enviar uma resposta publica, preservando notas privadas e rascunhos.
+- Exigir que o agente assuma conversas sem responsavel ou retome conversas em
+  automacao antes de responder, preservando notas privadas e rascunhos.
+- Permitir colaboracao em conversas abertas atribuidas a outro agente humano
+  sem substituir o responsavel atual; atribuicoes a bots continuam protegidas.
 
 Arquivos privados principais:
 

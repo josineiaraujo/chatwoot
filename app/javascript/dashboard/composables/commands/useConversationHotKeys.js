@@ -10,6 +10,7 @@ import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 
 import wootConstants from 'dashboard/constants/globals';
+import { isManualAssignmentAllowed } from 'dashboard/ibsoft/conversationDistribution/manualAssignmentAvailability';
 
 import {
   ICON_ADD_LABEL,
@@ -150,6 +151,8 @@ export function useConversationHotKeys() {
   const { agentsList } = useAgentsList();
 
   const currentChat = useMapGetter('getSelectedChat');
+  const currentRole = useMapGetter('getCurrentRole');
+  const currentUser = useMapGetter('getCurrentUser');
   const replyMode = useMapGetter('draftMessages/getReplyEditorMode');
   const contextMenuChatId = useMapGetter('getContextMenuChatId');
   const teams = useMapGetter('teams/getTeams');
@@ -163,6 +166,12 @@ export function useConversationHotKeys() {
   const draftMessage = computed(() => getDraftMessage.value(draftKey.value));
 
   const hasAnAssignedTeam = computed(() => !!currentChat.value?.meta?.team);
+  const manualAssignmentAllowed = computed(() =>
+    isManualAssignmentAllowed(currentChat.value, {
+      isAdmin: currentRole.value === 'administrator',
+      currentUserId: currentUser.value?.id,
+    })
+  );
 
   const teamsList = computed(() => {
     if (hasAnAssignedTeam.value) {
@@ -172,6 +181,8 @@ export function useConversationHotKeys() {
   });
 
   const onChangeAssignee = action => {
+    if (!manualAssignmentAllowed.value) return;
+
     store.dispatch('assignAgent', {
       conversationId: currentChat.value.id,
       agentId: action.agentInfo.id,
@@ -186,6 +197,8 @@ export function useConversationHotKeys() {
   };
 
   const onChangeTeam = action => {
+    if (!manualAssignmentAllowed.value) return;
+
     store.dispatch('assignTeam', {
       conversationId: currentChat.value.id,
       teamId: action.teamInfo.id,
@@ -213,6 +226,8 @@ export function useConversationHotKeys() {
   );
 
   const assignAgentActions = computed(() => {
+    if (!manualAssignmentAllowed.value) return [];
+
     const agentOptions = agentsList.value.map(agent => ({
       id: `agent-${agent.id}`,
       title: agent.name,
@@ -257,6 +272,8 @@ export function useConversationHotKeys() {
   });
 
   const assignTeamActions = computed(() => {
+    if (!manualAssignmentAllowed.value) return [];
+
     const teamOptions = teamsList.value.map(team => ({
       id: `team-${team.id}`,
       title: team.name,

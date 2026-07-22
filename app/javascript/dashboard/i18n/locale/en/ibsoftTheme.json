@@ -59,6 +59,7 @@
         "INTEGRATIONS": "Integrations",
         "ACCOUNT": "Account",
         "ERP": "ERPs",
+        "MESSAGE_SIGNATURE": "Message signatures",
         "ATTENDANCE": "Entry settings",
         "POLICIES": "Policies",
         "AGENTS": "Agents",
@@ -140,6 +141,36 @@
         "DELETE_CANCEL": "Cancel",
         "DELETE_SUCCESS": "Channel deleted successfully.",
         "DELETE_ERROR": "Could not delete the channel."
+      },
+      "MESSAGE_SIGNATURE": {
+        "TITLE": "Message signatures",
+        "DESCRIPTION": "Automatically identify the agent at the beginning of messages sent through selected channels.",
+        "SEARCH_PLACEHOLDER": "Search channels",
+        "SAVE": "Save signature",
+        "SAVED": "Signature settings saved successfully.",
+        "ENABLE": {
+          "TITLE": "Enable header signature",
+          "DESCRIPTION": "Adds the agent name in bold before each message they send. Automated messages, private notes, and templates are not changed."
+        },
+        "CHANNELS": {
+          "TITLE": "Channels with signatures",
+          "DESCRIPTION": "Select where the agent identification should be included.",
+          "COUNT_ONE": "{count} channel selected",
+          "COUNT_MANY": "{count} channels selected",
+          "EMPTY": "No communication channels are available.",
+          "NO_RESULTS": "No channels found for this search."
+        },
+        "PREVIEW": {
+          "TITLE": "Preview",
+          "DESCRIPTION": "The signature always uses the current name of the agent who sent the message.",
+          "AGENT": "Agent name",
+          "BODY": "Hello! How can I help?"
+        },
+        "ERRORS": {
+          "LOAD": "Could not load signature settings.",
+          "SAVE": "Could not save signature settings.",
+          "CHANNEL_REQUIRED": "Select at least one channel before enabling signatures."
+        }
       },
       "CHANNEL_OPERATIONS": {
         "BUTTON": "Rules",
@@ -771,18 +802,44 @@
     },
     "CONVERSATION_DISTRIBUTION": {
       "TEAM_ACTION": "Configure distribution",
+      "TRANSFER": {
+        "BUTTON": "Transfer conversation",
+        "AGENT_OPTION": "To an agent",
+        "QUEUE_OPTION": "To a department queue",
+        "CONFIRM": "Transfer conversation",
+        "AGENT": {
+          "TITLE": "Transfer to an agent",
+          "DESCRIPTION": "Choose the agent who will become responsible for this conversation.",
+          "LABEL": "Destination agent",
+          "PLACEHOLDER": "Select an agent",
+          "SEARCH": "Search agents",
+          "EMPTY": "No agents found",
+          "SUCCESS": "Conversation transferred to {agentName}.",
+          "ERROR": "Could not transfer the conversation to the agent.",
+          "ERRORS": {
+            "LOAD_FAILED": "Could not refresh the agents available in this communication channel.",
+            "NOT_FOUND": "The agent is no longer available in this communication channel.",
+            "INVALID_TARGET": "The selected agent is invalid. Refresh the list and try again.",
+            "RESOLVED": "Closed conversations cannot be transferred.",
+            "FORBIDDEN": "This conversation was assigned to another agent and can no longer be transferred by you."
+          }
+        }
+      },
       "QUEUE_RETURN": {
-        "BUTTON": "Return to queue",
-        "TITLE": "Return conversation to queue",
-        "DESCRIPTION": "Remove this conversation from your responsibility and place it back in the distribution queue. You can keep the current team or choose another one.",
+        "TITLE": "Transfer to a department queue",
+        "DESCRIPTION": "Choose the department that will receive the conversation. The current assignee will be removed and automatic distribution will choose a new agent.",
         "TEAM_LABEL": "Destination team",
-        "CONFIRM": "Return to queue",
-        "SUCCESS": "Conversation returned to the {teamName} queue.",
-        "ERROR": "Could not return the conversation to the queue.",
+        "CONFIRM": "Transfer conversation",
+        "SUCCESS": "Conversation transferred to the {teamName} queue.",
+        "ERROR": "Could not transfer the conversation to the queue.",
+        "ALREADY_QUEUED": "This conversation is already in this department queue. Select another department to transfer it.",
         "ERRORS": {
           "queue_return_not_open": "Only open conversations can return to the queue.",
           "queue_return_actor_not_assignee": "This conversation is no longer assigned to you.",
           "queue_return_missing_team": "Select a valid team.",
+          "queue_return_resolved": "Closed conversations cannot be transferred.",
+          "queue_return_assigned_forbidden": "Only the assigned agent or an administrator can transfer this conversation.",
+          "queue_return_already_queued": "This conversation is already in the selected department queue.",
           "queue_return_distribution_disabled": "Automatic distribution is disabled.",
           "queue_return_real_assignment_disabled": "Distribution is in simulation mode and cannot change conversations.",
           "queue_return_native_assignment_enabled": "Disable this team's native auto assignment before returning conversations to the queue.",

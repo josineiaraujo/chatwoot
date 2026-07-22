@@ -8,6 +8,7 @@ import ConversationCardExpanded from 'dashboard/components-next/Conversation/Con
 import ContextMenu from 'dashboard/components/ui/ContextMenu.vue';
 import ConversationContextMenu from './widgets/conversation/contextMenu/Index.vue';
 import QueueReturnDialog from 'dashboard/ibsoft/conversationDistribution/components/QueueReturnDialog.vue';
+import TransferToAgentDialog from 'dashboard/ibsoft/conversationDistribution/components/TransferToAgentDialog.vue';
 
 const props = defineProps({
   source: { type: Object, required: true },
@@ -24,8 +25,6 @@ const store = useStore();
 
 const selectConversation = inject('selectConversation');
 const deSelectConversation = inject('deSelectConversation');
-const assignAgent = inject('assignAgent');
-const assignTeam = inject('assignTeam');
 const assignLabels = inject('assignLabels');
 const removeLabels = inject('removeLabels');
 const updateConversationStatus = inject('updateConversationStatus');
@@ -40,6 +39,7 @@ const deleteConversation = inject('deleteConversation');
 const showContextMenu = ref(false);
 const contextMenu = ref({ x: null, y: null });
 const queueReturnDialogRef = ref(null);
+const transferToAgentDialogRef = ref(null);
 
 // Reset context menu state when the row is recycled to a different conversation.
 watch(
@@ -141,22 +141,12 @@ const onUpdateConversation = (status, snoozedUntil) => {
   updateConversationStatus(props.source.id, status, snoozedUntil);
 };
 
-const onAssignAgent = agent => {
-  assignAgent(agent, [props.source.id]);
-  closeContextMenu();
-};
-
 const onAssignLabel = label => {
   assignLabels([label.title], [props.source.id]);
 };
 
 const onRemoveLabel = label => {
   removeLabels([label.title], [props.source.id]);
-};
-
-const onAssignTeam = team => {
-  assignTeam(team, props.source.id);
-  closeContextMenu();
 };
 
 const onMarkAsUnread = () => {
@@ -183,6 +173,12 @@ const onReturnToQueue = async () => {
   closeContextMenu();
   await nextTick();
   queueReturnDialogRef.value?.open();
+};
+
+const onTransferToAgent = async () => {
+  closeContextMenu();
+  await nextTick();
+  transferToAgentDialogRef.value?.open();
 };
 </script>
 
@@ -231,25 +227,30 @@ const onReturnToQueue = async () => {
   >
     <ConversationContextMenu
       :status="source.status"
-      :inbox-id="inbox.id"
+      :assignee="source.meta?.assignee || null"
+      :assignee-type="source.meta?.assignee_type || null"
       :priority="source.priority"
       :chat-id="source.id"
       :has-unread-messages="source.unread_count > 0"
       :conversation-labels="source.labels"
       :conversation-url="conversationPath"
       @update-conversation="onUpdateConversation"
-      @assign-agent="onAssignAgent"
       @assign-label="onAssignLabel"
       @remove-label="onRemoveLabel"
-      @assign-team="onAssignTeam"
+      @transfer-to-agent="onTransferToAgent"
+      @transfer-to-queue="onReturnToQueue"
       @mark-as-unread="onMarkAsUnread"
       @mark-as-read="onMarkAsRead"
       @assign-priority="onAssignPriority"
       @delete-conversation="onDeleteConversation"
-      @return-to-queue="onReturnToQueue"
       @close="closeContextMenu"
     />
   </ContextMenu>
 
   <QueueReturnDialog ref="queueReturnDialogRef" :chat-id="source.id" />
+  <TransferToAgentDialog
+    ref="transferToAgentDialogRef"
+    :chat-id="source.id"
+    :inbox-id="source.inbox_id"
+  />
 </template>
