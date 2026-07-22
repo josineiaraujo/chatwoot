@@ -41,11 +41,18 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
     )
     participant = create(:conversation_participant, account: account, conversation: conversation, user: agent)
 
-    result = described_class.new(
-      conversation: conversation,
-      actor: agent,
-      team: source_team
-    ).perform
+    result = nil
+    expect do
+      result = described_class.new(
+        conversation: conversation,
+        actor: agent,
+        team: source_team
+      ).perform
+    end.to have_enqueued_job(Ibsoft::ConversationDistribution::WatchdogJob).with(
+      account_id: account.id,
+      inbox_id: inbox.id,
+      team_id: source_team.id
+    )
 
     expect(result).to include(queued: true, previous_assignee: agent, team: source_team)
     expect(conversation.reload).to have_attributes(
@@ -83,6 +90,102 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
       team_id: target_team.id,
       assignee_id: nil
     )
+  end
+
+  it 'keeps the queue transfer successful when the immediate watchdog enqueue fails' do
+    allow(Ibsoft::ConversationDistribution::WatchdogJob).to receive(:perform_later).and_raise(Redis::BaseError)
+
+    result = described_class.new(
+      conversation: conversation,
+      actor: agent,
+      team: target_team
+    ).perform
+
+    expect(result[:distribution_job]).to include(enqueued: false, error: 'Redis::BaseError')
+    expect(conversation.reload).to have_attributes(
+      status: 'open',
+      team_id: target_team.id,
+      assignee_id: nil
+    )
+  end
+
+  it 'transfers a pending bot conversation to a team queue when requested by another agent' do
+    another_agent = create(:user, account: account, role: :agent, name: 'Supervisor')
+    agent_bot = create(:agent_bot, account: account)
+    conversation.update!(status: :pending, assignee: nil, assignee_agent_bot: agent_bot)
+
+    described_class.new(
+      conversation: conversation,
+      actor: another_agent,
+      team: target_team,
+      mode: :manual_transfer
+    ).perform
+
+    expect(conversation.reload).to have_attributes(
+      status: 'open',
+      team_id: target_team.id,
+      assignee_id: nil,
+      assignee_agent_bot_id: nil
+    )
+  end
+
+  it 'rejects transferring a resolved conversation to a queue' do
+    conversation.update!(status: :resolved)
+
+    expect do
+      described_class.new(
+        conversation: conversation,
+        actor: agent,
+        team: target_team,
+        mode: :manual_transfer
+      ).perform
+    end.to raise_error(described_class::Error, 'queue_return_resolved')
+  end
+
+  it 'rejects a manual queue transfer by a regular agent when a human is assigned' do
+    another_agent = create(:user, account: account, role: :agent)
+
+    expect do
+      described_class.new(
+        conversation: conversation,
+        actor: another_agent,
+        team: target_team,
+        mode: :manual_transfer
+      ).perform
+    end.to raise_error(described_class::Error, 'queue_return_assigned_forbidden')
+
+    expect(conversation.reload).to have_attributes(team_id: source_team.id, assignee_id: agent.id)
+  end
+
+  it 'allows a manual queue transfer by an administrator when a human is assigned' do
+    administrator = create(:user, account: account, role: :administrator)
+
+    described_class.new(
+      conversation: conversation,
+      actor: administrator,
+      team: target_team,
+      mode: :manual_transfer
+    ).perform
+
+    expect(conversation.reload).to have_attributes(team_id: target_team.id, assignee_id: nil)
+  end
+
+  it 'does not requeue a conversation already waiting in the selected team' do
+    original_waiting_since = 45.minutes.ago
+    conversation.update!(assignee: nil, waiting_since: original_waiting_since)
+
+    expect do
+      expect do
+        described_class.new(
+          conversation: conversation,
+          actor: agent,
+          team: source_team,
+          mode: :manual_transfer
+        ).perform
+      end.to raise_error(described_class::Error, 'queue_return_already_queued')
+    end.not_to have_enqueued_job(Ibsoft::ConversationDistribution::WatchdogJob)
+
+    expect(conversation.reload.waiting_since).to be_within(0.000001).of(original_waiting_since)
   end
 
   it 'rejects a queue return requested by someone other than the current assignee' do

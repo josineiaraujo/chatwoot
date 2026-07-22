@@ -1,5 +1,7 @@
 import types from '../../mutation-types';
 import ConversationApi from '../../../api/inbox/conversation';
+import ConversationDistributionAPI from 'dashboard/ibsoft/conversationDistribution/api';
+import { syncManualAssignmentState } from 'dashboard/ibsoft/conversationDistribution/manualAssignmentStateSync';
 import MessageApi from '../../../api/inbox/message';
 import { MESSAGE_STATUS, MESSAGE_TYPE } from 'shared/constants/messages';
 import { createPendingMessage } from 'dashboard/helper/commons';
@@ -214,35 +216,58 @@ const actions = {
     }
   },
 
-  assignAgent: async ({ dispatch }, { conversationId, agentId }) => {
-    try {
-      const response = await ConversationApi.assignAgent({
+  assignAgent: async ({ commit, state }, { conversationId, agentId }) => {
+    const { data } =
+      await ConversationDistributionAPI.manuallyAssignConversation(
         conversationId,
-        agentId,
-      });
-      dispatch('setCurrentChatAssignee', {
+        'agent',
+        agentId
+      );
+    syncManualAssignmentState(
+      {
+        commit,
+        conversation: state.allConversations.find(
+          conversation => conversation.id === conversationId
+        ),
+      },
+      {
         conversationId,
-        assignee: response.data,
-      });
-    } catch (error) {
-      // Handle error
-    }
+        assignee: data.assignee,
+        team: data.team,
+        status: data.status,
+        snoozedUntil: data.snoozed_until,
+      }
+    );
+    return data;
   },
 
   setCurrentChatAssignee({ commit }, { conversationId, assignee }) {
     commit(types.ASSIGN_AGENT, { conversationId, assignee });
   },
 
-  assignTeam: async ({ dispatch }, { conversationId, teamId }) => {
-    try {
-      const response = await ConversationApi.assignTeam({
+  assignTeam: async ({ commit, state }, { conversationId, teamId }) => {
+    const { data } =
+      await ConversationDistributionAPI.manuallyAssignConversation(
         conversationId,
-        teamId,
-      });
-      dispatch('setCurrentChatTeam', { team: response.data, conversationId });
-    } catch (error) {
-      // Handle error
-    }
+        'team',
+        teamId
+      );
+    syncManualAssignmentState(
+      {
+        commit,
+        conversation: state.allConversations.find(
+          conversation => conversation.id === conversationId
+        ),
+      },
+      {
+        conversationId,
+        assignee: data.assignee,
+        team: data.team,
+        status: data.status,
+        snoozedUntil: data.snoozed_until,
+      }
+    );
+    return data;
   },
 
   setCurrentChatTeam({ commit }, { team, conversationId }) {

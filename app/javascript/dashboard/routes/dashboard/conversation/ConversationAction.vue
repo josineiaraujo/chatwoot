@@ -10,6 +10,8 @@ import { CONVERSATION_PRIORITY } from '../../../../shared/constants/messages';
 import { CONVERSATION_EVENTS } from '../../../helper/AnalyticsHelper/events';
 import { useTrack } from 'dashboard/composables';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { isManualAssignmentAllowed } from 'dashboard/ibsoft/conversationDistribution/manualAssignmentAvailability';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 export default {
   components: {
@@ -26,8 +28,10 @@ export default {
   },
   setup() {
     const { agentsList } = useAgentsList();
+    const { isAdmin } = useAdmin();
     return {
       agentsList,
+      isAdmin,
     };
   },
   data() {
@@ -85,10 +89,6 @@ export default {
       },
       set(agent) {
         const agentId = agent ? agent.id : null;
-        this.$store.dispatch('setCurrentChatAssignee', {
-          conversationId: this.currentChat.id,
-          assignee: agent,
-        });
         this.$store
           .dispatch('assignAgent', {
             conversationId: this.currentChat.id,
@@ -96,6 +96,9 @@ export default {
           })
           .then(() => {
             useAlert(this.$t('CONVERSATION.CHANGE_AGENT'));
+          })
+          .catch(() => {
+            useAlert(this.$t('CONVERSATION.CHANGE_AGENT_FAILED'));
           });
       },
     },
@@ -106,11 +109,17 @@ export default {
       set(team) {
         const conversationId = this.currentChat.id;
         const teamId = team ? team.id : 0;
-        this.$store.dispatch('setCurrentChatTeam', { team, conversationId });
         this.$store
           .dispatch('assignTeam', { conversationId, teamId })
           .then(() => {
             useAlert(this.$t('CONVERSATION.CHANGE_TEAM'));
+          })
+          .catch(() => {
+            useAlert(
+              this.$t(
+                'CONVERSATION.CARD_CONTEXT_MENU.API.TEAM_ASSIGNMENT.FAILED'
+              )
+            );
           });
       },
     },
@@ -156,6 +165,12 @@ export default {
         return true;
       }
       return false;
+    },
+    isManualAssignmentDisabled() {
+      return !isManualAssignmentAllowed(this.currentChat, {
+        isAdmin: this.isAdmin,
+        currentUserId: this.currentUser?.id,
+      });
     },
   },
   methods: {
@@ -213,57 +228,67 @@ export default {
 
 <template>
   <div>
-    <div>
-      <ContactDetailsItem
-        compact
-        :title="$t('CONVERSATION_SIDEBAR.ASSIGNEE_LABEL')"
-      >
-        <template #button>
-          <NextButton
-            v-if="showSelfAssign"
-            link
-            xs
-            icon="i-lucide-arrow-right"
-            class="!gap-1"
-            :label="$t('CONVERSATION_SIDEBAR.SELF_ASSIGN')"
-            @click="onSelfAssign"
-          />
-        </template>
-      </ContactDetailsItem>
-      <MultiselectDropdown
-        :options="agentsList"
-        :selected-item="assignedAgent"
-        :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.AGENT')"
-        :multiselector-placeholder="$t('AGENT_MGMT.MULTI_SELECTOR.PLACEHOLDER')"
-        :no-search-result="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS.AGENT')
-        "
-        :input-placeholder="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.AGENT')
-        "
-        @select="onClickAssignAgent"
-      />
-    </div>
-    <div>
-      <ContactDetailsItem
-        compact
-        :title="$t('CONVERSATION_SIDEBAR.TEAM_LABEL')"
-      />
-      <MultiselectDropdown
-        :options="teamsList"
-        :selected-item="assignedTeam"
-        show-emoji-icon
-        :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.TEAM')"
-        :multiselector-placeholder="$t('AGENT_MGMT.MULTI_SELECTOR.PLACEHOLDER')"
-        :no-search-result="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS.TEAM')
-        "
-        :input-placeholder="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.TEAM')
-        "
-        @select="onClickAssignTeam"
-      />
-    </div>
+    <fieldset
+      :disabled="isManualAssignmentDisabled"
+      :aria-disabled="isManualAssignmentDisabled"
+      class="m-0 min-w-0 border-0 p-0 disabled:opacity-50"
+    >
+      <div>
+        <ContactDetailsItem
+          compact
+          :title="$t('CONVERSATION_SIDEBAR.ASSIGNEE_LABEL')"
+        >
+          <template #button>
+            <NextButton
+              v-if="showSelfAssign"
+              link
+              xs
+              icon="i-lucide-arrow-right"
+              class="!gap-1"
+              :label="$t('CONVERSATION_SIDEBAR.SELF_ASSIGN')"
+              @click="onSelfAssign"
+            />
+          </template>
+        </ContactDetailsItem>
+        <MultiselectDropdown
+          :options="agentsList"
+          :selected-item="assignedAgent"
+          :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.AGENT')"
+          :multiselector-placeholder="
+            $t('AGENT_MGMT.MULTI_SELECTOR.PLACEHOLDER')
+          "
+          :no-search-result="
+            $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS.AGENT')
+          "
+          :input-placeholder="
+            $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.AGENT')
+          "
+          @select="onClickAssignAgent"
+        />
+      </div>
+      <div>
+        <ContactDetailsItem
+          compact
+          :title="$t('CONVERSATION_SIDEBAR.TEAM_LABEL')"
+        />
+        <MultiselectDropdown
+          :options="teamsList"
+          :selected-item="assignedTeam"
+          show-emoji-icon
+          :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.TEAM')"
+          :multiselector-placeholder="
+            $t('AGENT_MGMT.MULTI_SELECTOR.PLACEHOLDER')
+          "
+          :no-search-result="
+            $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS.TEAM')
+          "
+          :input-placeholder="
+            $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.TEAM')
+          "
+          @select="onClickAssignTeam"
+        />
+      </div>
+    </fieldset>
     <div>
       <ContactDetailsItem compact :title="$t('CONVERSATION.PRIORITY.TITLE')" />
       <MultiselectDropdown

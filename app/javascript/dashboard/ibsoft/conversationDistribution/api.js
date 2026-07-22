@@ -76,6 +76,16 @@ class ConversationDistributionAPI extends ApiClient {
     });
   }
 
+  manuallyAssignConversation(conversationId, assignmentType, targetId) {
+    return axios.post(
+      `${this.url}/conversations/${conversationId}/manual_assignment`,
+      {
+        assignment_type: assignmentType,
+        target_id: targetId,
+      }
+    );
+  }
+
   returnConversationToQueue(conversationId, teamId) {
     return axios.post(
       `${this.url}/conversations/${conversationId}/return_to_queue`,

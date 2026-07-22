@@ -8,6 +8,7 @@ describe('#settingsSections', () => {
       'account',
       'erp',
       'channels',
+      'message_signature',
       'teams',
       'agent_bots',
       'integrations',
@@ -28,6 +29,7 @@ describe('#settingsSections', () => {
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.ACCOUNT',
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.ERP',
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.CHANNELS',
+      'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.MESSAGE_SIGNATURE',
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.TEAMS',
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.AGENT_BOTS',
       'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.INTEGRATIONS',
@@ -42,6 +44,10 @@ describe('#settingsSections', () => {
     expect(findSettingsSection('teams')).toMatchObject({
       id: 'teams',
       labelKey: 'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.TEAMS',
+    });
+    expect(findSettingsSection('message_signature')).toMatchObject({
+      id: 'message_signature',
+      icon: 'i-lucide-signature',
     });
     expect(findSettingsSection('erp')).toMatchObject({
       id: 'erp',

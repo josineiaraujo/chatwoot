@@ -90,12 +90,12 @@ describe('#getters', () => {
   });
 
   describe('#getMessageSignature', () => {
-    it('Return signature when signature is present', () => {
+    it('suppresses the native footer signature when it is present', () => {
       expect(
         getters.getMessageSignature({
           currentUser: { message_signature: 'Thanks' },
         })
-      ).toEqual('Thanks');
+      ).toEqual('');
     });
     it('Return empty string when signature is not present', () => {
       expect(getters.getMessageSignature({ currentUser: {} })).toEqual('');

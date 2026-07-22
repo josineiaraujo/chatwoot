@@ -353,16 +353,59 @@ describe('#actions', () => {
   describe('#assignAgent', () => {
     it('sends correct mutations if assignment is successful', async () => {
       axios.post.mockResolvedValue({
-        data: { id: 1, name: 'User' },
+        data: {
+          assignee: { id: 1, name: 'User' },
+          team: { id: 2, name: 'Support' },
+          status: 'open',
+          snoozed_until: null,
+        },
       });
       await actions.assignAgent(
-        { dispatch },
+        { commit, state: { allConversations: [{ id: 1, meta: {} }] } },
         { conversationId: 1, agentId: 1 }
       );
-      expect(dispatch).toHaveBeenCalledWith('setCurrentChatAssignee', {
+      expect(commit).toHaveBeenCalledWith(types.ASSIGN_AGENT, {
         conversationId: 1,
         assignee: { id: 1, name: 'User' },
       });
+      expect(commit).toHaveBeenCalledWith(types.ASSIGN_TEAM, {
+        conversationId: 1,
+        team: { id: 2, name: 'Support' },
+      });
+      expect(commit).toHaveBeenCalledWith(types.CHANGE_CONVERSATION_STATUS, {
+        conversationId: 1,
+        status: 'open',
+        snoozedUntil: null,
+      });
+    });
+
+    it('propagates assignment errors', async () => {
+      axios.post.mockRejectedValue(new Error('manual_assignment_resolved'));
+
+      await expect(
+        actions.assignAgent(
+          { commit, state: { allConversations: [{ id: 1, meta: {} }] } },
+          { conversationId: 1, agentId: 1 }
+        )
+      ).rejects.toThrow('manual_assignment_resolved');
+    });
+
+    it('does not mutate a conversation that left the list while the API request was running', async () => {
+      axios.post.mockResolvedValue({
+        data: {
+          assignee: { id: 1, name: 'User' },
+          team: null,
+          status: 'open',
+          snoozed_until: null,
+        },
+      });
+
+      await actions.assignAgent(
+        { commit, state: { allConversations: [] } },
+        { conversationId: 1, agentId: 1 }
+      );
+
+      expect(commit).not.toHaveBeenCalled();
     });
   });
 
@@ -406,11 +449,30 @@ describe('#actions', () => {
   describe('#assignTeam', () => {
     it('sends correct mutations if assignment is successful', async () => {
       axios.post.mockResolvedValue({
-        data: { id: 1, name: 'Team' },
+        data: {
+          assignee: null,
+          team: { id: 1, name: 'Team' },
+          status: 'open',
+          snoozed_until: null,
+        },
       });
-      await actions.assignTeam({ commit }, { conversationId: 1, teamId: 1 });
-      expect(commit).toHaveBeenCalledTimes(0);
-      expect(commit.mock.calls).toEqual([]);
+      await actions.assignTeam(
+        { commit, state: { allConversations: [{ id: 1, meta: {} }] } },
+        { conversationId: 1, teamId: 1 }
+      );
+      expect(commit).toHaveBeenCalledWith(types.ASSIGN_AGENT, {
+        conversationId: 1,
+        assignee: null,
+      });
+      expect(commit).toHaveBeenCalledWith(types.ASSIGN_TEAM, {
+        conversationId: 1,
+        team: { id: 1, name: 'Team' },
+      });
+      expect(commit).toHaveBeenCalledWith(types.CHANGE_CONVERSATION_STATUS, {
+        conversationId: 1,
+        status: 'open',
+        snoozedUntil: null,
+      });
     });
   });
 

@@ -4,6 +4,7 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
     agent_claim_completed: 'ibsoft.conversation_distribution.activity.agent_claim_completed',
     automation_handoff_completed: 'ibsoft.conversation_distribution.activity.automation_handoff_completed',
     queue_returned: 'ibsoft.conversation_distribution.activity.queue_returned',
+    queue_transferred: 'ibsoft.conversation_distribution.activity.queue_transferred',
     redistribution_completed: 'ibsoft.conversation_distribution.activity.redistribution_completed'
   }.freeze
 

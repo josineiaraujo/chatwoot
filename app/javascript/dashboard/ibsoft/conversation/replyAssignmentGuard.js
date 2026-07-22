@@ -1,5 +1,7 @@
 import wootConstants from 'dashboard/constants/globals';
 
+const AGENT_BOT_ASSIGNEE_TYPE = 'AgentBot';
+
 const EMPTY_GUARD_STATE = Object.freeze({
   isBlocked: false,
   needsAssignment: false,
@@ -16,9 +18,14 @@ export const getReplyAssignmentGuardState = ({
   }
 
   const assigneeId = conversation.meta?.assignee?.id;
-  const needsAssignment = assigneeId !== currentUserId;
+  const isAssignedToBot =
+    conversation.meta?.assignee_type === AGENT_BOT_ASSIGNEE_TYPE;
   const needsHandoff =
     conversation.status === wootConstants.STATUS_TYPE.PENDING;
+  const needsAssignment =
+    !assigneeId ||
+    isAssignedToBot ||
+    (needsHandoff && assigneeId !== currentUserId);
 
   return {
     isBlocked: needsAssignment || needsHandoff,

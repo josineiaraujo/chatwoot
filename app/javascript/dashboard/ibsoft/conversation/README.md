@@ -20,7 +20,9 @@ operacao Ibsoft:
 - apresenta a acao `resolved` como `Encerrar atendimento` nos pontos
   operacionais do atendimento.
 - impede resposta publica antes de o agente assumir uma conversa sem
-  responsavel, atribuida a outro agente ou ainda mantida em automacao;
+  responsavel ou ainda mantida em automacao;
+- permite que outros agentes colaborem em conversas abertas atribuidas a um
+  agente humano sem substituir o responsavel atual;
 - permite notas privadas sem assumir a conversa e preserva o rascunho enquanto
   a atribuicao ou a retomada e confirmada.
 
@@ -111,9 +113,10 @@ padrao do Chatwoot.
 
 ## Regra de assumir antes de responder
 
-- Conversa `open` atribuida ao agente atual: resposta liberada normalmente.
-- Conversa `open` sem agente ou atribuida a outra pessoa: exige a acao
-  explicita `Assumir atendimento`.
+- Conversa `open` atribuida a um agente humano: resposta liberada normalmente;
+  o autor da mensagem participa sem substituir o responsavel atual.
+- Conversa `open` atribuida a um bot: exige assumir o atendimento.
+- Conversa `open` sem agente: exige a acao explicita `Assumir atendimento`.
 - Conversa `pending` atribuida ao agente atual: exige apenas marcar como
   aberta.
 - Conversa `pending` sem agente ou atribuida a outra pessoa: atribui primeiro

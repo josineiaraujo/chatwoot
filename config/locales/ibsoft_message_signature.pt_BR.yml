@@ -1,0 +1,6 @@
+pt_BR:
+  ibsoft_message_signature:
+    errors:
+      inbox_ids_invalid: Selecione canais de comunicação válidos.
+      inbox_ids_not_found: Um ou mais canais de comunicação não pertencem a esta conta.
+      inbox_ids_required: Selecione pelo menos um canal de comunicação antes de ativar as assinaturas.

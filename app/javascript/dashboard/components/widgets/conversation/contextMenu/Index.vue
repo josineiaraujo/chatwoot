@@ -3,16 +3,12 @@ import { mapGetters } from 'vuex';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useAlert } from 'dashboard/composables';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
-import {
-  getSortedAgentsByAvailability,
-  getAgentsByUpdatedPresence,
-} from 'dashboard/helper/agentHelper.js';
 import MenuItem from './menuItem.vue';
 import MenuItemWithSubmenu from './menuItemWithSubmenu.vue';
 import wootConstants from 'dashboard/constants/globals';
-import AgentLoadingPlaceholder from './agentLoadingPlaceholder.vue';
 import { visibleManualConversationStatusOptions } from 'dashboard/ibsoft/conversation/statusPresentation';
-import QueueReturnContextMenuAction from 'dashboard/ibsoft/conversationDistribution/components/QueueReturnContextMenuAction.vue';
+import TransferConversationContextMenuAction from 'dashboard/ibsoft/conversationDistribution/components/TransferConversationContextMenuAction.vue';
+import { isManualAssignmentAllowed } from 'dashboard/ibsoft/conversationDistribution/manualAssignmentAvailability';
 
 const MENU = {
   MARK_AS_READ: 'mark-as-read',
@@ -33,8 +29,7 @@ export default {
   components: {
     MenuItem,
     MenuItemWithSubmenu,
-    AgentLoadingPlaceholder,
-    QueueReturnContextMenuAction,
+    TransferConversationContextMenuAction,
   },
   props: {
     chatId: {
@@ -45,13 +40,17 @@ export default {
       type: String,
       default: '',
     },
+    assignee: {
+      type: Object,
+      default: null,
+    },
+    assigneeType: {
+      type: String,
+      default: null,
+    },
     hasUnreadMessages: {
       type: Boolean,
       default: false,
-    },
-    inboxId: {
-      type: Number,
-      default: null,
     },
     priority: {
       type: String,
@@ -75,12 +74,11 @@ export default {
     'assignPriority',
     'markAsUnread',
     'markAsRead',
-    'assignAgent',
-    'assignTeam',
+    'transferToAgent',
+    'transferToQueue',
     'assignLabel',
     'removeLabel',
     'deleteConversation',
-    'returnToQueue',
     'close',
   ],
   setup() {
@@ -155,16 +153,6 @@ export default {
         icon: 'tag',
         label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.ASSIGN_LABEL'),
       },
-      agentMenuConfig: {
-        key: MENU.AGENT,
-        icon: 'person-add',
-        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.ASSIGN_AGENT'),
-      },
-      teamMenuConfig: {
-        key: MENU.TEAM,
-        icon: 'people-team-add',
-        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.ASSIGN_TEAM'),
-      },
       deleteOption: {
         key: MENU.DELETE,
         icon: 'delete',
@@ -185,45 +173,28 @@ export default {
   computed: {
     ...mapGetters({
       labels: 'labels/getLabels',
-      teams: 'teams/getTeams',
-      assignableAgentsUiFlags: 'inboxAssignableAgents/getUIFlags',
       currentUser: 'getCurrentUser',
-      currentAccountId: 'getCurrentAccountId',
     }),
-    filteredAgentOnAvailability() {
-      const agents = this.$store.getters[
-        'inboxAssignableAgents/getAssignableAgents'
-      ](this.inboxId);
-      const agentsByUpdatedPresence = getAgentsByUpdatedPresence(
-        agents,
-        this.currentUser,
-        this.currentAccountId
-      );
-      const filteredAgents = getSortedAgentsByAvailability(
-        agentsByUpdatedPresence
-      );
-      return filteredAgents;
-    },
-    assignableAgents() {
-      return [
-        {
-          confirmed: true,
-          name: 'None',
-          id: null,
-          role: 'agent',
-          account_id: 0,
-          email: 'None',
-        },
-        ...this.filteredAgentOnAvailability,
-      ];
-    },
     showSnooze() {
       // Don't show snooze if the conversation is already snoozed/resolved/pending
       return this.status === wootConstants.STATUS_TYPE.OPEN;
     },
-  },
-  mounted() {
-    this.$store.dispatch('inboxAssignableAgents/fetch', [this.inboxId]);
+    isManualAssignmentDisabled() {
+      return !isManualAssignmentAllowed(
+        {
+          id: this.chatId,
+          status: this.status,
+          meta: {
+            assignee: this.assignee,
+            assignee_type: this.assigneeType,
+          },
+        },
+        {
+          isAdmin: this.isAdmin,
+          currentUserId: this.currentUser?.id,
+        }
+      );
+    },
   },
   methods: {
     isAllowed(keys) {
@@ -364,38 +335,11 @@ export default {
           "
         />
       </MenuItemWithSubmenu>
-      <MenuItemWithSubmenu
-        v-if="isAllowed([MENU.AGENT])"
-        :option="agentMenuConfig"
-        :sub-menu-available="!!assignableAgents.length"
-      >
-        <AgentLoadingPlaceholder v-if="assignableAgentsUiFlags.isFetching" />
-        <template v-else>
-          <MenuItem
-            v-for="agent in assignableAgents"
-            :key="agent.id"
-            :option="generateMenuLabelConfig(agent, 'agent')"
-            variant="agent"
-            @click.stop="$emit('assignAgent', agent)"
-          />
-        </template>
-      </MenuItemWithSubmenu>
-      <MenuItemWithSubmenu
-        v-if="isAllowed([MENU.TEAM])"
-        :option="teamMenuConfig"
-        :sub-menu-available="!!teams.length"
-      >
-        <MenuItem
-          v-for="team in teams"
-          :key="team.id"
-          :option="generateMenuLabelConfig(team, 'team')"
-          @click.stop="$emit('assignTeam', team)"
-        />
-      </MenuItemWithSubmenu>
-      <QueueReturnContextMenuAction
-        v-if="isAllowed([MENU.RETURN_TO_QUEUE])"
-        :chat-id="chatId"
-        @open="$emit('returnToQueue')"
+      <TransferConversationContextMenuAction
+        v-if="isAllowed([MENU.AGENT, MENU.TEAM, MENU.RETURN_TO_QUEUE])"
+        :disabled="isManualAssignmentDisabled"
+        @agent="$emit('transferToAgent')"
+        @queue="$emit('transferToQueue')"
       />
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>

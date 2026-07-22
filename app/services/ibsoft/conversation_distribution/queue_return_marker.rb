@@ -15,6 +15,11 @@ class Ibsoft::ConversationDistribution::QueueReturnMarker
     ) == REASON
   end
 
+  def self.waiting_in?(conversation, team)
+    conversation.open? && conversation.team_id == team.id && conversation.assignee_id.blank? &&
+      conversation.assignee_agent_bot_id.blank?
+  end
+
   def self.consume(attributes)
     attributes.deep_dup.except(Ibsoft::ConversationDistribution::SourceMarker::REASON_KEY)
   end

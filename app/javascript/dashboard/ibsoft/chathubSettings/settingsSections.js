@@ -22,6 +22,14 @@ export const settingsSections = Object.freeze([
     loader: () => import('./components/ChannelCardsPanel.vue'),
   },
   {
+    id: 'message_signature',
+    icon: 'i-lucide-signature',
+    labelKey: 'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.MESSAGE_SIGNATURE',
+    label: t => t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.MESSAGE_SIGNATURE'),
+    loader: () =>
+      import('dashboard/ibsoft/messageSignature/components/SettingsPanel.vue'),
+  },
+  {
     id: 'teams',
     icon: 'i-lucide-users-round',
     labelKey: 'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.TEAMS',

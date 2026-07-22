@@ -1,0 +1,6 @@
+en:
+  ibsoft_message_signature:
+    errors:
+      inbox_ids_invalid: Select valid communication channels.
+      inbox_ids_not_found: One or more communication channels do not belong to this account.
+      inbox_ids_required: Select at least one communication channel before enabling signatures.

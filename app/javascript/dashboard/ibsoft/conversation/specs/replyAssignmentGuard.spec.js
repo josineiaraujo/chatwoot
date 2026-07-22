@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { getReplyAssignmentGuardState } from '../replyAssignmentGuard';
 
-const conversation = ({ status = 'open', assignee } = {}) => ({
+const conversation = ({
+  status = 'open',
+  assignee,
+  assigneeType = assignee ? 'User' : undefined,
+} = {}) => ({
   id: 42,
   status,
-  meta: { assignee },
+  meta: { assignee, assignee_type: assigneeType },
 });
 
 describe('getReplyAssignmentGuardState', () => {
@@ -35,10 +39,26 @@ describe('getReplyAssignmentGuardState', () => {
     });
   });
 
-  it('requires explicit assignment when another agent owns the conversation', () => {
+  it('allows collaboration without changing the owner of an open conversation', () => {
     expect(
       getReplyAssignmentGuardState({
         conversation: conversation({ assignee: { id: 9 } }),
+        currentUserId: 7,
+      })
+    ).toEqual({
+      isBlocked: false,
+      needsAssignment: false,
+      needsHandoff: false,
+    });
+  });
+
+  it('requires assignment when an agent bot owns an open conversation', () => {
+    expect(
+      getReplyAssignmentGuardState({
+        conversation: conversation({
+          assignee: { id: 9 },
+          assigneeType: 'AgentBot',
+        }),
         currentUserId: 7,
       })
     ).toEqual({
@@ -68,6 +88,22 @@ describe('getReplyAssignmentGuardState', () => {
     expect(
       getReplyAssignmentGuardState({
         conversation: conversation({ status: 'pending' }),
+        currentUserId: 7,
+      })
+    ).toEqual({
+      isBlocked: true,
+      needsAssignment: true,
+      needsHandoff: true,
+    });
+  });
+
+  it('requires assignment and handoff when another agent owns a pending conversation', () => {
+    expect(
+      getReplyAssignmentGuardState({
+        conversation: conversation({
+          status: 'pending',
+          assignee: { id: 9 },
+        }),
         currentUserId: 7,
       })
     ).toEqual({

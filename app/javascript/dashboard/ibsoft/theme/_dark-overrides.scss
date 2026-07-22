@@ -239,6 +239,12 @@ body.dark #app .ibsoft-inbox-empty-state::before {
   display: none !important;
 }
 
+/* The private account-level signature module replaces Chatwoot's footer signature. */
+#app section:has(#message-signature-input),
+#app button:has(.i-ph-signature) {
+  display: none !important;
+}
+
 body.dark #app .ibsoft-conversation-empty-state > span,
 body.dark #app .ibsoft-select-conversation-empty-state > span,
 body.dark #app .ibsoft-internal-chat-empty-state > span,

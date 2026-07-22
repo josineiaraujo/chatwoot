@@ -6,6 +6,7 @@ en:
         agent_claim_completed: 'Conversation claimed by %{assignee_name} from the distribution queue.'
         automation_handoff_completed: 'Conversation automatically forwarded from automation to %{target_team_name} because it was inactive.'
         queue_returned: 'Conversation returned by %{assignee_name} to the %{target_team_name} team queue.'
+        queue_transferred: 'Conversation transferred by %{assignee_name} to the %{target_team_name} team queue.'
         redistribution_completed: 'Conversation automatically redistributed from %{previous_assignee_name} to %{assignee_name} by automatic redistribution after exceeding the waiting time.'
         unknown_assignee: 'Not informed'
         unknown_team: 'unknown department'

@@ -4,6 +4,7 @@ import authAPI from '../../api/auth';
 import { setUser, clearCookiesOnLogout } from '../utils/api';
 import SessionStorage from 'shared/helpers/sessionStorage';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
+import { resolveNativeMessageSignature } from 'dashboard/ibsoft/messageSignature/nativeSignature';
 
 const initialState = {
   currentUser: {
@@ -82,7 +83,7 @@ export const getters = {
   getMessageSignature($state) {
     const { message_signature: messageSignature } = $state.currentUser;
 
-    return messageSignature || '';
+    return resolveNativeMessageSignature(messageSignature);
   },
 
   getCurrentAccount($state, $getters) {

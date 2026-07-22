@@ -39,7 +39,10 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/source_marker.rb`
 - `app/services/ibsoft/conversation_distribution/queue_return_marker.rb`
 - `app/services/ibsoft/conversation_distribution/queue_return_service.rb`
+- `app/services/ibsoft/conversation_distribution/manual_assignment_service.rb`
 - `app/services/ibsoft/conversation_distribution/team_transfer_preparer.rb`
+- `app/services/ibsoft/conversation_distribution/manual_transfer_permission.rb`
+- `app/services/ibsoft/conversation_distribution/scoped_watchdog_enqueuer.rb`
 - `app/services/ibsoft/conversation_distribution/candidate_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/dry_run_preview.rb`
 - `app/services/ibsoft/conversation_distribution/execution_config.rb`
@@ -77,11 +80,14 @@ Backend isolado:
 Frontend isolado:
 
 - `app/javascript/dashboard/ibsoft/conversationDistribution/api.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/manualAssignmentAvailability.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/manualAssignmentStateSync.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/policyDefaults.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/TeamDistributionSettingsModal.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/AgentAssignmentPrompt.vue`
-- `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnContextMenuAction.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/components/TransferConversationContextMenuAction.vue`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/components/TransferToAgentDialog.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/QueueReturnDialog.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/PolicyBusinessHourDay.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`
@@ -368,7 +374,7 @@ por exemplo:
 Origem da conversa:
 
 - `bot_handoff`: detectada por `reporting_events.name =
-  conversation_bot_handoff`;
+conversation_bot_handoff`;
 - `manual_team_transfer`: marcada quando um usuario transfere a conversa para
   um time;
 - `system_team_transfer`: marcada quando uma automacao ou `AgentBot` transfere
@@ -379,27 +385,90 @@ desconhecida e nao sao distribuidas automaticamente. Essa decisao evita que uma
 conversa apenas aberta, sem agente e com time seja tratada como transferencia
 humana por inferencia ampla.
 
-Quando um usuario transfere uma conversa para outro time pela API/UI, o
+Quando um usuario transfere uma conversa para um departamento pela UI, o
+dashboard usa o endpoint privado
+`POST /conversations/:conversation_id/manual_assignment`. O
+`ManualAssignmentService` bloqueia conversas encerradas, abre conversas
+pendentes ou adiadas e devolve ao frontend o estado final da conversa. A
+operacao e protegida por lock no registro e valida agentes e departamentos no
+escopo da conta. Identificadores malformados sao rejeitados sem serem
+interpretados como desatribuicao. Agentes de destino precisam estar entre os
+agentes atribuiveis do canal, preservando a regra da API nativa; administradores
+da conta continuam atribuiveis conforme o comportamento do Chatwoot.
+
+Na atribuicao direta a um agente, o responsavel escolhido e aplicado sem
+colocar a conversa na distribuicao automatica. Notificacoes de atencao e a
+participacao obsoleta do agente anterior sao removidas quando o responsavel
+muda. A mesma limpeza ocorre quando a transferencia para departamento remove o
+agente atual. Na atribuicao a departamento, o
 `TeamTransferPreparer` remove o agente atual antes da troca somente quando:
 
 - a politica efetiva do time/canal esta habilitada e aceita
   `manual_team_transfer`;
 - o job e a atribuicao real Ibsoft estao habilitados;
 - a autoatribuicao nativa do time esta desabilitada;
-- o time de destino e diferente do time atual.
+- o departamento de destino e diferente do atual; ou
+- a conversa esta no mesmo departamento, mas sem agente humano responsavel.
 
-Assim a conversa entra na fila sem agente e pode ser distribuida na rodada
-seguinte. Fora dessas condicoes, o comportamento nativo do Chatwoot e
-preservado para evitar conversas paradas durante configuracao ou modo seguro.
+Quando preparada para distribuicao, a conversa e gravada como aberta, preserva
+`waiting_since` existente, remove agente humano e bot, e agenda uma rodada do
+`WatchdogJob` limitada a conta, canal e departamento afetados. Se
+`waiting_since` ainda estiver vazio, ele e inicializado no momento da
+transferencia. Isso evita aguardar o cron global para distribuir a conversa.
+Se o enqueue imediato falhar por indisponibilidade transitoria do Sidekiq ou do
+Redis, a transferencia confirmada no banco continua sendo respondida como
+sucesso, a falha e registrada no log e o watchdog periodico pode recuperar a
+conversa marcada quando a infraestrutura voltar.
 
-### Devolucao explicita a fila
+Selecionar novamente o mesmo departamento preserva o agente humano atual. Se a
+conversa estiver sem agente ou com bot, a mesma selecao pode encaminha-la para a
+fila privada. Fora das condicoes da politica, o `ManualAssignmentService` ainda
+abre e transfere a conversa, mas preserva o responsavel e nao agenda a
+distribuicao, evitando efeitos automaticos em modo seguro. Transferencias reais
+continuam registrando a origem mesmo em modo seguro, para preservar o contrato
+com automacoes, bots e consumidores da API nativa.
 
-O agente atualmente responsavel pode clicar com o botao direito sobre a
-conversa e usar a acao `Devolver a fila`. O modal permite manter o departamento
-atual ou selecionar outro.
-A operacao:
+Conversas `resolved` mantem os seletores visiveis, mas desabilitados, na barra
+lateral e no menu contextual. O backend privado repete essa validacao sob lock
+e responde `manual_assignment_resolved`, de modo que uma chamada direta nao
+contorne a protecao visual. Acoes em massa, macros, automacoes e consumidores da
+API nativa continuam no fluxo original do Chatwoot; esta integracao privada se
+aplica as atribuicoes individuais do dashboard.
 
-- exige conversa aberta e atribuida ao proprio usuario solicitante;
+Quando ja existe agente humano responsavel, os controles individuais de
+transferencia ficam disponiveis somente para o proprio responsavel ou para um
+administrador da conta. Outros agentes veem os controles desabilitados e o
+backend repete a verificacao sob lock por meio de
+`ManualTransferPermission`. Conversas sem responsavel humano, inclusive as que
+estao com bot, continuam transferiveis por agentes com acesso a conversa. O
+frontend considera o formato nativo `meta.assignee_type=AgentBot`, e o backend
+continua sendo a autoridade final sob lock.
+
+### Transferencia manual pelo menu de contexto
+
+O menu de contexto da conversa apresenta uma unica acao
+`Transferir atendimento`, com duas opcoes:
+
+- `Para um agente`: abre um modal com os agentes disponiveis no canal e aplica
+  o responsavel escolhido sem colocar a conversa na distribuicao automatica;
+- `Para a fila de um departamento`: abre um modal com os departamentos da
+  conta, remove o responsavel atual e entrega a conversa para a fila privada do
+  departamento escolhido.
+
+No backend, a validacao do agente consulta somente o `AccountUser` solicitado
+e verifica a associacao ao canal com `EXISTS`. Administradores da conta mantem
+o comportamento nativo de poder receber a conversa sem associacao explicita ao
+canal. A transferencia nao materializa a lista completa de agentes e, por isso,
+seu custo nao cresce linearmente com o total de usuarios da conta.
+O departamento atual nao limita a atribuicao direta: um agente atribuivel ao
+canal pode receber a conversa mesmo pertencendo a outro departamento. Nesse
+caso, o departamento da conversa e preservado; sua troca exige a opcao
+especifica de transferencia para fila.
+
+A transferencia para fila:
+
+- aceita conversas abertas, pendentes ou adiadas e as deixa abertas;
+- rejeita conversas encerradas no frontend e novamente no backend;
 - exige distribuicao e atribuicao real habilitadas;
 - exige politica efetiva ativa que aceite `manual_team_transfer`;
 - exige autoatribuicao nativa desabilitada no departamento de destino;
@@ -410,11 +479,28 @@ A operacao:
 - registra `queue_returned/agent_returned_to_queue` na auditoria;
 - cria mensagem interna de atividade informando agente e departamento.
 
-A auto-desatribuicao pelo seletor nativo usa o mesmo service quando todas essas
-condicoes sao atendidas. Se a distribuicao privada estiver indisponivel, o
-fluxo nativo de desatribuicao continua funcionando sem marcar a conversa como
-candidata. Selecionar novamente o mesmo departamento no seletor de times nao
-desatribui o agente.
+Depois da gravacao, o endpoint agenda imediatamente uma rodada do
+`WatchdogJob` limitada a conta, canal e departamento. Isso vale inclusive para
+o departamento atual e evita esperar o cron global para redistribuir a
+conversa.
+
+Se a conversa ja estiver aberta, sem agente humano ou bot e aguardando na fila
+do departamento selecionado, a operacao e recusada como idempotente. O modal
+desabilita a confirmacao para esse departamento e o backend preserva
+`waiting_since`, auditoria e jobs; ainda e possivel escolher outro departamento.
+
+Ao confirmar um modal, conversa e destino sao capturados antes da chamada. Uma
+mudanca de selecao, reciclagem da linha virtual ou duplo clique durante a
+requisicao nao altera o alvo em andamento. A sincronizacao do store usa a
+resposta final da API e e ignorada com seguranca se a conversa ja tiver saido
+da lista, evitando transformar uma operacao concluida no backend em falso erro
+visual.
+
+A auto-desatribuicao pelo seletor lateral continua usando o mesmo service em
+modo restrito: exige conversa aberta e atribuida ao proprio usuario. Se a
+distribuicao privada estiver indisponivel, o fluxo nativo de desatribuicao
+continua funcionando sem marcar a conversa como candidata. Selecionar
+novamente o mesmo departamento no seletor de times nao desatribui o agente.
 
 O marcador `agent_returned_to_queue` e temporario. O
 `AssignmentExecutor` o remove atomicamente quando atribui a conversa novamente,
@@ -856,26 +942,42 @@ Neste incremento inicial, os pontos de acoplamento sao:
   preparacao da fila quando uma conversa e transferida para um time via API/UI,
   e ao `QueueReturnService` a auto-desatribuicao do agente quando a distribuicao
   privada estiver disponivel.
+- `app/javascript/dashboard/store/modules/conversations/actions.js`: os pontos
+  individuais `assignAgent` e `assignTeam` delegam ao endpoint privado e
+  sincronizam agente, departamento, status e adiamento com o estado confirmado
+  pelo backend por meio de `manualAssignmentStateSync.js`. Nao existe
+  atualizacao otimista para estas operacoes, e o helper nao escreve em linhas
+  que ja sairam do store.
+- `app/javascript/dashboard/routes/dashboard/conversation/ConversationAction.vue`:
+  mantem os seletores nativos e apenas os conecta ao fluxo privado, deixando-os
+  desabilitados quando a conversa esta encerrada.
 - `app/javascript/dashboard/components/widgets/conversation/contextMenu/Index.vue`:
-  registra o componente privado `QueueReturnContextMenuAction` no menu aberto
-  pelo botao direito sobre a conversa. O componente privado controla a
-  visibilidade e emite a solicitacao de abertura.
+  substitui os submenus individuais de agente e departamento por um unico
+  ponto de conexao com `TransferConversationContextMenuAction`; o submenu fica
+  visivel, mas desabilitado em conversas encerradas.
+- `app/javascript/dashboard/composables/chatlist/useBulkActions.js`: somente a
+  atribuicao individual originada pelo menu contextual delega ao fluxo privado;
+  a operacao realmente em massa permanece na API nativa.
+- `app/javascript/dashboard/composables/commands/useConversationHotKeys.js`:
+  impede que atalhos executem atribuicao individual em conversa encerrada.
 - `app/javascript/dashboard/components/ConversationItem.vue`: hospeda o
-  `QueueReturnDialog` privado fora do menu de contexto. Esse ponto e necessario
-  porque o menu nativo e desmontado ao perder o foco; manter o dialog como
-  filho do menu faria o modal ser destruido ao abrir. API, regra e sincronizacao
-  do store continuam no componente privado.
+  `TransferToAgentDialog` e o `QueueReturnDialog` privados fora do menu de
+  contexto. Esse ponto e necessario porque o menu nativo e desmontado ao perder
+  o foco; manter os dialogs como filhos do menu faria os modais serem destruidos
+  ao abrir. API, regra e sincronizacao do store continuam nos componentes
+  privados.
 - `app/services/action_service.rb`: ponto pequeno para marcar origem Ibsoft
   quando uma automacao, macro ou acao de sistema atribui a conversa a um time.
 
 Nenhum callback de conversa, status de agente ou Assignment V2 foi alterado
 nesta fase. O unico acoplamento em ActionCable e a chamada frontend ao helper
 Ibsoft de som de atribuicao no evento `assignee.changed`; toda regra continua
-isolada em `assignmentAudioNotifications.js`. A unica escrita nova em conversa
-e o marcador `additional_attributes.ibsoft_distribution_source` durante
-atribuicao a time, sem executar distribuicao. A atribuicao real so acontece pelo
-endpoint administrativo `POST /executions` quando a flag global de seguranca
-estiver explicitamente ligada.
+isolada em `assignmentAudioNotifications.js`. A escrita privada na conversa e
+limitada ao estado final da atribuicao, abertura, `waiting_since` quando ausente
+e marcadores em `additional_attributes`. A atribuicao automatica pode ser
+iniciada pelo endpoint administrativo `POST /executions`, pelo watchdog ou por
+uma rodada escopada apos transferencia manual; todos dependem das flags globais
+de job e atribuicao real.
 
 ## Proximas fases planejadas
 
@@ -884,13 +986,17 @@ estiver explicitamente ligada.
 
 ## Validacao recomendada
 
-- `bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
-- `bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
+- `RAILS_ENV=test bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
+- `RAILS_ENV=test bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
 - `bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
-- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnContextMenuAction.spec.js`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferConversationContextMenuAction.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferToAgentDialog.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnDialog.spec.js`
-- validar devolucao a fila no mesmo departamento e em outro departamento;
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentAvailability.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentControls.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentStateSync.spec.js app/javascript/dashboard/store/modules/specs/conversations/actions.spec.js`
+- validar atribuicao individual de agente e departamento em conversas abertas,
+  pendentes, adiadas e encerradas;
+- validar transferencia para agente e para a fila do mesmo ou de outro
+  departamento;
 - validar que a conversa respondida preserva `first_reply_created_at` e volta a
   ser distribuida;
 - validar build/lint dos arquivos em
