@@ -62,20 +62,37 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
   end
 
   def assign_candidate(conversation, candidate, decision)
-    assignee = find_assignee(conversation, candidate)
-    if assignee.blank?
+    assignment_attempt = claim_available_agent(conversation, candidate)
+    if assignment_attempt[:status] == :no_available_agent
       unavailable_decision = decision_for(conversation, candidate).unavailable_decision('no_available_agent')
       unavailable_decision = decision_with_optional_action(conversation, candidate, unavailable_decision)
       return skipped_result(conversation, candidate, 'no_available_agent', decision: unavailable_decision)
     end
 
-    assignment = claim_and_assign(conversation, assignee)
-    return skipped_result(conversation, candidate, 'candidate_already_claimed', decision: decision) if assignment.blank?
+    return skipped_result(conversation, candidate, 'candidate_already_claimed', decision: decision) unless assignment_attempt[:status] == :claimed
+
+    assignment = assignment_attempt[:assignment]
+    assignee = assignment_attempt[:assignee]
 
     notifications = post_assignment_actions(assignment, candidate, assignee)
     log_assignment_completed(assignment, candidate, assignee, decision, notifications)
 
     result_payload(candidate, 'assigned', 'assigned_to_agent', assignee, decision)
+  end
+
+  def claim_available_agent(conversation, candidate)
+    excluded_agent_ids = []
+    policy = Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_candidate(candidate)
+
+    loop do
+      assignee = find_assignee(conversation, candidate, excluding_agent_ids: excluded_agent_ids)
+      return { status: :no_available_agent } if assignee.blank?
+
+      claim = claim_and_assign(conversation, assignee, policy)
+      return claim.merge(assignee: assignee) unless claim[:status] == :capacity_reached
+
+      excluded_agent_ids << assignee.id
+    end
   end
 
   def post_assignment_actions(assignment, candidate, assignee)
@@ -127,8 +144,8 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
     { applied: false, status: 'error', error: e.class.name }
   end
 
-  def find_assignee(conversation, candidate)
-    allowed_agent_ids = allowed_agent_ids_for(conversation)
+  def find_assignee(conversation, candidate, excluding_agent_ids: [])
+    allowed_agent_ids = allowed_agent_ids_for(conversation) - excluding_agent_ids.map(&:to_i)
     return if allowed_agent_ids.blank?
 
     Ibsoft::ConversationDistribution::AssignmentAgentSelector.new(
@@ -148,26 +165,29 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
       .perform
   end
 
-  def claim_and_assign(conversation, assignee)
-    Conversation.transaction do
-      claim_scope = account.conversations
-                           .open
-                           .where(id: conversation.id, assignee_id: nil)
-      claim_scope = Ibsoft::ConversationDistribution::QueueReturnMarker.apply_first_reply_scope(claim_scope)
-      locked_conversation = claim_scope.lock('FOR UPDATE SKIP LOCKED').first
-      next if locked_conversation.blank?
+  def claim_and_assign(conversation, assignee, policy)
+    Ibsoft::ConversationDistribution::AgentCapacityGuard.new(
+      account: account,
+      agent: assignee,
+      policy: policy
+    ).perform { locked_assignment_for(conversation, assignee) }
+  end
 
-      previous_assignee = locked_conversation.assignee
-      locked_conversation.update!(
-        assignee: assignee,
-        additional_attributes: consumed_queue_return_attributes(locked_conversation)
-      )
+  def locked_assignment_for(conversation, assignee)
+    claim_scope = account.conversations
+                         .open
+                         .where(id: conversation.id, assignee_id: nil)
+    claim_scope = Ibsoft::ConversationDistribution::QueueReturnMarker.apply_first_reply_scope(claim_scope)
+    locked_conversation = claim_scope.lock('FOR UPDATE SKIP LOCKED').first
+    return if locked_conversation.blank?
 
-      {
-        conversation: locked_conversation,
-        previous_assignee: previous_assignee
-      }
-    end
+    previous_assignee = locked_conversation.assignee
+    locked_conversation.update!(
+      assignee: assignee,
+      additional_attributes: consumed_queue_return_attributes(locked_conversation)
+    )
+
+    { conversation: locked_conversation, previous_assignee: previous_assignee }
   end
 
   def consumed_queue_return_attributes(conversation)

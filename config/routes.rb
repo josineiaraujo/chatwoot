@@ -40,6 +40,37 @@ Rails.application.routes.draw do
 
   get '/health', to: 'health#show'
   get '/api', to: 'api#index'
+  get '/chathub-sender/sgp/generico',
+      to: 'api/v1/ibsoft/external_messaging/messages#create',
+      defaults: {
+        format: 'json',
+        ibsoft_external_messaging_instance_type: 'sgp_generic'
+      },
+      as: :ibsoft_external_messaging
+  match '/chathub-sender/ixc',
+        to: 'api/v1/ibsoft/external_messaging/messages#create',
+        via: :all,
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_instance_type: 'ixc'
+        },
+        as: :ibsoft_external_messaging_ixc
+  match '/chathub-sender/sgp/pedido',
+        to: 'api/v1/ibsoft/external_messaging/order_updates#create',
+        via: [:get, :post],
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_family: 'sgp'
+        },
+        as: :ibsoft_external_messaging_order_update
+  match '/chathub-sender/ixc/pedido',
+        to: 'api/v1/ibsoft/external_messaging/order_updates#create',
+        via: [:get, :post],
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_family: 'ixc'
+        },
+        as: :ibsoft_external_messaging_ixc_order_update
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
       # ----------------------------------
@@ -345,6 +376,10 @@ Rails.application.routes.draw do
               resource :setting, only: [:show, :update], controller: :settings
             end
 
+            namespace :instagram_inbound do
+              resources :inbox_policies, only: [:show, :update], param: :inbox_id
+            end
+
             namespace :erp do
               resources :connections, only: [:index, :show, :create, :update, :destroy] do
                 post :test_connection, on: :member
@@ -363,6 +398,23 @@ Rails.application.routes.draw do
               get 'lookups/pops', to: 'lookups#pops'
               get 'lookups/transmitters', to: 'lookups#transmitters'
               post 'recipients/preview', to: 'recipients#preview'
+            end
+
+            namespace :external_messaging do
+              resources :endpoints, only: [:index, :create, :update, :destroy] do
+                post :rotate_token, on: :member
+              end
+              resources :deliveries, only: [:index, :show]
+              resources :orders, only: [:index] do
+                post :bulk_update, on: :collection
+              end
+            end
+
+            namespace :meta_templates do
+              resources :inboxes, only: [] do
+                resources :templates, only: [:index, :show, :create, :update, :destroy]
+                resources :media_uploads, only: [:create]
+              end
             end
 
             namespace :access_control do

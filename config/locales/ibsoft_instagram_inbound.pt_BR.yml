@@ -1,0 +1,12 @@
+pt_BR:
+  ibsoft_instagram_inbound:
+    errors:
+      invalid_configuration: "Não foi possível salvar as configurações de interações do Instagram."
+  activerecord:
+    errors:
+      models:
+        ibsoft/instagram_inbound/policy:
+          attributes:
+            inbox:
+              invalid_account: "deve pertencer à mesma conta"
+              not_instagram: "deve estar conectado ao Instagram"

@@ -42,6 +42,7 @@ import SelectInput from 'dashboard/components-next/select/Select.vue';
 import Widget from 'dashboard/modules/widget-preview/components/Widget.vue';
 import AccessToken from 'dashboard/routes/dashboard/settings/profile/AccessToken.vue';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import InstagramInboundSettingsPanel from 'dashboard/ibsoft/instagramInbound/components/SettingsPanel.vue';
 
 export default {
   components: {
@@ -76,6 +77,7 @@ export default {
     AccountHealth,
     Widget,
     AccessToken,
+    InstagramInboundSettingsPanel,
   },
   mixins: [inboxMixin],
   setup() {
@@ -172,6 +174,13 @@ export default {
           name: this.$t('INBOX_MGMT.TABS.COLLABORATORS'),
         },
       ];
+
+      if (this.isInstagramInbox) {
+        visibleToAllChannelTabs.splice(1, 0, {
+          key: 'instagram-interactions',
+          name: this.$t('IBSOFT_INSTAGRAM_INBOUND.TAB'),
+        });
+      }
 
       visibleToAllChannelTabs = [
         ...visibleToAllChannelTabs,
@@ -271,6 +280,9 @@ export default {
     },
     currentInboxId() {
       return this.$route.params.inboxId;
+    },
+    isInstagramInbox() {
+      return Boolean(this.inbox?.instagram_id);
     },
     inbox() {
       return this.$store.getters['inboxes/getInbox'](this.currentInboxId);
@@ -1267,6 +1279,10 @@ export default {
         <div v-if="selectedTabKey === 'collaborators'" class="mx-6 max-w-4xl">
           <CollaboratorsPage :inbox="inbox" />
         </div>
+        <InstagramInboundSettingsPanel
+          v-if="selectedTabKey === 'instagram-interactions'"
+          :inbox-id="currentInboxId"
+        />
         <div
           v-if="selectedTabKey === 'configuration'"
           class="mx-6"

@@ -1,0 +1,31 @@
+{
+  "IBSOFT_INSTAGRAM_INBOUND": {
+    "TAB": "Interações do Instagram",
+    "TITLE": "Criação de conversas por interações",
+    "DESCRIPTION": "Defina quais interações podem iniciar uma nova conversa neste canal.",
+    "ACTIVE_CONVERSATION_NOTICE": "Quando já existir uma conversa em andamento com o contato, a interação será recebida normalmente, independentemente destas opções.",
+    "OPTIONS": {
+      "STORY_INTERACTIONS": {
+        "TITLE": "Respostas e menções em Stories",
+        "DESCRIPTION": "Permitir que respostas ou menções em Stories iniciem uma nova conversa."
+      },
+      "SHARED_REELS_AND_STORIES": {
+        "TITLE": "Compartilhamento de Reels e Stories",
+        "DESCRIPTION": "Permitir que Reels ou Stories compartilhados iniciem uma nova conversa."
+      },
+      "SHARED_POSTS": {
+        "TITLE": "Compartilhamento de publicações",
+        "DESCRIPTION": "Permitir que publicações compartilhadas iniciem uma nova conversa."
+      }
+    },
+    "ACTIONS": {
+      "SAVE": "Salvar configurações",
+      "RETRY": "Tentar novamente"
+    },
+    "SAVED": "Configurações de interações do Instagram salvas.",
+    "ERRORS": {
+      "LOAD": "Não foi possível carregar as configurações de interações do Instagram.",
+      "SAVE": "Não foi possível salvar as configurações de interações do Instagram."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "IBSOFT_INSTAGRAM_INBOUND": {
+    "TAB": "Instagram interactions",
+    "TITLE": "Conversation creation from interactions",
+    "DESCRIPTION": "Choose which interactions can start a new conversation in this channel.",
+    "ACTIVE_CONVERSATION_NOTICE": "When an active conversation already exists for the contact, the interaction is received regardless of these settings.",
+    "OPTIONS": {
+      "STORY_INTERACTIONS": {
+        "TITLE": "Story replies and mentions",
+        "DESCRIPTION": "Allow Story replies or mentions to start a new conversation."
+      },
+      "SHARED_REELS_AND_STORIES": {
+        "TITLE": "Shared Reels and Stories",
+        "DESCRIPTION": "Allow shared Reels or Stories to start a new conversation."
+      },
+      "SHARED_POSTS": {
+        "TITLE": "Shared posts",
+        "DESCRIPTION": "Allow shared posts to start a new conversation."
+      }
+    },
+    "ACTIONS": {
+      "SAVE": "Save settings",
+      "RETRY": "Try again"
+    },
+    "SAVED": "Instagram interaction settings saved.",
+    "ERRORS": {
+      "LOAD": "Instagram interaction settings could not be loaded.",
+      "SAVE": "Instagram interaction settings could not be saved."
+    }
+  }
+}

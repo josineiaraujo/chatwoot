@@ -24,6 +24,9 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import ibsoftInternalChat from './ibsoftInternalChat.json';
+import ibsoftExternalMessaging from './ibsoftExternalMessaging.json';
+import ibsoftInstagramInbound from './ibsoftInstagramInbound.json';
+import ibsoftMetaTemplates from './ibsoftMetaTemplates.json';
 import ibsoftTheme from './ibsoftTheme.json';
 import integrationApps from './integrationApps.json';
 import integrations from './integrations.json';
@@ -73,6 +76,9 @@ const locale = {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
+  ...ibsoftExternalMessaging,
+  ...ibsoftInstagramInbound,
+  ...ibsoftMetaTemplates,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,

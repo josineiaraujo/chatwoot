@@ -54,13 +54,13 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
   end
 
   def redistribute_event(event, policy, decision)
-    conversation = event.conversation
-    assignee = find_assignee(conversation, policy, excluding_agent_id: event.new_assignee_id)
+    redistribution_attempt = claim_available_agent(event, policy)
 
-    return skipped_result(event, policy, 'no_available_agent', decision: decision) if assignee.blank?
+    return skipped_result(event, policy, 'no_available_agent', decision: decision) if redistribution_attempt[:status] == :no_available_agent
+    return skipped_result(event, policy, 'candidate_already_changed', decision: decision) unless redistribution_attempt[:status] == :claimed
 
-    redistribution = claim_and_redistribute(conversation, event, assignee)
-    return skipped_result(event, policy, 'candidate_already_changed', decision: decision) if redistribution.blank?
+    redistribution = redistribution_attempt[:assignment]
+    assignee = redistribution_attempt[:assignee]
 
     track_redistribution_rate(redistribution, assignee, policy)
     cleanup_previous_assignee_participation(redistribution, assignee)
@@ -69,6 +69,22 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
     log_redistribution_completed(event, redistribution.merge(new_assignee: assignee), policy, decision, activity_message)
 
     result_payload(event, policy, status: 'redistributed', reason: REASON_TIMEOUT, assignee: assignee, decision: decision)
+  end
+
+  def claim_available_agent(event, policy)
+    conversation = event.conversation
+    excluded_agent_ids = [event.new_assignee_id]
+    policy_snapshot = Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_policy(policy)
+
+    loop do
+      assignee = find_assignee(conversation, policy_snapshot, excluding_agent_ids: excluded_agent_ids)
+      return { status: :no_available_agent } if assignee.blank?
+
+      claim = claim_and_redistribute(conversation, event, assignee, policy_snapshot)
+      return claim.merge(assignee: assignee) unless claim[:status] == :capacity_reached
+
+      excluded_agent_ids << assignee.id
+    end
   end
 
   def log_redistribution_completed(event, redistribution, policy, decision, activity_message)
@@ -96,15 +112,15 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
     ).perform
   end
 
-  def find_assignee(conversation, policy, excluding_agent_id:)
-    allowed_agent_ids = allowed_agent_ids_for(conversation) - [excluding_agent_id]
+  def find_assignee(conversation, policy, excluding_agent_ids:)
+    allowed_agent_ids = allowed_agent_ids_for(conversation) - excluding_agent_ids.compact.map(&:to_i)
     return if allowed_agent_ids.blank?
 
     Ibsoft::ConversationDistribution::AssignmentAgentSelector.new(
       account: account,
       conversation: conversation,
       allowed_agent_ids: allowed_agent_ids,
-      policy: Ibsoft::ConversationDistribution::AssignmentPolicySnapshot.from_policy(policy)
+      policy: policy
     ).perform
   end
 
@@ -114,8 +130,12 @@ class Ibsoft::ConversationDistribution::RedistributionExecutor
     conversation.inbox.member_ids_with_assignment_capacity & conversation.team.members.ids
   end
 
-  def claim_and_redistribute(conversation, event, assignee)
-    Conversation.transaction do
+  def claim_and_redistribute(conversation, event, assignee, policy)
+    Ibsoft::ConversationDistribution::AgentCapacityGuard.new(
+      account: account,
+      agent: assignee,
+      policy: policy
+    ).perform do
       locked_conversation = account.conversations
                                    .open
                                    .where(id: conversation.id, assignee_id: event.new_assignee_id, first_reply_created_at: nil)

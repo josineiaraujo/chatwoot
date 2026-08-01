@@ -1,5 +1,6 @@
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import ChathubSettingsIndex from './views/Index.vue';
+import { routes as metaTemplateRoutes } from 'dashboard/ibsoft/metaTemplates/routes';
 
 export const IBSOFT_CHATHUB_SETTINGS_PERMISSION =
   'ibsoft_chathub_settings_manage';
@@ -14,4 +15,5 @@ export const routes = [
       hideCopilotLauncher: true,
     },
   },
+  ...metaTemplateRoutes,
 ];

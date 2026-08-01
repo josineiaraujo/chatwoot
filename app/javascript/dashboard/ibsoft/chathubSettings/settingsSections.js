@@ -30,6 +30,13 @@ export const settingsSections = Object.freeze([
       import('dashboard/ibsoft/messageSignature/components/SettingsPanel.vue'),
   },
   {
+    id: 'external_messaging',
+    icon: 'i-lucide-external-link',
+    labelKey: 'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.EXTERNAL_MESSAGING',
+    label: t => t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.EXTERNAL_MESSAGING'),
+    loader: () => import('dashboard/ibsoft/externalMessaging/views/Index.vue'),
+  },
+  {
     id: 'teams',
     icon: 'i-lucide-users-round',
     labelKey: 'IBSOFT_THEME.CHATHUB_SETTINGS.MENU.TEAMS',

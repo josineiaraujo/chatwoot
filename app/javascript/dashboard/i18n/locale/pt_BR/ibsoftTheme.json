@@ -899,6 +899,7 @@
         "ACCOUNT": "Conta",
         "ERP": "ERPs",
         "MESSAGE_SIGNATURE": "Assinatura de mensagens",
+        "EXTERNAL_MESSAGING": "API de cobrança",
         "ATTENDANCE": "Ajustes de entrada",
         "POLICIES": "Políticas de distribuição",
         "AGENTS": "Agentes",

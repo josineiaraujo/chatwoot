@@ -774,6 +774,45 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(conversation.reload.assignee).to eq(secondary_agent)
   end
 
+  it 'tries the next eligible agent when capacity is exhausted during the protected claim' do
+    Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                   .distribution_policy
+                                                   .update!(
+                                                     config: {
+                                                       distribution: {
+                                                         assignment_limit_mode: 'open_conversations',
+                                                         open_conversation_limit: 1
+                                                       }
+                                                     }
+                                                   )
+    create(:inbox_member, inbox: inbox, user: agent)
+    create(:inbox_member, inbox: inbox, user: secondary_agent)
+    create(:team_member, team: team, user: agent)
+    create(:team_member, team: team, user: secondary_agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      agent.id.to_s => 'online',
+      secondary_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AssignmentAgentSelector).to receive(:new).and_return(
+      instance_double(Ibsoft::ConversationDistribution::AssignmentAgentSelector, perform: agent),
+      instance_double(Ibsoft::ConversationDistribution::AssignmentAgentSelector, perform: secondary_agent)
+    )
+    capacity_reached_guard = instance_double(
+      Ibsoft::ConversationDistribution::AgentCapacityGuard,
+      perform: { status: :capacity_reached, assignment: nil }
+    )
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new).and_call_original
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new)
+      .with(account: account, agent: agent, policy: anything)
+      .and_return(capacity_reached_guard)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, assigned: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(secondary_agent)
+  end
+
   it 'skips assignment when every available agent reached the policy window limit' do
     Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
                                                    .distribution_policy
