@@ -7,6 +7,7 @@ describe('syncManualAssignmentState', () => {
   const assignment = {
     conversationId: 17,
     assignee: { id: 7, name: 'Camila' },
+    assigneeType: 'User',
     team: { id: 2, name: 'Suporte' },
     status: 'open',
     snoozedUntil: null,
@@ -24,7 +25,11 @@ describe('syncManualAssignmentState', () => {
     expect(commit.mock.calls).toEqual([
       [
         types.ASSIGN_AGENT,
-        { conversationId: 17, assignee: assignment.assignee },
+        {
+          conversationId: 17,
+          assignee: assignment.assignee,
+          assigneeType: 'User',
+        },
       ],
       [types.ASSIGN_TEAM, { conversationId: 17, team: assignment.team }],
       [

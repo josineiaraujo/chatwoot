@@ -85,14 +85,22 @@ export default {
     },
     assignedAgent: {
       get() {
-        return this.currentChat.meta.assignee;
+        const assignee = this.currentChat.meta.assignee;
+        return (
+          assignee && {
+            ...assignee,
+            assignee_type: this.currentChat.meta.assignee_type || 'User',
+          }
+        );
       },
       set(agent) {
         const agentId = agent ? agent.id : null;
+        const assigneeType = agent ? agent.assignee_type || 'User' : null;
         this.$store
           .dispatch('assignAgent', {
             conversationId: this.currentChat.id,
             agentId,
+            assigneeType,
           })
           .then(() => {
             useAlert(this.$t('CONVERSATION.CHANGE_AGENT'));
@@ -161,7 +169,10 @@ export default {
       if (!this.assignedAgent) {
         return true;
       }
-      if (this.assignedAgent.id !== this.currentUser.id) {
+      if (
+        this.assignedAgent.id !== this.currentUser.id ||
+        (this.assignedAgent.assignee_type || 'User') !== 'User'
+      ) {
         return true;
       }
       return false;
@@ -198,7 +209,11 @@ export default {
       this.assignedAgent = selfAssign;
     },
     onClickAssignAgent(selectedItem) {
-      if (this.assignedAgent && this.assignedAgent.id === selectedItem.id) {
+      if (
+        this.assignedAgent?.id === selectedItem.id &&
+        (this.assignedAgent?.assignee_type || 'User') ===
+          (selectedItem.assignee_type || 'User')
+      ) {
         this.assignedAgent = null;
       } else {
         this.assignedAgent = selectedItem;

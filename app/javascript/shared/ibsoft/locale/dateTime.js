@@ -1,4 +1,11 @@
-import { format, formatDistanceToNow, fromUnixTime } from 'date-fns';
+import {
+  format,
+  formatDistanceToNow,
+  fromUnixTime,
+  isThisYear,
+  isToday,
+  isYesterday,
+} from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DEFAULT_LOCALE = 'en';
@@ -91,6 +98,14 @@ export const ibsoftFormatDistanceToNow = time => {
     addSuffix: true,
     ...(dateFnsLocale ? { locale: dateFnsLocale } : {}),
   });
+};
+
+export const ibsoftRelativeDayTimestamp = (time, yesterdayLabel) => {
+  const date = ibsoftToDate(time);
+  if (isToday(date)) return ibsoftFormatDate(date, 'h:mm a');
+  if (isYesterday(date)) return yesterdayLabel;
+  if (isThisYear(date)) return ibsoftFormatDate(date, 'MMM d');
+  return ibsoftFormatDate(date, 'MMM d, yyyy');
 };
 
 const stripAccents = text =>

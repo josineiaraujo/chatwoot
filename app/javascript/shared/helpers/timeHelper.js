@@ -2,6 +2,7 @@ import { isSameYear, differenceInDays } from 'date-fns';
 import {
   ibsoftFormatDate,
   ibsoftFormatDistanceToNow,
+  ibsoftRelativeDayTimestamp,
   ibsoftShortTimestamp,
   ibsoftToDate,
 } from 'shared/ibsoft/locale/dateTime';
@@ -30,6 +31,18 @@ export const messageTimestamp = (time, dateFormat = 'MMM d, yyyy') => {
     return ibsoftFormatDate(time, 'LLL d y, h:mm a');
   }
   return messageDate;
+};
+
+/**
+ * Formats a Unix timestamp relative to today: the time for today, a caller-
+ * supplied label for yesterday, and a date otherwise. The yesterday label is
+ * passed in so the caller keeps ownership of translation.
+ * @param {number} time - Unix timestamp.
+ * @param {string} yesterdayLabel - Localized label shown for yesterday.
+ * @returns {string} Formatted timestamp string.
+ */
+export const relativeDayTimestamp = (time, yesterdayLabel) => {
+  return ibsoftRelativeDayTimestamp(time, yesterdayLabel);
 };
 
 /**

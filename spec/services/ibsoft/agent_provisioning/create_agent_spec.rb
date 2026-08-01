@@ -8,6 +8,8 @@ RSpec.describe Ibsoft::AgentProvisioning::CreateAgent do
 
   describe '#perform' do
     it 'creates a confirmed native user with a one-time temporary password' do
+      expect(account).to receive(:with_lock).and_call_original
+
       result = described_class.new(account: account, inviter: admin, params: params).perform
 
       user = result.user
@@ -115,7 +117,7 @@ RSpec.describe Ibsoft::AgentProvisioning::CreateAgent do
     end
 
     it 'respects the account agent limit' do
-      allow(account).to receive(:usage_limits).and_return({ agents: account.users.count })
+      allow(account).to receive(:usage_limits).and_return({ agents: account.account_users.count })
 
       expect do
         described_class.new(account: account, inviter: admin, params: params).perform
