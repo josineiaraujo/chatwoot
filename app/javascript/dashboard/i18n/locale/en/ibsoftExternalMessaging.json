@@ -226,13 +226,13 @@
         "DESCRIPTION": "All three parameters are part of the required contract.",
         "NAME": "Parameter",
         "PURPOSE": "Purpose",
-        "MSG": "Template and variables using [field]=value||[other]=value.",
+        "MSG": "Template and variables using [field]=value{'|'}{'|'}[other]=value.",
         "TO": "Recipient phone number with country code and digits only.",
         "TOKEN": "Exclusive token generated for the endpoint. It identifies the account and channel.",
         "USER": "Unique IXC instance username. It identifies the configured contract.",
         "PW": "Password generated for the IXC instance and shown only after creation or rotation.",
         "DEST": "Recipient phone number with country code. Punctuation is normalized and 10 to 15 digits are validated.",
-        "TEXT": "Template and variables using [field]=value||[other]=value."
+        "TEXT": "Template and variables using [field]=value{'|'}{'|'}[other]=value."
       },
       "PROCESSING": {
         "TITLE": "Processing",
@@ -260,7 +260,7 @@
           "TEMPLATE_TYPE_SIMPLE": "For regular messages, omit it or set it to simple.",
           "BODY_NAMED": "Value for a named body variable. Its name and count must match the approved template.",
           "BODY_POSITIONAL": "Positional body values. Start at 1, keep a continuous sequence, and do not mix them with named variables.",
-          "HEADER_NAMED": "The single named text-header variable. Replace <name> with the name approved in the template.",
+          "HEADER_NAMED": "The single named text-header variable. Replace [name] with the name approved in the template.",
           "HEADER_POSITIONAL": "The single positional text-header variable.",
           "HEADER_TEXT_ALIAS": "Alternative way to submit the text-header value.",
           "HEADER_PARAMETER_NAME": "Variable name when header_text is used with a named-variable template.",
@@ -296,7 +296,7 @@
           "UPDATE_IXC_USER": "Username generated for the IXC instance.",
           "UPDATE_IXC_PASSWORD": "Password issued for the same IXC instance.",
           "UPDATE_IXC_RECIPIENT": "Order phone number including country and area codes. It must match the original message recipient.",
-          "UPDATE_IXC_TEXT": "Required semantic content. Keep every update field inside it using [field]=value||[other]=value."
+          "UPDATE_IXC_TEXT": "Required semantic content. Keep every update field inside it using [field]=value{'|'}{'|'}[other]=value."
         },
         "SCENARIOS": {
           "SIMPLE": {
@@ -354,7 +354,7 @@
               "PIX_DEFAULTS": "When PIX is used, merchant name, key, and type are required, but missing fields may be completed from the instance configuration.",
               "TOTAL": "Total must equal subtotal + tax + shipping - discount. Invalid totals are rejected before queueing.",
               "ITEMS": "Without order.items, the system creates a single item from order.item_name and order.total.",
-              "BUTTON_INDEX": "The order button index cannot match another button.<index> submitted in the same message."
+              "BUTTON_INDEX": "The order button index cannot match another button.[index] submitted in the same message."
             }
           },
           "ORDER_UPDATE": {
@@ -363,7 +363,7 @@
             "RULES": {
               "STATUS": "Submit status or at least one of order_status and payment_status.",
               "AUTHENTICATION": "GET accepts token as a parameter. POST requires Authorization Bearer and accepts JSON or semantic text.",
-              "AUTHENTICATION_IXC": "Submit user, pw, dest, and text in the IXC envelope. Keep update fields inside text using [field]=value||[other]=value.",
+              "AUTHENTICATION_IXC": "Submit user, pw, dest, and text in the IXC envelope. Keep update fields inside text using [field]=value{'|'}{'|'}[other]=value.",
               "ACCEPTED": "A 202 response means queued. An identical update already applied returns 200 without another message."
             }
           }

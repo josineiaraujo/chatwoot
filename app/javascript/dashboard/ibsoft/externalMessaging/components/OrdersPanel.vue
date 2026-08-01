@@ -373,31 +373,34 @@ onMounted(() => fetchOrders());
         class="grid gap-3 border-b border-n-weak p-4 md:grid-cols-2 xl:grid-cols-3"
         @submit.prevent="applyFilters"
       >
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.RECIPIENT') }}
           </span>
           <input
             v-model="filters.recipient"
             type="search"
-            class="h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
         </label>
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.REFERENCE') }}
           </span>
           <input
             v-model="filters.reference_id"
             type="search"
-            class="h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
         </label>
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.ORDER_STATUS') }}
           </span>
-          <IbsoftSelect v-model="filters.order_status">
+          <IbsoftSelect
+            v-model="filters.order_status"
+            class="h-10 [&>select]:!h-10 [&>select]:!bg-n-solid-1"
+          >
             <option
               v-for="status in orderStatusOptions"
               :key="status.value"
@@ -407,11 +410,14 @@ onMounted(() => fetchOrders());
             </option>
           </IbsoftSelect>
         </label>
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.PAYMENT_STATUS') }}
           </span>
-          <IbsoftSelect v-model="filters.payment_status">
+          <IbsoftSelect
+            v-model="filters.payment_status"
+            class="h-10 [&>select]:!h-10 [&>select]:!bg-n-solid-1"
+          >
             <option
               v-for="status in paymentStatusOptions"
               :key="status.value"
@@ -421,24 +427,24 @@ onMounted(() => fetchOrders());
             </option>
           </IbsoftSelect>
         </label>
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.DATE_FROM') }}
           </span>
           <input
             v-model="filters.date_from"
             type="date"
-            class="h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
         </label>
-        <label class="grid gap-1">
+        <label class="grid content-start gap-1">
           <span class="text-label-small text-n-slate-11">
             {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.DATE_TO') }}
           </span>
           <input
             v-model="filters.date_to"
             type="date"
-            class="h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
         </label>
         <div class="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3">

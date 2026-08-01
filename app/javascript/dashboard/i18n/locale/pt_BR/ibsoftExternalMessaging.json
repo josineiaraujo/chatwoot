@@ -226,13 +226,13 @@
         "DESCRIPTION": "Os três parâmetros fazem parte do contrato obrigatório.",
         "NAME": "Parâmetro",
         "PURPOSE": "Finalidade",
-        "MSG": "Template e variáveis no formato [campo]=valor||[outro]=valor.",
+        "MSG": "Template e variáveis no formato [campo]=valor{'|'}{'|'}[outro]=valor.",
         "TO": "Telefone do destinatário com código do país e somente números.",
         "TOKEN": "Token exclusivo gerado para o endpoint. Ele identifica a conta e o canal.",
         "USER": "Usuário exclusivo da instância IXC. Ele identifica o contrato configurado.",
         "PW": "Senha gerada para a instância IXC e exibida somente na criação ou rotação.",
         "DEST": "Telefone do destinatário com código do país. O sistema normaliza pontuação e valida de 10 a 15 dígitos.",
-        "TEXT": "Template e variáveis no formato [campo]=valor||[outro]=valor."
+        "TEXT": "Template e variáveis no formato [campo]=valor{'|'}{'|'}[outro]=valor."
       },
       "PROCESSING": {
         "TITLE": "Processamento",
@@ -260,7 +260,7 @@
           "TEMPLATE_TYPE_SIMPLE": "Para mensagens comuns, pode ser omitido ou informado como simple.",
           "BODY_NAMED": "Valor de uma variável nomeada do corpo. O nome e a quantidade precisam corresponder ao template aprovado.",
           "BODY_POSITIONAL": "Valores posicionais do corpo. Comece em 1, mantenha a sequência contínua e não misture com variáveis nomeadas.",
-          "HEADER_NAMED": "Única variável nomeada do cabeçalho textual. Substitua <nome> pelo nome aprovado no template.",
+          "HEADER_NAMED": "Única variável nomeada do cabeçalho textual. Substitua [nome] pelo nome aprovado no template.",
           "HEADER_POSITIONAL": "Única variável posicional do cabeçalho textual.",
           "HEADER_TEXT_ALIAS": "Forma alternativa de enviar o valor textual do cabeçalho.",
           "HEADER_PARAMETER_NAME": "Nome da variável quando header_text for usado com um template de variável nomeada.",
@@ -296,7 +296,7 @@
           "UPDATE_IXC_USER": "Usuário gerado para a instância IXC.",
           "UPDATE_IXC_PASSWORD": "Senha emitida para a mesma instância IXC.",
           "UPDATE_IXC_RECIPIENT": "Telefone da ordem com DDI e DDD. O número precisa corresponder ao destinatário da mensagem original.",
-          "UPDATE_IXC_TEXT": "Conteúdo semântico obrigatório. Inclua todos os campos da atualização no formato [campo]=valor||[outro]=valor."
+          "UPDATE_IXC_TEXT": "Conteúdo semântico obrigatório. Inclua todos os campos da atualização no formato [campo]=valor{'|'}{'|'}[outro]=valor."
         },
         "SCENARIOS": {
           "SIMPLE": {
@@ -354,7 +354,7 @@
               "PIX_DEFAULTS": "Ao usar PIX, nome do recebedor, chave e tipo são obrigatórios, mas campos ausentes podem ser completados pela configuração da instância.",
               "TOTAL": "O total deve ser igual a subtotal + impostos + frete - desconto. Valores inconsistentes são rejeitados antes da fila.",
               "ITEMS": "Sem order.items, o sistema cria um item único usando order.item_name e order.total.",
-              "BUTTON_INDEX": "O índice do botão da ordem não pode coincidir com outro button.<índice> enviado na mesma mensagem."
+              "BUTTON_INDEX": "O índice do botão da ordem não pode coincidir com outro button.[índice] enviado na mesma mensagem."
             }
           },
           "ORDER_UPDATE": {
@@ -363,7 +363,7 @@
             "RULES": {
               "STATUS": "Informe status ou pelo menos um dos campos order_status e payment_status.",
               "AUTHENTICATION": "GET aceita token como parâmetro. POST exige Authorization Bearer e aceita JSON ou texto semântico.",
-              "AUTHENTICATION_IXC": "Envie user, pw, dest e text no envelope IXC. Os campos da atualização devem ficar dentro de text no formato [campo]=valor||[outro]=valor.",
+              "AUTHENTICATION_IXC": "Envie user, pw, dest e text no envelope IXC. Os campos da atualização devem ficar dentro de text no formato [campo]=valor{'|'}{'|'}[outro]=valor.",
               "ACCEPTED": "A resposta 202 indica enfileiramento. Uma atualização idêntica já aplicada retorna 200 sem novo envio."
             }
           }

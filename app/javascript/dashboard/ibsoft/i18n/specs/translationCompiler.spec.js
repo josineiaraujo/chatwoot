@@ -1,27 +1,75 @@
 import { createI18n } from 'vue-i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import enExternalMessaging from '../../../i18n/locale/en/ibsoftExternalMessaging.json';
 import enTheme from '../../../i18n/locale/en/ibsoftTheme.json';
 import heLogin from '../../../i18n/locale/he/login.json';
 import ptBrHelpCenter from '../../../i18n/locale/pt_BR/helpCenter.json';
+import ptBrExternalMessaging from '../../../i18n/locale/pt_BR/ibsoftExternalMessaging.json';
 import ptBrTheme from '../../../i18n/locale/pt_BR/ibsoftTheme.json';
 import sqIntegrations from '../../../i18n/locale/sq/integrations.json';
 
+const ibsoftLocaleBundles = import.meta.glob(
+  [
+    '../../../i18n/locale/en/ibsoft*.json',
+    '../../../i18n/locale/pt_BR/ibsoft*.json',
+  ],
+  { eager: true, import: 'default' }
+);
+
 // Test cases intentionally select translation keys dynamically.
 /* eslint-disable @intlify/vue-i18n/no-dynamic-keys */
-const translate = ({ locale, messages, key, options }) => {
-  const i18n = createI18n({
+const createTestI18n = ({ locale, messages }) =>
+  createI18n({
     legacy: false,
     locale,
     messages: { [locale]: messages },
+    warnHtmlMessage: false,
   });
+
+const translate = ({ locale, messages, key, options }) => {
+  const i18n = createTestI18n({ locale, messages });
 
   return options ? i18n.global.t(key, options) : i18n.global.t(key);
 };
 
+const stringMessageKeys = (messages, prefix = '') =>
+  Object.entries(messages).flatMap(([key, value]) => {
+    const messageKey = prefix ? `${prefix}.${key}` : key;
+
+    if (typeof value === 'string') {
+      return [messageKey];
+    }
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return stringMessageKeys(value, messageKey);
+    }
+
+    return [];
+  });
+
 describe('Dashboard translation compiler compatibility', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('compiles every private dashboard translation', () => {
+    const failures = [];
+
+    Object.entries(ibsoftLocaleBundles).forEach(([filename, messages]) => {
+      const locale = filename.includes('/pt_BR/') ? 'pt_BR' : 'en';
+      const i18n = createTestI18n({ locale, messages });
+
+      stringMessageKeys(messages).forEach(key => {
+        try {
+          i18n.global.t(key, { count: 2, n: 2 });
+        } catch (error) {
+          failures.push(`${filename}:${key}: ${error.message}`);
+        }
+      });
+    });
+
+    expect(failures).toEqual([]);
   });
 
   it.each([
@@ -46,6 +94,34 @@ describe('Dashboard translation compiler compatibility', () => {
     });
 
     expect(result).toBe(testCase.expected);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      locale: 'en',
+      messages: enExternalMessaging,
+      expectedContract: '[field]=value||[other]=value',
+    },
+    {
+      locale: 'pt_BR',
+      messages: ptBrExternalMessaging,
+      expectedContract: '[campo]=valor||[outro]=valor',
+    },
+  ])('renders literal IXC separators in $locale', testCase => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const keys = [
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.MSG',
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.TEXT',
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.FIELDS.UPDATE_IXC_TEXT',
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION_IXC',
+    ];
+
+    keys.forEach(key => {
+      expect(translate({ ...testCase, key })).toContain(
+        testCase.expectedContract
+      );
+    });
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
