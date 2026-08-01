@@ -355,6 +355,7 @@ describe('#actions', () => {
       axios.post.mockResolvedValue({
         data: {
           assignee: { id: 1, name: 'User' },
+          assignee_type: 'User',
           team: { id: 2, name: 'Support' },
           status: 'open',
           snoozed_until: null,
@@ -367,6 +368,7 @@ describe('#actions', () => {
       expect(commit).toHaveBeenCalledWith(types.ASSIGN_AGENT, {
         conversationId: 1,
         assignee: { id: 1, name: 'User' },
+        assigneeType: 'User',
       });
       expect(commit).toHaveBeenCalledWith(types.ASSIGN_TEAM, {
         conversationId: 1,
@@ -414,6 +416,7 @@ describe('#actions', () => {
       const payload = {
         conversationId: 1,
         assignee: { id: 1, name: 'User' },
+        assigneeType: 'AgentBot',
       };
       await actions.setCurrentChatAssignee({ commit }, payload);
       expect(commit).toHaveBeenCalledTimes(1);

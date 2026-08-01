@@ -233,6 +233,7 @@ const actions = {
       {
         conversationId,
         assignee: data.assignee,
+        assigneeType: data.assignee_type,
         team: data.team,
         status: data.status,
         snoozedUntil: data.snoozed_until,
@@ -241,8 +242,11 @@ const actions = {
     return data;
   },
 
-  setCurrentChatAssignee({ commit }, { conversationId, assignee }) {
-    commit(types.ASSIGN_AGENT, { conversationId, assignee });
+  setCurrentChatAssignee(
+    { commit },
+    { conversationId, assignee, assigneeType }
+  ) {
+    commit(types.ASSIGN_AGENT, { conversationId, assignee, assigneeType });
   },
 
   assignTeam: async ({ commit, state }, { conversationId, teamId }) => {

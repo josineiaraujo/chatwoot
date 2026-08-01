@@ -1,0 +1,440 @@
+{
+  "IBSOFT_EXTERNAL_MESSAGING": {
+    "TITLE": "API de envio de templates Meta",
+    "DESCRIPTION": "Crie e gerencie instâncias autenticadas para receber solicitações de sistemas externos e enviar templates pelo WhatsApp Business Cloud.",
+    "ENDPOINTS": {
+      "TITLE": "Instâncias",
+      "DESCRIPTION": "Cada instância possui tipo, canal e credenciais próprios.",
+      "NEW": "Nova instância",
+      "CREATE_TITLE": "Configurar instância",
+      "EDIT_TITLE": "Editar instância",
+      "TYPE_STEP_TITLE": "Escolha o tipo da instância",
+      "TYPE_STEP_DESCRIPTION": "O tipo define o contrato aceito e as instruções apresentadas para a integração.",
+      "TYPE": "Tipo de instância",
+      "NAME": "Nome",
+      "CHANNEL": "Canal de comunicação",
+      "RATE": "Limite de envios por segundo",
+      "RATE_SHORT": "Limite",
+      "RATE_VALUE": "Até {count} envios por segundo neste canal",
+      "RATE_CARD_VALUE": "{count}/s",
+      "RETENTION_DAYS": "Retenção do histórico",
+      "RETENTION_DESCRIPTION": "Ordens e mensagens mais antigas que este período serão removidas automaticamente, independentemente do status.",
+      "REQUESTS": "Solicitações",
+      "ENABLED": "Instância ativa",
+      "ENABLED_DESCRIPTION": "Credenciais de instâncias inativas não recebem novas solicitações.",
+      "SAVE": "Salvar instância",
+      "SAVED": "Instância salva.",
+      "VIEW": "Visualizar",
+      "EDIT": "Editar",
+      "ROTATE": "Gerar novas credenciais",
+      "DEACTIVATE": "Desativar",
+      "ACTIVATE": "Ativar",
+      "ACTIVE": "Ativo",
+      "INACTIVE": "Inativo",
+      "BACK": "Voltar",
+      "CONTINUE": "Continuar",
+      "EMPTY_TITLE": "Nenhuma instância criada",
+      "EMPTY": "Crie a primeira instância para conectar um sistema externo a um canal do WhatsApp Business Cloud."
+    },
+    "TYPES": {
+      "SGP_GENERIC": {
+        "NAME": "SGP Genérico",
+        "DESCRIPTION": "Integração compatível com o contrato genérico por parâmetros msg, to e token."
+      },
+      "IXC": {
+        "NAME": "IXC",
+        "DESCRIPTION": "Integração compatível com o contrato IXC por usuário, senha, destinatário e texto semântico."
+      }
+    },
+    "DETAIL": {
+      "BACK": "Voltar para instâncias",
+      "TYPE_AND_CHANNEL": "{type} · {channel}",
+      "TABS": {
+        "LABEL": "Seções da instância",
+        "OVERVIEW": "Visão geral",
+        "ORDERS": "Ordens",
+        "INSTRUCTIONS": "Instruções",
+        "HISTORY": "Histórico"
+      },
+      "OVERVIEW": {
+        "TITLE": "Configuração da instância",
+        "TOKEN": "Identificação do token"
+      }
+    },
+    "ORDERS": {
+      "TITLE": "Ordens e pagamentos",
+      "DESCRIPTION": "Defina os dados PIX e as mensagens padrão utilizadas nas atualizações de ordens.",
+      "CONFIGURATION_TITLE": "Configuração de ordens",
+      "CONFIGURE": "Configurar ordens",
+      "EDIT": "Editar configuração",
+      "CONFIGURED": "Os dados PIX padrão estão completos.",
+      "WARNING_TITLE": "Configuração de PIX incompleta",
+      "WARNING_DESCRIPTION": "Preencha o nome do recebedor, o tipo e a chave PIX para aceitar ordens que dependam dos valores padrão da instância.",
+      "MERCHANT_NAME": "Nome do recebedor",
+      "KEY_TYPE": "Tipo da chave",
+      "PIX_KEY": "Chave PIX",
+      "SELECT_KEY_TYPE": "Selecione o tipo",
+      "NOT_CONFIGURED": "Não configurado",
+      "PRIORITY": "Os valores enviados pelo ERP têm prioridade. Estes dados são utilizados somente quando o campo correspondente não estiver presente na solicitação.",
+      "KEEP_KEY": "Manter {hint}",
+      "KEEP_KEY_DESCRIPTION": "Deixe o campo vazio para preservar a chave protegida atual.",
+      "SHOW_KEY": "Mostrar chave digitada",
+      "HIDE_KEY": "Ocultar chave digitada",
+      "REMOVE_KEY": "Remover chave configurada",
+      "REMOVE_KEY_DESCRIPTION": "Novas ordens com PIX precisarão informar a chave na própria solicitação.",
+      "SAVED": "Configuração de ordens salva.",
+      "RETENTION": {
+        "TITLE": "Retenção do histórico",
+        "VALUE": "{count} dias"
+      },
+      "LIST": {
+        "TITLE": "Ordens enviadas",
+        "DESCRIPTION": "Consulte ordens, pagamentos e atualize manualmente os itens que ainda estão disponíveis na Meta.",
+        "EMPTY": "Nenhuma ordem foi encontrada para os filtros informados."
+      },
+      "FILTERS": {
+        "RECIPIENT": "Destinatário",
+        "REFERENCE": "Referência da ordem",
+        "ORDER_STATUS": "Status da ordem",
+        "PAYMENT_STATUS": "Status do pagamento",
+        "DATE_FROM": "Data inicial",
+        "DATE_TO": "Data final",
+        "ALL_ORDER_STATUSES": "Todos os status de ordem",
+        "ALL_PAYMENT_STATUSES": "Todos os status de pagamento",
+        "APPLY": "Filtrar",
+        "CLEAR": "Limpar filtros"
+      },
+      "ORDER_STATUSES": {
+        "PENDING": "Pendente",
+        "PROCESSING": "Em processamento",
+        "PARTIALLY_SHIPPED": "Parcialmente enviada",
+        "SHIPPED": "Enviada",
+        "COMPLETED": "Concluída",
+        "CANCELED": "Cancelada"
+      },
+      "PAYMENT_STATUSES": {
+        "PENDING": "Pendente",
+        "CAPTURED": "Pago",
+        "FAILED": "Falhou",
+        "NOT_INFORMED": "Não informado"
+      },
+      "SELECTION": {
+        "COUNT": "{count} ordens selecionadas",
+        "ALL_FILTERED": "Selecionar todas as {count} ordens filtradas",
+        "CLEAR": "Limpar seleção",
+        "SELECT_PAGE": "Selecionar ordens atualizáveis desta página",
+        "SELECT_ORDER": "Selecionar ordem {reference}",
+        "NOT_UPDATEABLE": "Esta ordem ainda está em processamento, possui resultado incerto ou não tem uma mensagem aceita pela Meta."
+      },
+      "TABLE": {
+        "DATE": "Data",
+        "REFERENCE": "Referência",
+        "RECIPIENT": "Destinatário",
+        "ORDER_STATUS": "Ordem",
+        "PAYMENT_STATUS": "Pagamento",
+        "LAST_UPDATE": "Última atualização",
+        "UPDATE_VALUE": "{status} em {date}",
+        "NO_UPDATE": "Sem atualização"
+      },
+      "BULK": {
+        "OPEN": "Atualizar status",
+        "TITLE": "Atualizar ordens",
+        "DESCRIPTION_SELECTED": "Defina os novos status para as {count} ordens selecionadas.",
+        "DESCRIPTION_FILTER": "Defina os novos status para todas as {count} ordens correspondentes ao filtro aplicado.",
+        "KEEP": "Manter status atual",
+        "ASYNC_NOTICE": "A atualização será processada em segundo plano, em lotes seguros. O histórico será atualizado à medida que a Meta responder.",
+        "INVALID_COMBINATION": "Uma ordem cancelada não pode receber pagamento confirmado na mesma atualização.",
+        "CONFIRM": "Confirmar atualização",
+        "ACCEPTED": "{count} ordens foram encaminhadas para atualização."
+      },
+      "PAGINATION": {
+        "PER_PAGE": "Itens por página"
+      },
+      "MODAL": {
+        "TITLE": "Configurar ordens",
+        "DESCRIPTION": "Defina os dados de pagamento e os textos usados nas atualizações enviadas aos clientes.",
+        "TABS": {
+          "LABEL": "Seções da configuração de ordens",
+          "PAYMENT": "Pagamento",
+          "MESSAGES": "Mensagens"
+        },
+        "MESSAGES": {
+          "DESCRIPTION": "Esses textos são usados quando a integração não envia message ou mensagem. Use {placeholder} para inserir a referência da ordem.",
+          "RESTORE": "Restaurar textos padrão",
+          "ORDER_GROUP": "Atualizações da ordem",
+          "PAYMENT_GROUP": "Atualizações de pagamento",
+          "EVENTS": {
+            "ORDER_PENDING": "Ordem pendente",
+            "ORDER_PROCESSING": "Ordem em processamento",
+            "ORDER_PARTIALLY_SHIPPED": "Ordem parcialmente enviada",
+            "ORDER_SHIPPED": "Ordem enviada",
+            "ORDER_COMPLETED": "Ordem concluída",
+            "ORDER_CANCELED": "Ordem cancelada",
+            "PAYMENT_PENDING": "Pagamento pendente",
+            "PAYMENT_CAPTURED": "Pagamento confirmado",
+            "PAYMENT_FAILED": "Pagamento não confirmado",
+            "CAPTURED_AND_COMPLETED": "Pagamento confirmado e ordem concluída"
+          }
+        },
+        "SAVE": "Salvar configuração"
+      }
+    },
+    "TOKEN": {
+      "TITLE": "Token do endpoint",
+      "DESCRIPTION": "Este token é exibido somente agora. Armazene-o no cofre de segredos do sistema integrado. Gerar outro token invalida o anterior imediatamente.",
+      "VALUE": "Token de acesso",
+      "COPY": "Copiar token",
+      "COPIED": "Token copiado.",
+      "CLOSE": "Concluir"
+    },
+    "CREDENTIALS": {
+      "TOKEN_TITLE": "Token da instância",
+      "TOKEN_DESCRIPTION": "Este token é exibido somente agora. Armazene-o no cofre de segredos do sistema integrado. Gerar novas credenciais invalida o token anterior imediatamente.",
+      "IXC_TITLE": "Credenciais da instância IXC",
+      "IXC_DESCRIPTION": "A senha é exibida somente agora. Armazene-a no cofre de segredos do sistema integrado. Gerar novas credenciais invalida a senha anterior imediatamente.",
+      "USERNAME": "Usuário",
+      "PASSWORD": "Senha",
+      "PASSWORD_HINT": "Identificação da senha",
+      "TOKEN": "Token de acesso",
+      "COPY_USERNAME": "Copiar usuário",
+      "COPY_PASSWORD": "Copiar senha",
+      "COPY_TOKEN": "Copiar token",
+      "USERNAME_COPIED": "Usuário copiado.",
+      "PASSWORD_COPIED": "Senha copiada.",
+      "TOKEN_COPIED": "Token copiado.",
+      "CLOSE": "Concluir"
+    },
+    "INTEGRATION": {
+      "TITLE": "Detalhes da integração",
+      "DESCRIPTION": "O sistema integrado envia os dados semânticos pelo contrato abaixo. O ChatHub valida os campos, monta o template da Meta e processa a solicitação em segundo plano.",
+      "COPY_URL": "Copiar URL",
+      "URL_COPIED": "URL copiada.",
+      "TEST_EXAMPLE": "Exemplo completo de integração",
+      "CURL_DESCRIPTION": "A chamada deve usar exatamente o método GET e os parâmetros msg, to e token.",
+      "COPY_CURL": "Copiar comando",
+      "CURL_COPIED": "Comando copiado.",
+      "REQUEST": {
+        "TITLE": "Requisição",
+        "DESCRIPTION": "Use o método GET na URL pública do módulo.",
+        "METHOD": "GET",
+        "IXC_DESCRIPTION": "Use GET, POST com formulário ou POST com JSON na URL pública do contrato IXC.",
+        "IXC_METHOD": "GET / POST",
+        "IXC_SECURITY": "Em produção, prefira POST para que a senha não fique exposta em URLs, históricos do navegador ou logs de proxy. O formato GET continua disponível para compatibilidade com o IXC."
+      },
+      "PARAMETERS": {
+        "TITLE": "Parâmetros",
+        "DESCRIPTION": "Os três parâmetros fazem parte do contrato obrigatório.",
+        "NAME": "Parâmetro",
+        "PURPOSE": "Finalidade",
+        "MSG": "Template e variáveis no formato [campo]=valor||[outro]=valor.",
+        "TO": "Telefone do destinatário com código do país e somente números.",
+        "TOKEN": "Token exclusivo gerado para o endpoint. Ele identifica a conta e o canal.",
+        "USER": "Usuário exclusivo da instância IXC. Ele identifica o contrato configurado.",
+        "PW": "Senha gerada para a instância IXC e exibida somente na criação ou rotação.",
+        "DEST": "Telefone do destinatário com código do país. O sistema normaliza pontuação e valida de 10 a 15 dígitos.",
+        "TEXT": "Template e variáveis no formato [campo]=valor||[outro]=valor."
+      },
+      "PROCESSING": {
+        "TITLE": "Processamento",
+        "DESCRIPTION": "O envio ocorre de forma assíncrona pelos workers.",
+        "ACCEPTED": "A resposta 202 confirma que a solicitação foi validada e colocada na fila. O histórico desta tela apresenta o resultado informado posteriormente pela Meta."
+      },
+      "GUIDE": {
+        "SCENARIOS_TITLE": "Como montar a mensagem",
+        "SCENARIOS_DESCRIPTION": "Escolha o cenário para consultar os campos aceitos, a obrigatoriedade e um exemplo completo.",
+        "RULES_TITLE": "Regras importantes",
+        "EXAMPLE_TITLE": "Exemplo de requisição",
+        "TABLE": {
+          "FIELD": "Campo",
+          "REQUIREMENT": "Obrigatoriedade",
+          "DESCRIPTION": "Como utilizar"
+        },
+        "REQUIREMENTS": {
+          "REQUIRED": "Obrigatório",
+          "CONDITIONAL": "Condicional",
+          "OPTIONAL": "Opcional"
+        },
+        "FIELDS": {
+          "TEMPLATE_NAME": "Nome exato do template aprovado na Meta. Aceita letras minúsculas, números e sublinhado.",
+          "TEMPLATE_LANGUAGE": "Idioma aprovado do template. Quando omitido, utiliza pt_BR.",
+          "TEMPLATE_TYPE_SIMPLE": "Para mensagens comuns, pode ser omitido ou informado como simple.",
+          "BODY_NAMED": "Valor de uma variável nomeada do corpo. O nome e a quantidade precisam corresponder ao template aprovado.",
+          "BODY_POSITIONAL": "Valores posicionais do corpo. Comece em 1, mantenha a sequência contínua e não misture com variáveis nomeadas.",
+          "HEADER_NAMED": "Única variável nomeada do cabeçalho textual. Substitua <nome> pelo nome aprovado no template.",
+          "HEADER_POSITIONAL": "Única variável posicional do cabeçalho textual.",
+          "HEADER_TEXT_ALIAS": "Forma alternativa de enviar o valor textual do cabeçalho.",
+          "HEADER_PARAMETER_NAME": "Nome da variável quando header_text for usado com um template de variável nomeada.",
+          "HEADER_DOCUMENT_TYPE": "Informe document. Pode ser omitido somente quando o caminho da URL terminar claramente em .pdf.",
+          "HEADER_LINK": "URL HTTPS pública e acessível pela Meta para baixar o arquivo, a imagem ou o vídeo.",
+          "HEADER_FILENAME": "Nome apresentado para o documento. Quando omitido, é extraído do caminho da URL.",
+          "HEADER_APPEND_PDF": "Use true para acrescentar .pdf ao caminho da URL ou false para preservá-la.",
+          "HEADER_PDF_MODE": "Alternativa a header_append_pdf. Aceita as_is ou append.",
+          "HEADER_MEDIA_TYPE": "Informe image ou video. Pode ser omitido somente quando a extensão reconhecida estiver no caminho da URL.",
+          "BUTTON_TYPE": "Tipo do botão dinâmico: url, copy_code ou quick_reply.",
+          "BUTTON_VALUE": "Sufixo da URL, código para cópia ou payload da resposta rápida, conforme o tipo do botão.",
+          "ORDER_TEMPLATE_TYPE": "Identifica que o template usa o componente ORDER_DETAILS.",
+          "ORDER_REFERENCE": "Identificador único da ordem ou fatura no canal. Aceita até 60 letras, números, ponto, hífen e sublinhado.",
+          "ORDER_TOTAL": "Valor total da ordem. Aceita formato brasileiro, como 64,99, ou decimal com ponto.",
+          "ORDER_ITEM_NAME": "Nome do item único. Quando omitido e não houver lista de itens, utiliza Fatura.",
+          "ORDER_PIX_CODE": "Código PIX copia e cola. Obrigatório somente quando PIX for uma das formas de pagamento.",
+          "ORDER_PIX_MERCHANT": "Nome do recebedor PIX. Pode vir da solicitação ou dos dados padrão da instância.",
+          "ORDER_PIX_KEY": "Chave PIX. Pode vir da solicitação ou da configuração protegida da instância.",
+          "ORDER_PIX_KEY_TYPE": "Tipo CPF, CNPJ, EMAIL, PHONE ou EVP. Pode vir da solicitação ou da instância.",
+          "ORDER_BOLETO": "Linha digitável do boleto. Quando enviada junto com o PIX, gera a segunda opção de pagamento para copiar o código de barras.",
+          "ORDER_ITEMS": "Lista opcional. Para cada índice contínuo a partir de 0, envie id, name, amount e quantity.",
+          "ORDER_AMOUNTS": "Resumo financeiro opcional. O total precisa corresponder a subtotal + tax + shipping - discount.",
+          "ORDER_EXPIRATION": "Data futura em ISO 8601 com fuso ou timestamp Unix. A descrição de expiração é opcional.",
+          "ORDER_OPTIONS": "Moeda, tipo de produto e posição do botão. Os padrões são BRL, digital-goods e índice 0.",
+          "UPDATE_REFERENCE": "ID da ordem enviada anteriormente. Também aceita id_fatura, id-fatura ou reference_id.",
+          "UPDATE_STATUS": "Atalho de estado reconhecido pelo contrato, como pago. Use-o sozinho ou informe os estados detalhados.",
+          "UPDATE_ORDER_STATUS": "Estado específico da ordem. Obrigatório quando status e payment_status não forem enviados.",
+          "UPDATE_PAYMENT_STATUS": "Estado específico do pagamento. Obrigatório quando status e order_status não forem enviados.",
+          "UPDATE_PAYMENT_TIMESTAMP": "Momento do pagamento. Só pode ser enviado junto com um estado de pagamento.",
+          "UPDATE_MESSAGE": "Texto opcional exibido na atualização enviada ao cliente.",
+          "UPDATE_DESCRIPTION": "Descrição opcional associada ao novo estado da ordem.",
+          "UPDATE_TOKEN": "Token de uma instância SGP da mesma conta e do mesmo canal que criou a ordem.",
+          "UPDATE_IXC_USER": "Usuário gerado para a instância IXC.",
+          "UPDATE_IXC_PASSWORD": "Senha emitida para a mesma instância IXC.",
+          "UPDATE_IXC_RECIPIENT": "Telefone da ordem com DDI e DDD. O número precisa corresponder ao destinatário da mensagem original.",
+          "UPDATE_IXC_TEXT": "Conteúdo semântico obrigatório. Inclua todos os campos da atualização no formato [campo]=valor||[outro]=valor."
+        },
+        "SCENARIOS": {
+          "SIMPLE": {
+            "TITLE": "Mensagem simples",
+            "DESCRIPTION": "Envie um template comum com variáveis de corpo, sem mídia ou ordem.",
+            "RULES": {
+              "MATCH_TEMPLATE": "Os nomes e a quantidade das variáveis precisam corresponder exatamente ao template aprovado na Meta.",
+              "DEFAULTS": "template_language usa pt_BR e template_type usa simple quando esses campos são omitidos."
+            }
+          },
+          "VARIABLES": {
+            "TITLE": "Variáveis",
+            "DESCRIPTION": "Preencha cabeçalho textual e corpo usando variáveis nomeadas ou posicionais.",
+            "RULES": {
+              "HEADER_LIMIT": "O cabeçalho textual aceita somente uma variável e não pode ser combinado com header_link.",
+              "BODY_MODE": "No corpo, escolha variáveis nomeadas ou posicionais. Os dois formatos não podem ser misturados.",
+              "POSITION_SEQUENCE": "Variáveis posicionais do corpo devem começar em 1 e seguir sem intervalos."
+            }
+          },
+          "DOCUMENT": {
+            "TITLE": "PDF e documento",
+            "DESCRIPTION": "Envie um documento por URL HTTPS no cabeçalho do template.",
+            "RULES": {
+              "HTTPS": "A Meta precisa conseguir acessar a URL sem autenticação, redirecionamento privado ou certificado inválido.",
+              "TYPE_INFERENCE": "Embora .pdf permita inferir o tipo, informar header_type=document deixa o contrato explícito e mais previsível.",
+              "PDF_OPTIONS": "Use apenas header_append_pdf ou header_pdf_mode. Não envie opções conflitantes."
+            }
+          },
+          "MEDIA": {
+            "TITLE": "Imagem ou vídeo",
+            "DESCRIPTION": "Envie imagem ou vídeo por link no cabeçalho.",
+            "RULES": {
+              "FORMATS": "A inferência automática reconhece jpg, jpeg, png, webp, mp4 e 3gp. Para outros caminhos, o tipo é obrigatório.",
+              "HTTPS": "O link precisa usar HTTPS e estar publicamente acessível pela Meta.",
+              "NO_TEXT_VARIABLE": "Cabeçalhos de mídia não aceitam variável textual nem opções exclusivas de documento."
+            }
+          },
+          "BUTTONS": {
+            "TITLE": "Botões",
+            "DESCRIPTION": "Preencha os valores dinâmicos dos botões existentes no template.",
+            "RULES": {
+              "INDEX": "Os índices aceitos vão de 0 a 9 e devem corresponder à posição do botão no template.",
+              "TYPES": "url envia texto para completar a URL; copy_code envia um código; quick_reply envia um payload.",
+              "MATCH_TEMPLATE": "O tipo informado precisa ser o mesmo do botão aprovado na Meta."
+            }
+          },
+          "ORDER": {
+            "TITLE": "Ordem e pagamento",
+            "DESCRIPTION": "Envie uma ordem interativa com itens e pagamento PIX, boleto ou ambos.",
+            "RULES": {
+              "PAYMENT": "Informe pelo menos order.payment.pix.code ou order.payment.boleto.digitable_line.",
+              "PIX_AND_BOLETO": "Para mostrar PIX no primeiro botão e código de barras no segundo, envie order.payment.pix.code e order.payment.boleto.digitable_line na mesma solicitação. O sistema preserva essa ordem ao montar os meios de pagamento.",
+              "NO_SECOND_DYNAMIC_BUTTON": "Não envie button.1 para criar o botão do boleto. PIX e boleto são meios de pagamento do mesmo componente ORDER_DETAILS; order.button_index indica apenas a posição desse componente no template.",
+              "BOLETO_ONLY": "Para oferecer somente código de barras, omita todos os campos PIX e envie apenas order.payment.boleto.digitable_line.",
+              "PIX_DEFAULTS": "Ao usar PIX, nome do recebedor, chave e tipo são obrigatórios, mas campos ausentes podem ser completados pela configuração da instância.",
+              "TOTAL": "O total deve ser igual a subtotal + impostos + frete - desconto. Valores inconsistentes são rejeitados antes da fila.",
+              "ITEMS": "Sem order.items, o sistema cria um item único usando order.item_name e order.total.",
+              "BUTTON_INDEX": "O índice do botão da ordem não pode coincidir com outro button.<índice> enviado na mesma mensagem."
+            }
+          },
+          "ORDER_UPDATE": {
+            "TITLE": "Atualizar ordem",
+            "DESCRIPTION": "Atualize o estado de uma ordem já aceita pela Meta usando a rota compartilhada de pedidos.",
+            "RULES": {
+              "STATUS": "Informe status ou pelo menos um dos campos order_status e payment_status.",
+              "AUTHENTICATION": "GET aceita token como parâmetro. POST exige Authorization Bearer e aceita JSON ou texto semântico.",
+              "AUTHENTICATION_IXC": "Envie user, pw, dest e text no envelope IXC. Os campos da atualização devem ficar dentro de text no formato [campo]=valor||[outro]=valor.",
+              "ACCEPTED": "A resposta 202 indica enfileiramento. Uma atualização idêntica já aplicada retorna 200 sem novo envio."
+            }
+          }
+        }
+      },
+      "ORDER_UPDATES": {
+        "TITLE": "Atualizações de pedidos",
+        "DESCRIPTION": "Todos os contratos da mesma família e do mesmo canal usam sua rota de pedidos para atualizar ordens e pagamentos já enviados.",
+        "METHODS": "GET / POST",
+        "AUTHENTICATION": "Use Bearer Token em requisições POST. Requisições GET também aceitam o token no parâmetro token para compatibilidade com o ERP.",
+        "EXAMPLE_TITLE": "Exemplo de atualização de pedido",
+        "EXAMPLE_DESCRIPTION": "A resposta 202 confirma a entrada na fila. O envio visível pela Meta será executado em segundo plano e respeitará a ordem das atualizações da fatura."
+      },
+      "EXAMPLE": {
+        "RECIPIENT": "5575982479788",
+        "TEMPLATE_NAME": "lembrete_fatura_pdf_pix",
+        "DOCUMENT_URL": "https://sistema.asnetwork.net.br/boleto/9388-0CFLCN1OMD.pdf",
+        "CUSTOMER_NAME": "José Augusto Silva",
+        "HEADER_TITLE": "Fatura disponível",
+        "DUE_DATE": "10/08/2027",
+        "ORDER_REFERENCE": "9388",
+        "ORDER_TOTAL": "64,99",
+        "ITEM_NAME": "Fatura de internet",
+        "PIX_CODE": "PIX_COPIA_E_COLA_COMPLETO",
+        "PIX_MERCHANT": "IBSoft Cloud",
+        "PIX_KEY": "12345678000199",
+        "BOLETO_LINE": "00190000090350182490218767625173516510000006499",
+        "TOKEN_PLACEHOLDER": "TOKEN_DO_ENDPOINT",
+        "USERNAME_PLACEHOLDER": "USUARIO_DA_INSTANCIA",
+        "PASSWORD_PLACEHOLDER": "SENHA_DA_INSTANCIA"
+      }
+    },
+    "DELIVERIES": {
+      "TITLE": "Histórico de solicitações",
+      "DESCRIPTION": "Acompanhe o aceite da API, o processamento e os estados informados pela Meta.",
+      "ALL_ENDPOINTS": "Todos os endpoints",
+      "ALL_STATUSES": "Todos os status",
+      "FILTER": "Filtrar",
+      "DATE": "Recebida em",
+      "ENDPOINT": "Endpoint",
+      "RECIPIENT": "Destinatário",
+      "TEMPLATE": "Template",
+      "STATUS": "Status",
+      "META_ID": "ID da Meta",
+      "NOT_AVAILABLE": "Não disponível",
+      "EMPTY": "Nenhuma solicitação externa foi registrada.",
+      "PER_PAGE": "Itens por página",
+      "PREVIOUS": "Anterior",
+      "NEXT": "Próxima",
+      "PAGE": "Página {page} de {total}"
+    },
+    "STATUSES": {
+      "QUEUED": "Na fila",
+      "PROCESSING": "Processando",
+      "ACCEPTED": "Aceita pela Meta",
+      "SENT": "Enviada",
+      "DELIVERED": "Entregue",
+      "READ": "Lida",
+      "FAILED": "Falhou",
+      "UNCERTAIN": "Resultado incerto",
+      "UNCHANGED": "Sem alteração"
+    },
+    "ERRORS": {
+      "LOAD": "Não foi possível carregar as instâncias.",
+      "SAVE": "Não foi possível salvar a instância.",
+      "ORDER_DEFAULTS_SAVE": "Não foi possível salvar a configuração de ordens.",
+      "ROTATE": "Não foi possível gerar novas credenciais.",
+      "COPY": "Não foi possível copiar o valor.",
+      "DELIVERIES_LOAD": "Não foi possível carregar o histórico.",
+      "ORDERS_LOAD": "Não foi possível carregar as ordens.",
+      "ORDERS_UPDATE": "Não foi possível encaminhar a atualização das ordens."
+    }
+  }
+}

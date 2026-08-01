@@ -24,6 +24,9 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import ibsoftInternalChat from './ibsoftInternalChat.json';
+import ibsoftExternalMessaging from './ibsoftExternalMessaging.json';
+import ibsoftInstagramInbound from './ibsoftInstagramInbound.json';
+import ibsoftMetaTemplates from './ibsoftMetaTemplates.json';
 import ibsoftTheme from './ibsoftTheme.json';
 import integrationApps from './integrationApps.json';
 import integrations from './integrations.json';
@@ -36,6 +39,7 @@ import report from './report.json';
 import resetPassword from './resetPassword.json';
 import search from './search.json';
 import setNewPassword from './setNewPassword.json';
+import sessionLimit from './sessionLimit.json';
 import settings from './settings.json';
 import signup from './signup.json';
 import sla from './sla.json';
@@ -73,6 +77,9 @@ const locale = {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
+  ...ibsoftExternalMessaging,
+  ...ibsoftInstagramInbound,
+  ...ibsoftMetaTemplates,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,
@@ -84,6 +91,7 @@ const locale = {
   ...resetPassword,
   ...search,
   ...setNewPassword,
+  ...sessionLimit,
   ...settings,
   ...signup,
   ...sla,

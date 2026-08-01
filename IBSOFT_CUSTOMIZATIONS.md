@@ -20,6 +20,12 @@ Documento operacional de variaveis de ambiente:
   mensagens, buscas IXC, tabelas, selecao de telefones e testes.
 - `IBSOFT_MESSAGE_SIGNATURE.md`: documenta a assinatura privada no cabecalho,
   configuracao por conta/canal, neutralizacao da assinatura nativa e testes.
+- `IBSOFT_INSTAGRAM_INBOUND.md`: documenta a politica privada que controla
+  quais interacoes do Instagram podem iniciar novas conversas.
+- `IBSOFT_EXTERNAL_MESSAGING.md`: documenta endpoints autenticados para ERPs,
+  envio direto pela Meta, processamento assincrono e acompanhamento de status.
+- `IBSOFT_META_TEMPLATES.md`: documenta o gerenciamento privado de modelos
+  WhatsApp Business Cloud, cache, uploads, rotas e pontos de acoplamento.
 
 ## Como usar antes de sincronizar com upstream
 
@@ -324,6 +330,125 @@ Validacao recomendada:
 
 - `bundle exec rspec spec/services/ibsoft/message_signature spec/requests/api/v1/accounts/ibsoft/message_signature`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/messageSignature/specs app/javascript/dashboard/ibsoft/chathubSettings/specs/settingsSections.spec.js app/javascript/dashboard/store/modules/specs/auth/getters.spec.js`
+
+### 0.0.4. Politica de entrada do Instagram
+
+Documento detalhado: `IBSOFT_INSTAGRAM_INBOUND.md`.
+
+Objetivo:
+
+- Controlar por canal se respostas e mencoes em Stories, compartilhamentos de
+  Reels e Stories ou compartilhamentos de publicacoes podem iniciar uma nova
+  conversa.
+- Preservar todas essas interacoes quando ja existir conversa em andamento.
+- Nao alterar mensagens diretas comuns nem qualquer canal diferente de
+  Instagram.
+- Nao interferir em comentarios publicos; eles permanecem integralmente sob o
+  comportamento nativo do Chatwoot.
+- Operar sem payload, log de eventos, worker ou Redis adicional.
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/instagram_inbound/`
+- `app/services/ibsoft/instagram_inbound/`
+- `app/controllers/api/v1/accounts/ibsoft/instagram_inbound/`
+- `app/javascript/dashboard/ibsoft/instagramInbound/`
+- `config/initializers/ibsoft_instagram_inbound.rb`
+- `config/locales/ibsoft_instagram_inbound.*.yml`
+- `spec/**/ibsoft/instagram_inbound/`
+
+Banco de dados:
+
+- `db/migrate/20260723120000_create_ibsoft_instagram_inbound_policies.rb`
+- tabela `ibsoft_instagram_inbound_policies`, com apenas tres booleanos
+  funcionais e chave unica por conta/canal.
+
+Pontos de acoplamento no Chatwoot original:
+
+- `config/routes.rb`: registra a API privada.
+- `Webhooks::InstagramEventsJob`: recebe extensao privada via initializer, sem
+  edicao do job.
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/Settings.vue`:
+  registra a aba condicional e monta o componente privado.
+- `app/javascript/dashboard/i18n/locale/*/index.js`: registra os arquivos de
+  traducao proprios.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/instagram_inbound spec/services/ibsoft/instagram_inbound spec/jobs/ibsoft/instagram_inbound spec/requests/api/v1/accounts/ibsoft/instagram_inbound`
+- `pnpm test app/javascript/dashboard/ibsoft/instagramInbound/specs/SettingsPanel.spec.js`
+
+### 0.0.5. API de envio de templates Meta
+
+Documento detalhado: `IBSOFT_EXTERNAL_MESSAGING.md`.
+
+Objetivo:
+
+- receber solicitacoes de ERPs por endpoints autenticados vinculados a um
+  canal WhatsApp Business Cloud;
+- manter o contrato SGP Generico em
+  `GET /chathub-sender/sgp/generico/` com `msg`, `to` e `token`;
+- manter o contrato nativo IXC em `GET|POST /chathub-sender/ixc/`, com
+  `user`, `pw`, `dest` e `text`;
+- atualizar ordens e pagamentos pelos contratos compartilhados de familia
+  `GET|POST /chathub-sender/sgp/pedido/` e
+  `GET|POST /chathub-sender/ixc/pedido/`, processados de forma assincrona e
+  serializados por ordem; a rota IXC preserva o envelope obrigatorio `user`,
+  `pw`, `dest` e `text`, com os campos da ordem dentro de `text`;
+- interpretar o formato `[campo]=valor||[outro]=valor`, validando variaveis e
+  montando internamente os componentes aceitos pela Meta;
+- enviar templates diretamente pela Meta, sem criar conversa ou mensagem no
+  Chatwoot;
+- processar com Sidekiq, persistencia duravel, idempotencia e limite
+  distribuido por canal;
+- acompanhar aceite, entrega, leitura e falha por webhook.
+- apresentar instancias em catalogo administrativo, com tipo, configuracao,
+  instrucoes e historico isolados;
+- configurar defaults PIX por instancia, com prioridade para valores enviados
+  pelo ERP e chave separada do JSON operacional;
+- suportar novos tipos por registro de parser, autenticacao e contrato; os
+  tipos atuais sao `sgp_generic` (**SGP Generico**) e `ixc` (**IXC**).
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/external_messaging/`;
+- `app/services/ibsoft/external_messaging/`;
+- `app/jobs/ibsoft/external_messaging/`;
+- `app/controllers/api/v1/ibsoft/external_messaging/`;
+- `app/controllers/api/v1/accounts/ibsoft/external_messaging/`;
+- `app/javascript/dashboard/ibsoft/externalMessaging/`;
+- `app/javascript/dashboard/ibsoft/assets/images/logo/sgp/`;
+- `app/javascript/dashboard/ibsoft/assets/images/logo/ixc/`;
+- `spec/**/ibsoft/external_messaging/`.
+
+Banco:
+
+- `db/migrate/20260727090000_create_ibsoft_external_messaging.rb`;
+- `db/migrate/20260727213000_add_instance_type_to_ibsoft_external_message_endpoints.rb`;
+- `db/migrate/20260728100000_create_ibsoft_external_message_orders.rb`;
+- `db/migrate/20260729100000_add_order_pix_defaults_to_ibsoft_external_messaging.rb`;
+- tabelas `ibsoft_external_message_endpoints`,
+  `ibsoft_external_message_deliveries`, `ibsoft_external_message_orders` e
+  `ibsoft_external_message_order_updates`.
+
+Pontos de acoplamento:
+
+- `config/routes.rb`;
+- `config/schedule.yml`;
+- `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`;
+- `app/javascript/dashboard/ibsoft/chathubSettings/settingsSections.js`;
+- indexes i18n `en` e `pt_BR`;
+- `db/schema.rb`.
+
+O IXC reutiliza as tabelas existentes; nao exige migration propria e nao
+armazena `user`, `pw` ou o envelope bruto. Nenhum model de conversa/mensagem ou
+service nativo de envio foi alterado.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/external_messaging spec/services/ibsoft/external_messaging spec/jobs/ibsoft/external_messaging spec/requests/api/v1/ibsoft/external_messaging spec/requests/api/v1/accounts/ibsoft/external_messaging`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/externalMessaging/specs --no-coverage`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/externalMessaging`
 
 ### 0.1. Perfis e permissoes Ibsoft
 
@@ -726,6 +851,12 @@ Estado atual:
   `assignment_limit_mode=open_conversations`, contando apenas conversas abertas
   atribuidas ao agente na conta e ignorando etiquetas configuradas ou conversas
   aguardando resposta do cliente acima do prazo definido na politica.
+- Service `AgentCapacityGuard` protege a decisao final com advisory lock
+  transacional do PostgreSQL por conta e agente. A capacidade e recontada sob o
+  lock antes da escrita; se outra instancia consumir a vaga, distribuicao e
+  redistribuicao tentam o proximo agente elegivel. A garantia funciona entre
+  processos, containers e instancias em autoscaling sem tabela ou contador
+  adicional.
 - `WatchdogRunner` usa lock distribuido em Redis por escopo
   (`IBSOFT_CONVERSATION_DISTRIBUTION_WATCHDOG_LOCK_TTL_SECONDS`, padrao 300s)
   para evitar rodadas concorrentes.
@@ -1357,6 +1488,54 @@ Acoplamento e cuidados:
   caso, remover a composicao duplicada e preservar apenas as traducoes ainda
   ausentes.
 
+### 10. Gerenciamento de modelos da Meta
+
+Documento detalhado: `IBSOFT_META_TEMPLATES.md`.
+
+Objetivo:
+
+- Gerenciar modelos do WhatsApp Business Cloud por uma tela privada acessivel
+  apenas a administradores.
+- Reutilizar a Graph API e o cache nativo do canal sem criar tabelas ou
+  duplicar o catalogo no banco.
+- Listar os modelos mais recentes primeiro e exibir a data de criacao/ultima
+  atualizacao retornada pela Meta.
+- Criar e editar modelos padrao, catalogo, detalhes/status do pedido,
+  solicitacao de permissao para ligacao e autenticacao, com previa, variaveis,
+  acoes compativeis e amostras de midia.
+
+Arquivos privados principais:
+
+- `app/controllers/api/v1/accounts/ibsoft/meta_templates/`
+- `app/services/ibsoft/meta_templates/`
+- `app/javascript/dashboard/ibsoft/metaTemplates/`
+- `config/locales/ibsoft_meta_templates.*.yml`
+- `app/javascript/dashboard/i18n/locale/*/ibsoftMetaTemplates.json`
+- `spec/**/ibsoft/meta_templates/`
+
+Banco de dados:
+
+- Nenhuma tabela ou migration propria.
+- Reutiliza `message_templates` e `message_templates_last_updated` do canal
+  WhatsApp nativo.
+
+Pontos de acoplamento:
+
+- `config/routes.rb`: registra as rotas privadas da API.
+- `app/javascript/dashboard/ibsoft/chathubSettings/routes.js`: agrega as rotas
+  frontend privadas.
+- `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`:
+  adiciona o atalho no card do canal.
+- `app/javascript/dashboard/i18n/locale/en/index.js` e
+  `app/javascript/dashboard/i18n/locale/pt_BR/index.js`: registram os arquivos
+  de traducao privados.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/services/ibsoft/meta_templates spec/requests/api/v1/accounts/ibsoft/meta_templates`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/metaTemplates/specs app/javascript/dashboard/ibsoft/i18n/specs/translationCompiler.spec.js`
+- `pnpm exec eslint app/javascript/dashboard/ibsoft/metaTemplates`
+
 ## Arquivos sensiveis para conflito
 
 Estes arquivos originais do Chatwoot contem pontos de acoplamento Ibsoft. Em
@@ -1394,6 +1573,7 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/components/widgets/conversation/EmptyState/EmptyState.vue`
 - `app/javascript/dashboard/routes/dashboard/inbox/InboxEmptyState.vue`
 - `app/javascript/dashboard/routes/dashboard/inbox/InboxView.vue`
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/Settings.vue`
 
 ### Frontend: conversas, filtros e acoes
 

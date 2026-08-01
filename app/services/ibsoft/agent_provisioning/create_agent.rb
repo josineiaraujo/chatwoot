@@ -14,12 +14,11 @@ class Ibsoft::AgentProvisioning::CreateAgent
   end
 
   def perform
-    validate!
-
     temporary_password = Ibsoft::AgentProvisioning::TemporaryPasswordGenerator.generate
     user = nil
 
-    ActiveRecord::Base.transaction do
+    account.with_lock do
+      validate!
       user = build_user(temporary_password)
       user.save!
       create_account_user!(user)
@@ -103,7 +102,7 @@ class Ibsoft::AgentProvisioning::CreateAgent
   end
 
   def available_agent_count
-    account.usage_limits[:agents] - account.users.count
+    account.usage_limits[:agents] - account.account_users.count
   end
 
   def saml_enabled?

@@ -5,6 +5,7 @@ import attributesMgmt from './attributesMgmt.json';
 import auditLogs from './auditLogs.json';
 import automation from './automation.json';
 import bulkActions from './bulkActions.json';
+import calls from './calls.json';
 import campaign from './campaign.json';
 import cannedMgmt from './cannedMgmt.json';
 import chatlist from './chatlist.json';
@@ -23,6 +24,9 @@ import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import ibsoftInternalChat from './ibsoftInternalChat.json';
+import ibsoftExternalMessaging from './ibsoftExternalMessaging.json';
+import ibsoftInstagramInbound from './ibsoftInstagramInbound.json';
+import ibsoftMetaTemplates from './ibsoftMetaTemplates.json';
 import ibsoftTheme from './ibsoftTheme.json';
 import integrationApps from './integrationApps.json';
 import integrations from './integrations.json';
@@ -54,6 +58,7 @@ const locale = {
   ...auditLogs,
   ...automation,
   ...bulkActions,
+  ...calls,
   ...campaign,
   ...cannedMgmt,
   ...chatlist,
@@ -72,6 +77,9 @@ const locale = {
   ...inbox,
   ...inboxMgmt,
   ...ibsoftInternalChat,
+  ...ibsoftExternalMessaging,
+  ...ibsoftInstagramInbound,
+  ...ibsoftMetaTemplates,
   ...integrationApps,
   ...integrations,
   ...labelsMgmt,

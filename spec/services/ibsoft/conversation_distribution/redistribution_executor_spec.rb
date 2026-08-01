@@ -80,6 +80,34 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
     expect(conversation.reload.assignee).to eq(next_agent)
   end
 
+  it 'tries another eligible agent when redistribution capacity changes during the protected claim' do
+    create(:inbox_member, inbox: inbox, user: manual_agent)
+    create(:team_member, team: team, user: manual_agent)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      current_agent.id.to_s => 'online',
+      next_agent.id.to_s => 'online',
+      manual_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AssignmentAgentSelector).to receive(:new).and_return(
+      instance_double(Ibsoft::ConversationDistribution::AssignmentAgentSelector, perform: next_agent),
+      instance_double(Ibsoft::ConversationDistribution::AssignmentAgentSelector, perform: manual_agent)
+    )
+    capacity_reached_guard = instance_double(
+      Ibsoft::ConversationDistribution::AgentCapacityGuard,
+      perform: { status: :capacity_reached, assignment: nil }
+    )
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new).and_call_original
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new)
+      .with(account: account, agent: next_agent, policy: anything)
+      .and_return(capacity_reached_guard)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 1, skipped: 0)
+    expect(conversation.reload.assignee).to eq(manual_agent)
+  end
+
   it 'does not redistribute while real execution is disabled' do
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(next_agent.id.to_s => 'online')
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)

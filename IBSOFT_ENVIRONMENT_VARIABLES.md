@@ -123,6 +123,91 @@ Cuidados:
 - Essa variavel nao substitui traducoes ausentes. Ela apenas escolhe o locale
   padrao.
 
+### ACTIVE_RECORD_ENCRYPTION_*
+
+Exemplo:
+
+```env
+ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=...
+ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=...
+ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=...
+```
+
+Origem:
+
+- Nativas do Chatwoot/Rails.
+
+Motivo:
+
+- Protegem campos sensiveis no banco.
+- O modulo Ibsoft de API de templates usa essa criptografia para a chave PIX
+  padrao da instancia e para o snapshot transitorio necessario ao worker.
+
+Cuidados:
+
+- As tres variaveis devem estar presentes em `rails` e `sidekiq`.
+- Em producao, o modulo recusa gravar uma chave PIX se a criptografia nao
+  estiver configurada.
+- Gere os valores pelo procedimento oficial do Chatwoot/Rails e armazene-os em
+  cofre de segredos. Nao reutilize valores de desenvolvimento.
+- Perder ou trocar as chaves sem migracao impede a leitura dos segredos ja
+  gravados.
+
+### WHATSAPP_CLOUD_BASE_URL e WHATSAPP_API_VERSION
+
+Exemplo:
+
+```env
+WHATSAPP_CLOUD_BASE_URL=https://graph.facebook.com
+WHATSAPP_API_VERSION=v22.0
+```
+
+Origem:
+
+- Nativas do Chatwoot.
+
+Motivo:
+
+- Definem a origem e a versao da Graph API usadas pelo WhatsApp Business Cloud.
+- O modulo Ibsoft de mensagens externas reutiliza esses valores para enviar
+  diretamente pela Meta.
+
+Cuidados:
+
+- Prefira a versao homologada pela versao atual do Chatwoot.
+- `WHATSAPP_API_VERSION` tambem pode ser controlada por
+  `installation_configs` via `GlobalConfigService`.
+- Nao altere a versao apenas no container Rails; workers Sidekiq precisam
+  receber a mesma configuracao.
+
+### WHATSAPP_APP_ID
+
+Exemplo:
+
+```env
+WHATSAPP_APP_ID=123456789012345
+```
+
+Origem:
+
+- Nativa do Chatwoot para o WhatsApp Embedded Signup.
+
+Motivo:
+
+- Identifica o aplicativo Meta usado pela integracao WhatsApp Embedded.
+- O modulo Ibsoft de modelos usa esse identificador para abrir sessoes de
+  upload resumivel de imagens, videos e documentos usados como amostra.
+
+Cuidados:
+
+- A listagem e a edicao de modelos sem midia continuam funcionando sem essa
+  variavel.
+- O upload de amostras de midia exige o ID do mesmo aplicativo associado ao
+  token do canal.
+- A tela administrativa do WhatsApp Embedded persiste o valor em
+  `installation_configs`; o modulo o reutiliza por `GlobalConfigService`.
+- Nao duplique o valor em `provider_config` do canal.
+
 ### ACTIVE_STORAGE_SERVICE e storage compartilhado
 
 Exemplo local:
@@ -187,9 +272,93 @@ nativo selecionado por `ACTIVE_STORAGE_SERVICE`.
 
 ## Variaveis Ibsoft
 
-As variaveis abaixo nao fazem parte do Chatwoot oficial. Elas foram criadas
-para controlar o modulo privado de distribuicao e redistribuicao de
-atendimentos.
+As variaveis abaixo nao fazem parte do Chatwoot oficial. Elas controlam modulos
+privados Ibsoft.
+
+### IBSOFT_META_TEMPLATES_TIMEOUT_SECONDS
+
+Exemplo opcional:
+
+```env
+IBSOFT_META_TEMPLATES_TIMEOUT_SECONDS=20
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Define o timeout das operacoes de catalogo, criacao, edicao e exclusao de
+  modelos na Graph API.
+
+Default:
+
+- `20` segundos.
+- Valores sao limitados automaticamente entre 5 e 60 segundos.
+
+Cuidados:
+
+- Nao e obrigatoria.
+- Como as operacoes administrativas rodam no container Rails, a variavel
+  precisa estar disponivel nesse servico.
+
+### IBSOFT_META_TEMPLATES_UPLOAD_TIMEOUT_SECONDS
+
+Exemplo opcional:
+
+```env
+IBSOFT_META_TEMPLATES_UPLOAD_TIMEOUT_SECONDS=60
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Define o timeout da transferencia em streaming de amostras de imagem, video
+  e documento para a Meta.
+
+Default:
+
+- `60` segundos.
+- Valores sao limitados automaticamente entre 10 e 180 segundos.
+
+Cuidados:
+
+- Nao e obrigatoria.
+- Aumente apenas quando a rede ou o tamanho permitido das amostras justificar.
+- O upload acontece no Rails e nao depende do Sidekiq.
+
+### IBSOFT_EXTERNAL_MESSAGING_META_TIMEOUT_SECONDS
+
+Exemplo opcional:
+
+```env
+IBSOFT_EXTERNAL_MESSAGING_META_TIMEOUT_SECONDS=20
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Define o timeout HTTP do worker que envia templates externos diretamente
+  para a Meta.
+
+Default:
+
+- `20` segundos.
+- Valores sao limitados automaticamente entre 5 e 60 segundos.
+
+Cuidados:
+
+- Nao e obrigatoria.
+- Um timeout deixa a entrega como `uncertain` e nao causa retry automatico,
+  porque a Meta pode ter aceitado a mensagem antes da interrupcao da resposta.
+- Configure o mesmo valor em todos os containers Sidekiq.
 
 ### IBSOFT_CONVERSATION_DISTRIBUTION_JOB_ENABLED
 
@@ -360,6 +529,7 @@ Nao devem ser configuradas via `.env`:
 - percentual minimo do modal pos-login;
 - perfis e permissoes;
 - configuracoes do chat interno.
+- defaults PIX das instancias da API de templates Meta.
 
 ## Comandos de verificacao
 

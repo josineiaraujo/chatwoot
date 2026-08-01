@@ -60,6 +60,7 @@
         "ACCOUNT": "Account",
         "ERP": "ERPs",
         "MESSAGE_SIGNATURE": "Message signatures",
+        "EXTERNAL_MESSAGING": "Billing API",
         "ATTENDANCE": "Entry settings",
         "POLICIES": "Policies",
         "AGENTS": "Agents",

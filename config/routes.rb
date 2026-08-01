@@ -40,6 +40,37 @@ Rails.application.routes.draw do
 
   get '/health', to: 'health#show'
   get '/api', to: 'api#index'
+  get '/chathub-sender/sgp/generico',
+      to: 'api/v1/ibsoft/external_messaging/messages#create',
+      defaults: {
+        format: 'json',
+        ibsoft_external_messaging_instance_type: 'sgp_generic'
+      },
+      as: :ibsoft_external_messaging
+  match '/chathub-sender/ixc',
+        to: 'api/v1/ibsoft/external_messaging/messages#create',
+        via: :all,
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_instance_type: 'ixc'
+        },
+        as: :ibsoft_external_messaging_ixc
+  match '/chathub-sender/sgp/pedido',
+        to: 'api/v1/ibsoft/external_messaging/order_updates#create',
+        via: [:get, :post],
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_family: 'sgp'
+        },
+        as: :ibsoft_external_messaging_order_update
+  match '/chathub-sender/ixc/pedido',
+        to: 'api/v1/ibsoft/external_messaging/order_updates#create',
+        via: [:get, :post],
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_family: 'ixc'
+        },
+        as: :ibsoft_external_messaging_ixc_order_update
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
       # ----------------------------------
@@ -66,6 +97,10 @@ Rails.application.routes.draw do
             resources :assistants do
               member do
                 post :playground
+                get :metrics
+                get :faq_stats
+                get :summary
+                get :drilldown
               end
               collection do
                 get :tools
@@ -73,7 +108,12 @@ Rails.application.routes.draw do
               resources :inboxes, only: [:index, :create, :destroy], param: :inbox_id
               resources :scenarios
             end
+            resources :agent_sessions, only: [:show]
             resources :assistant_responses
+            resources :faq_suggestions, only: [:index, :show, :update] do
+              post :approve, on: :member
+              post :dismiss, on: :member
+            end
             resources :message_reports, only: [:create]
             resources :bulk_actions, only: [:create]
             resources :copilot_threads, only: [:index, :create] do
@@ -219,6 +259,18 @@ Rails.application.routes.draw do
               post :call, on: :member, to: 'calls#create' if ChatwootApp.enterprise?
             end
           end
+          resources :data_imports, only: [:index, :show, :create] do
+            collection do
+              post :validate_source
+            end
+            member do
+              post :start
+              post :retry, action: :retry_import
+              post :abandon
+              get :error_logs
+              get :skip_logs
+            end
+          end
           resources :csat_survey_responses, only: [:index] do
             collection do
               get :metrics
@@ -237,6 +289,7 @@ Rails.application.routes.draw do
           resources :reporting_events, only: [:index] if ChatwootApp.enterprise?
 
           if ChatwootApp.enterprise?
+            resources :calls, only: [:index]
             resources :whatsapp_calls, only: [:show] do
               member do
                 post :accept
@@ -252,6 +305,7 @@ Rails.application.routes.draw do
 
           resources :custom_attribute_definitions, only: [:index, :show, :create, :update, :destroy]
           resources :custom_filters, only: [:index, :show, :create, :update, :destroy]
+          resource :branded_email_layout, only: [:show, :update]
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do
             get :assignable_agents, on: :member
             get :campaigns, on: :member
@@ -345,6 +399,10 @@ Rails.application.routes.draw do
               resource :setting, only: [:show, :update], controller: :settings
             end
 
+            namespace :instagram_inbound do
+              resources :inbox_policies, only: [:show, :update], param: :inbox_id
+            end
+
             namespace :erp do
               resources :connections, only: [:index, :show, :create, :update, :destroy] do
                 post :test_connection, on: :member
@@ -363,6 +421,23 @@ Rails.application.routes.draw do
               get 'lookups/pops', to: 'lookups#pops'
               get 'lookups/transmitters', to: 'lookups#transmitters'
               post 'recipients/preview', to: 'recipients#preview'
+            end
+
+            namespace :external_messaging do
+              resources :endpoints, only: [:index, :create, :update, :destroy] do
+                post :rotate_token, on: :member
+              end
+              resources :deliveries, only: [:index, :show]
+              resources :orders, only: [:index] do
+                post :bulk_update, on: :collection
+              end
+            end
+
+            namespace :meta_templates do
+              resources :inboxes, only: [] do
+                resources :templates, only: [:index, :show, :create, :update, :destroy]
+                resources :media_uploads, only: [:create]
+              end
             end
 
             namespace :access_control do
@@ -577,6 +652,7 @@ Rails.application.routes.draw do
               get :conversations
               get :conversations_summary
               get :conversation_traffic
+              get :drilldown
               get :bot_metrics
               get :inbox_label_matrix
               get :first_response_time_distribution
@@ -603,9 +679,11 @@ Rails.application.routes.draw do
             member do
               post :checkout
               post :subscription
+              post :select_billing_currency
               get :limits
               post :toggle_deletion
               post :topup_checkout
+              get :topup_options
             end
           end
         end

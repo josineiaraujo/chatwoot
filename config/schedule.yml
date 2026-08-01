@@ -68,6 +68,20 @@ ibsoft_conversation_distribution_watchdog_job:
   class: 'Ibsoft::ConversationDistribution::WatchdogJob'
   queue: scheduled_jobs
 
+# Recovers durable external-message records when the initial Sidekiq enqueue
+# is interrupted. Stale in-flight records are marked uncertain, never resent.
+ibsoft_external_messaging_dispatch_pending_job:
+  cron: '*/1 * * * *'
+  class: 'Ibsoft::ExternalMessaging::DispatchPendingJob'
+  queue: scheduled_jobs
+
+# Removes expired external-message history using each instance retention policy.
+# Retention is absolute and removes expired records regardless of status.
+ibsoft_external_messaging_cleanup_expired_records_job:
+  cron: '15 3 * * *'
+  class: 'Ibsoft::ExternalMessaging::CleanupExpiredRecordsJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # removes old notifications (>1 month) and trims to 300 per user
 remove_old_notification_job:

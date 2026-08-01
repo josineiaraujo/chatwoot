@@ -1,6 +1,7 @@
 import settings from './settings/settings.routes';
 import conversation from './conversation/conversation.routes';
 import { routes as searchRoutes } from '../../modules/search/search.routes';
+import { routes as callRoutes } from './calls/routes';
 import { routes as contactRoutes } from './contacts/routes';
 import { routes as companyRoutes } from './companies/routes';
 import { routes as notificationRoutes } from './notifications/routes';
@@ -10,6 +11,7 @@ import { routes as ibsoftConversationDistributionRoutes } from 'dashboard/ibsoft
 import { routes as ibsoftChathubSettingsRoutes } from 'dashboard/ibsoft/chathubSettings/routes';
 import { routes as ibsoftChathubAnalyticsRoutes } from 'dashboard/ibsoft/chathubAnalytics/routes';
 import { routes as ibsoftMessageBroadcastRoutes } from 'dashboard/ibsoft/messageBroadcast/routes';
+import { routes as ibsoftExternalMessagingRoutes } from 'dashboard/ibsoft/externalMessaging/routes';
 import { frontendURL } from '../../helper/URLHelper';
 import helpcenterRoutes from './helpcenter/helpcenter.routes';
 import campaignsRoutes from './campaigns/campaigns.routes';
@@ -32,9 +34,11 @@ export default {
         ...ibsoftChathubSettingsRoutes,
         ...ibsoftChathubAnalyticsRoutes,
         ...ibsoftMessageBroadcastRoutes,
+        ...ibsoftExternalMessagingRoutes,
         ...inboxRoutes,
         ...conversation.routes,
         ...settings.routes,
+        ...callRoutes,
         ...contactRoutes,
         ...companyRoutes,
         ...searchRoutes,

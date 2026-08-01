@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_29_170000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -73,6 +73,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.integer "status", default: 0
     t.jsonb "internal_attributes", default: {}, null: false
     t.jsonb "settings", default: {}
+    t.bigint "feature_flags_ext_1", default: 0, null: false
     t.index ["status"], name: "index_accounts_on_status"
   end
 
@@ -145,6 +146,31 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.index ["account_id"], name: "index_agent_capacity_policies_on_account_id"
   end
 
+  create_table "agent_sessions", force: :cascade do |t|
+    t.integer "session_type", null: false
+    t.string "subject_type", null: false
+    t.bigint "subject_id", null: false
+    t.string "result_type"
+    t.bigint "result_id"
+    t.bigint "account_id", null: false
+    t.bigint "assistant_id", null: false
+    t.bigint "user_id"
+    t.string "llm_model"
+    t.float "credits_consumed"
+    t.jsonb "faq_ids", default: []
+    t.jsonb "document_ids", default: []
+    t.jsonb "scenario_ids", default: []
+    t.jsonb "run_context", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "result_type", "result_id"], name: "idx_on_account_id_result_type_result_id_ca66c00cd7"
+    t.index ["account_id", "session_type", "created_at"], name: "idx_on_account_id_session_type_created_at_c20a14bd4e"
+    t.index ["account_id", "subject_type", "subject_id"], name: "idx_on_account_id_subject_type_subject_id_6d60963b3d"
+    t.index ["account_id"], name: "index_agent_sessions_on_account_id"
+    t.index ["assistant_id"], name: "index_agent_sessions_on_assistant_id"
+    t.index ["user_id"], name: "index_agent_sessions_on_user_id"
+  end
+
   create_table "applied_slas", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "sla_policy_id", null: false
@@ -185,6 +211,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.string "slug", null: false
     t.integer "position"
     t.string "locale", default: "en", null: false
+    t.string "draft_title"
+    t.text "draft_content"
     t.index ["account_id"], name: "index_articles_on_account_id"
     t.index ["associated_article_id"], name: "index_articles_on_associated_article_id"
     t.index ["author_id"], name: "index_articles_on_author_id"
@@ -282,6 +310,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.datetime "updated_at", null: false
     t.index ["account_id", "contact_id"], name: "index_calls_on_account_id_and_contact_id"
     t.index ["account_id", "conversation_id"], name: "index_calls_on_account_id_and_conversation_id"
+    t.index ["account_id", "created_at"], name: "index_calls_on_account_id_and_created_at"
     t.index ["message_id"], name: "index_calls_on_message_id"
     t.index ["provider", "provider_call_id"], name: "index_calls_on_provider_and_provider_call_id", unique: true
   end
@@ -341,7 +370,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
   create_table "captain_assistants", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "account_id", null: false
-    t.string "description"
+    t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "config", default: {}, null: false
@@ -388,6 +417,39 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.index ["account_id"], name: "index_captain_documents_on_account_id"
     t.index ["assistant_id"], name: "index_captain_documents_on_assistant_id"
     t.index ["status"], name: "index_captain_documents_on_status"
+  end
+
+  create_table "captain_faq_observations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "faq_suggestion_id"
+    t.string "generated_question", null: false
+    t.text "generated_answer", null: false
+    t.string "language", default: "en", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_captain_faq_observations_on_account_id"
+    t.index ["conversation_id", "faq_suggestion_id"], name: "idx_captain_faq_observations_on_conversation_and_suggestion", unique: true, where: "(faq_suggestion_id IS NOT NULL)"
+    t.index ["conversation_id"], name: "index_captain_faq_observations_on_conversation_id"
+    t.index ["faq_suggestion_id"], name: "index_captain_faq_observations_on_faq_suggestion_id"
+  end
+
+  create_table "captain_faq_suggestions", force: :cascade do |t|
+    t.string "question", null: false
+    t.text "answer", null: false
+    t.vector "embedding", limit: 1536
+    t.bigint "assistant_id", null: false
+    t.bigint "account_id", null: false
+    t.string "language", default: "en", null: false
+    t.integer "source_count", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
+    t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
+    t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
 
   create_table "captain_inboxes", force: :cascade do |t|
@@ -621,6 +683,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.datetime "updated_at", null: false
     t.jsonb "message_templates", default: {}
     t.datetime "message_templates_last_updated", precision: nil
+    t.jsonb "phone_number_health", default: {}, null: false
+    t.datetime "phone_number_health_checked_at"
+    t.string "phone_number_health_error", limit: 500
+    t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
   end
 
@@ -839,6 +905,57 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.index ["user_id"], name: "index_dashboard_apps_on_user_id"
   end
 
+  create_table "data_import_errors", force: :cascade do |t|
+    t.bigint "data_import_id", null: false
+    t.bigint "data_import_item_id"
+    t.string "source_object_type"
+    t.string "source_object_id"
+    t.string "error_code", null: false
+    t.text "message"
+    t.jsonb "details", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["data_import_id"], name: "index_data_import_errors_on_data_import_id"
+    t.index ["data_import_item_id"], name: "index_data_import_errors_on_data_import_item_id"
+    t.index ["source_object_type", "source_object_id"], name: "idx_data_import_errors_on_source"
+  end
+
+  create_table "data_import_items", force: :cascade do |t|
+    t.bigint "data_import_id", null: false
+    t.string "source_provider", null: false
+    t.string "source_object_type", null: false
+    t.string "source_object_id", null: false
+    t.integer "status", default: 0, null: false
+    t.string "chatwoot_record_type"
+    t.bigint "chatwoot_record_id"
+    t.integer "attempt_count", default: 0, null: false
+    t.string "last_error_code"
+    t.text "last_error_message"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chatwoot_record_type", "chatwoot_record_id"], name: "idx_data_import_items_on_record"
+    t.index ["data_import_id", "source_object_type", "source_object_id"], name: "idx_data_import_items_on_import_and_source", unique: true
+    t.index ["data_import_id"], name: "index_data_import_items_on_data_import_id"
+    t.index ["source_provider", "source_object_type", "source_object_id"], name: "idx_data_import_items_on_source"
+  end
+
+  create_table "data_import_mappings", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.bigint "data_import_id", null: false
+    t.string "source_provider", null: false
+    t.string "source_object_type", null: false
+    t.string "source_object_id", null: false
+    t.string "chatwoot_record_type", null: false
+    t.bigint "chatwoot_record_id", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "source_provider", "source_object_type", "source_object_id"], name: "idx_data_import_mappings_on_account_and_source", unique: true
+    t.index ["chatwoot_record_type", "chatwoot_record_id"], name: "idx_data_import_mappings_on_record"
+    t.index ["data_import_id"], name: "index_data_import_mappings_on_data_import_id"
+  end
+
   create_table "data_imports", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.string "data_type", null: false
@@ -848,7 +965,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.integer "processed_records"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
+    t.string "source_type"
+    t.string "source_provider"
+    t.jsonb "import_types", default: [], null: false
+    t.integer "initiated_by_id"
+    t.text "access_token"
+    t.jsonb "source_metadata", default: {}, null: false
+    t.jsonb "stats", default: {}, null: false
+    t.jsonb "cursor", default: {}, null: false
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "abandoned_at"
+    t.datetime "last_error_at"
     t.index ["account_id"], name: "index_data_imports_on_account_id"
+    t.index ["initiated_by_id"], name: "index_data_imports_on_initiated_by_id"
+    t.index ["source_provider"], name: "index_data_imports_on_source_provider"
   end
 
   create_table "email_templates", force: :cascade do |t|
@@ -859,7 +991,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.integer "locale", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["name", "account_id"], name: "index_email_templates_on_name_and_account_id", unique: true
+    t.integer "inbox_id"
+    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "(account_id IS NOT NULL) AND (inbox_id IS NULL)"
+    t.index ["inbox_id", "name", "template_type", "locale"], name: "index_email_templates_on_inbox_scope", unique: true, where: "(inbox_id IS NOT NULL)"
+    t.index ["inbox_id"], name: "index_email_templates_on_inbox_id"
+    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "(account_id IS NULL) AND (inbox_id IS NULL)"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -1014,6 +1150,145 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.index ["account_id", "active"], name: "idx_ibsoft_erp_connections_one_active", unique: true, where: "(active = true)"
     t.index ["account_id", "provider", "name"], name: "idx_ibsoft_erp_connections_account_provider_name", unique: true
     t.index ["account_id"], name: "index_ibsoft_erp_connections_on_account_id"
+  end
+
+  create_table "ibsoft_external_message_deliveries", force: :cascade do |t|
+    t.bigint "endpoint_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "request_fingerprint", null: false
+    t.string "recipient", null: false
+    t.string "template_name", null: false
+    t.string "template_language", null: false
+    t.string "template_type", default: "standard", null: false
+    t.jsonb "template_components", default: [], null: false
+    t.text "message_content", null: false
+    t.string "order_reference_id"
+    t.string "status", default: "queued", null: false
+    t.string "meta_message_id"
+    t.integer "meta_http_status"
+    t.string "error_code"
+    t.text "error_message"
+    t.integer "attempts_count", default: 0, null: false
+    t.datetime "received_at", null: false
+    t.datetime "enqueued_at"
+    t.datetime "processing_started_at"
+    t.datetime "accepted_at"
+    t.datetime "delivered_at"
+    t.datetime "read_at"
+    t.datetime "failed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "order_pix_key"
+    t.index ["account_id", "created_at"], name: "idx_ibsoft_external_deliveries_account_created"
+    t.index ["account_id"], name: "index_ibsoft_external_message_deliveries_on_account_id"
+    t.index ["endpoint_id", "created_at"], name: "idx_ibsoft_ext_deliveries_endpoint_created"
+    t.index ["endpoint_id", "idempotency_key"], name: "idx_ibsoft_external_deliveries_idempotency", unique: true
+    t.index ["endpoint_id", "recipient", "created_at"], name: "idx_ibsoft_ext_deliveries_endpoint_recipient"
+    t.index ["endpoint_id"], name: "idx_ibsoft_external_deliveries_endpoint"
+    t.index ["inbox_id", "meta_message_id"], name: "idx_ibsoft_external_deliveries_meta_message", unique: true, where: "(meta_message_id IS NOT NULL)"
+    t.index ["inbox_id"], name: "index_ibsoft_external_message_deliveries_on_inbox_id"
+    t.index ["status", "enqueued_at"], name: "idx_ibsoft_external_deliveries_dispatch"
+  end
+
+  create_table "ibsoft_external_message_endpoints", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "created_by_id", null: false
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.string "token_hint", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "rate_limit_per_second", default: 10, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "instance_type", default: "sgp_generic", null: false
+    t.string "order_pix_merchant_name"
+    t.text "order_pix_key"
+    t.string "order_pix_key_type"
+    t.integer "retention_days", default: 30, null: false
+    t.jsonb "order_update_messages", default: {}, null: false
+    t.index ["account_id", "name"], name: "idx_ibsoft_external_endpoints_account_name", unique: true
+    t.index ["account_id"], name: "index_ibsoft_external_message_endpoints_on_account_id"
+    t.index ["created_by_id"], name: "index_ibsoft_external_message_endpoints_on_created_by_id"
+    t.index ["inbox_id"], name: "index_ibsoft_external_message_endpoints_on_inbox_id"
+    t.index ["token_digest"], name: "idx_ibsoft_external_endpoints_token", unique: true
+    t.check_constraint "jsonb_typeof(order_update_messages) = 'object'::text", name: "chk_ibsoft_ext_endpoints_order_update_messages"
+    t.check_constraint "retention_days >= 1 AND retention_days <= 3650", name: "chk_ibsoft_ext_endpoints_retention_days"
+  end
+
+  create_table "ibsoft_external_message_order_updates", force: :cascade do |t|
+    t.bigint "order_id", null: false
+    t.bigint "endpoint_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.string "order_status"
+    t.string "payment_status"
+    t.text "message_content", null: false
+    t.string "description"
+    t.bigint "payment_timestamp"
+    t.string "status", default: "queued", null: false
+    t.string "meta_message_id"
+    t.integer "meta_http_status"
+    t.string "error_code"
+    t.text "error_message"
+    t.integer "attempts_count", default: 0, null: false
+    t.datetime "received_at", null: false
+    t.datetime "enqueued_at"
+    t.datetime "processing_started_at"
+    t.datetime "accepted_at"
+    t.datetime "delivered_at"
+    t.datetime "read_at"
+    t.datetime "failed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "source", default: "external_api", null: false
+    t.bigint "requested_by_id"
+    t.index ["account_id", "created_at"], name: "idx_ibsoft_ext_order_updates_account_created"
+    t.index ["account_id"], name: "index_ibsoft_external_message_order_updates_on_account_id"
+    t.index ["endpoint_id"], name: "idx_ibsoft_ext_order_updates_endpoint"
+    t.index ["inbox_id", "meta_message_id"], name: "idx_ibsoft_ext_order_updates_meta_message", unique: true, where: "(meta_message_id IS NOT NULL)"
+    t.index ["inbox_id"], name: "index_ibsoft_external_message_order_updates_on_inbox_id"
+    t.index ["order_id", "status", "id"], name: "idx_ibsoft_ext_order_updates_queue"
+    t.index ["order_id"], name: "idx_ibsoft_ext_order_updates_order"
+    t.index ["requested_by_id"], name: "idx_ibsoft_ext_order_updates_requested_by"
+    t.index ["status", "enqueued_at"], name: "idx_ibsoft_ext_order_updates_dispatch"
+    t.check_constraint "order_status IS NOT NULL OR payment_status IS NOT NULL", name: "chk_ibsoft_ext_order_updates_requested_status"
+    t.check_constraint "order_status IS NULL OR (order_status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'partially_shipped'::character varying, 'shipped'::character varying, 'completed'::character varying, 'canceled'::character varying]::text[]))", name: "chk_ibsoft_ext_order_updates_order_status"
+    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying, 'captured'::character varying, 'failed'::character varying]::text[]))", name: "chk_ibsoft_ext_order_updates_payment_status"
+    t.check_constraint "payment_timestamp IS NULL OR payment_timestamp > 0", name: "chk_ibsoft_ext_order_updates_payment_timestamp"
+    t.check_constraint "source::text = ANY (ARRAY['external_api'::character varying, 'manual'::character varying]::text[])", name: "chk_ibsoft_ext_order_updates_source"
+    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying, 'processing'::character varying, 'accepted'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'uncertain'::character varying, 'unchanged'::character varying]::text[])", name: "chk_ibsoft_ext_order_updates_status"
+  end
+
+  create_table "ibsoft_external_message_orders", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "opening_delivery_id", null: false
+    t.string "reference_id", null: false
+    t.string "order_status", default: "pending", null: false
+    t.string "payment_status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "inbox_id", "reference_id"], name: "idx_ibsoft_ext_orders_tenant_reference", unique: true
+    t.index ["account_id", "order_status", "payment_status", "created_at"], name: "idx_ibsoft_ext_orders_account_status_created"
+    t.index ["account_id"], name: "index_ibsoft_external_message_orders_on_account_id"
+    t.index ["inbox_id"], name: "index_ibsoft_external_message_orders_on_inbox_id"
+    t.index ["opening_delivery_id"], name: "idx_ibsoft_ext_orders_opening_delivery", unique: true
+    t.check_constraint "order_status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'partially_shipped'::character varying, 'shipped'::character varying, 'completed'::character varying, 'canceled'::character varying]::text[])", name: "chk_ibsoft_ext_orders_order_status"
+    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying, 'captured'::character varying, 'failed'::character varying]::text[]))", name: "chk_ibsoft_ext_orders_payment_status"
+  end
+
+  create_table "ibsoft_instagram_inbound_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.boolean "create_from_story_interactions", default: true, null: false
+    t.boolean "create_from_shared_reels_and_stories", default: true, null: false
+    t.boolean "create_from_shared_posts", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "inbox_id"], name: "idx_ibsoft_instagram_inbound_policies_account_inbox", unique: true
   end
 
   create_table "ibsoft_internal_chat_attachments", force: :cascade do |t|
@@ -1333,6 +1608,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["created_at"], name: "index_messages_on_created_at"
     t.index ["inbox_id"], name: "index_messages_on_inbox_id"
+    t.index ["sender_type", "sender_id", "created_at"], name: "index_messages_on_sender_and_created"
     t.index ["sender_type", "sender_id"], name: "index_messages_on_sender_type_and_sender_id"
     t.index ["source_id"], name: "index_messages_on_source_id"
   end
@@ -1677,6 +1953,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_210000) do
   add_foreign_key "ibsoft_conversation_distribution_policies", "accounts"
   add_foreign_key "ibsoft_conversation_distribution_team_policies", "ibsoft_conversation_distribution_policies", column: "distribution_policy_id"
   add_foreign_key "ibsoft_erp_connections", "accounts"
+  add_foreign_key "ibsoft_external_message_deliveries", "accounts"
+  add_foreign_key "ibsoft_external_message_deliveries", "ibsoft_external_message_endpoints", column: "endpoint_id"
+  add_foreign_key "ibsoft_external_message_deliveries", "inboxes"
+  add_foreign_key "ibsoft_external_message_endpoints", "accounts"
+  add_foreign_key "ibsoft_external_message_endpoints", "inboxes"
+  add_foreign_key "ibsoft_external_message_endpoints", "users", column: "created_by_id"
+  add_foreign_key "ibsoft_external_message_order_updates", "accounts"
+  add_foreign_key "ibsoft_external_message_order_updates", "ibsoft_external_message_endpoints", column: "endpoint_id"
+  add_foreign_key "ibsoft_external_message_order_updates", "ibsoft_external_message_orders", column: "order_id"
+  add_foreign_key "ibsoft_external_message_order_updates", "inboxes"
+  add_foreign_key "ibsoft_external_message_order_updates", "users", column: "requested_by_id"
+  add_foreign_key "ibsoft_external_message_orders", "accounts"
+  add_foreign_key "ibsoft_external_message_orders", "ibsoft_external_message_deliveries", column: "opening_delivery_id"
+  add_foreign_key "ibsoft_external_message_orders", "inboxes"
+  add_foreign_key "ibsoft_instagram_inbound_policies", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_instagram_inbound_policies", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_message_broadcast_group_members", "ibsoft_message_broadcast_groups", column: "group_id"
   add_foreign_key "ibsoft_message_broadcast_groups", "accounts"
   add_foreign_key "ibsoft_message_broadcast_groups", "users", column: "created_by_id"

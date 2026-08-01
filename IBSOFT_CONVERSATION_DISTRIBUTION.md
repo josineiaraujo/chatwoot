@@ -53,6 +53,7 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/assignment_executor.rb`
 - `app/services/ibsoft/conversation_distribution/assignment_agent_selector.rb`
 - `app/services/ibsoft/conversation_distribution/agent_capacity_evaluator.rb`
+- `app/services/ibsoft/conversation_distribution/agent_capacity_guard.rb`
 - `app/services/ibsoft/conversation_distribution/assignment_rate_limiter.rb`
 - `app/services/ibsoft/conversation_distribution/assignment_rate_tracker.rb`
 - `app/services/ibsoft/conversation_distribution/assignment_confirmation_notifier.rb`
@@ -158,6 +159,10 @@ services proprios Ibsoft:
   conta apenas conversas abertas atribuidas ao agente na conta, ignorando
   etiquetas configuradas e conversas em que a ultima mensagem publica foi do
   agente ha mais que o prazo configurado;
+- `AgentCapacityGuard`: adquire um advisory lock transacional do PostgreSQL por
+  conta e agente, revalida a capacidade dentro da transacao e mantem o lock ate
+  concluir a atribuicao ou redistribuicao. Se outra execucao consumir a vaga, o
+  executor tenta o proximo agente elegivel;
 - `AssignmentRateLimiter`: limita quantas atribuicoes o agente pode receber na
   janela configurada quando `assignment_limit_mode=assignment_window`;
 - `AssignmentRoundLimiter`: limita a quantidade total por rodada apenas quando
@@ -168,6 +173,14 @@ services proprios Ibsoft:
 O padrao Ibsoft preserva o comportamento historico do modulo e usa
 `conversation_priority=longest_waiting`. Uma politica pode alterar para
 `earliest_created` quando a operacao quiser seguir a ordem de criacao.
+
+No modo `open_conversations`, o limite simultaneo e garantido entre processos,
+containers e instancias em autoscaling porque a decisao final nao depende do
+lock de um worker especifico. O PostgreSQL serializa as tentativas concorrentes
+do mesmo agente, e a contagem e repetida depois da aquisicao do lock. A garantia
+abrange tanto a distribuicao inicial quanto a redistribuicao automatica. Uma
+atribuicao manual ainda pode ultrapassar deliberadamente o limite, pois o limite
+e uma regra dos motores automaticos.
 
 O bloco `assignment_confirmation` controla a mensagem automatica enviada quando
 o motor Ibsoft atribui uma conversa a um agente:

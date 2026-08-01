@@ -53,7 +53,7 @@ const isKeyOptionFriendly = key => key === 'friendly';
 const userName = keyOption =>
   isKeyOptionFriendly(keyOption.key)
     ? keyOption.preview.senderName
-    : keyOption.preview.businessName;
+    : props.businessName || keyOption.preview.businessName;
 
 const toggleSenderNameType = key => {
   emit('update', key);

@@ -85,6 +85,10 @@ const openAutomationHandoff = inbox => {
   automationHandoffModalRef.value?.open(inbox);
 };
 
+const supportsMetaTemplates = inbox =>
+  inbox.channel_type === 'Channel::Whatsapp' &&
+  inbox.provider === 'whatsapp_cloud';
+
 const closeDelete = () => {
   showDeletePopup.value = false;
   selectedInbox.value = {};
@@ -189,6 +193,22 @@ onMounted(() => {
         <div
           class="flex items-center justify-end gap-2 border-t border-n-weak pt-3"
         >
+          <router-link
+            v-if="isAdmin && supportsMetaTemplates(inbox)"
+            :to="{
+              name: 'ibsoft_meta_templates',
+              params: { inboxId: inbox.id },
+            }"
+          >
+            <Button
+              v-tooltip.top="t('IBSOFT_META_TEMPLATES.CARD_ACTION')"
+              icon="i-lucide-layout-template"
+              slate
+              sm
+              ghost
+              :aria-label="t('IBSOFT_META_TEMPLATES.CARD_ACTION')"
+            />
+          </router-link>
           <Button
             v-if="isAdmin"
             :label="

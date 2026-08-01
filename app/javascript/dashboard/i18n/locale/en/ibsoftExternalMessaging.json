@@ -1,0 +1,440 @@
+{
+  "IBSOFT_EXTERNAL_MESSAGING": {
+    "TITLE": "Meta template sending API",
+    "DESCRIPTION": "Create and manage authenticated instances that receive external system requests and send templates through WhatsApp Business Cloud.",
+    "ENDPOINTS": {
+      "TITLE": "Instances",
+      "DESCRIPTION": "Each instance has its own type, channel, and credentials.",
+      "NEW": "New instance",
+      "CREATE_TITLE": "Configure instance",
+      "EDIT_TITLE": "Edit instance",
+      "TYPE_STEP_TITLE": "Choose the instance type",
+      "TYPE_STEP_DESCRIPTION": "The type defines the accepted contract and the integration instructions.",
+      "TYPE": "Instance type",
+      "NAME": "Name",
+      "CHANNEL": "Communication channel",
+      "RATE": "Deliveries per second limit",
+      "RATE_SHORT": "Limit",
+      "RATE_VALUE": "Up to {count} deliveries per second on this channel",
+      "RATE_CARD_VALUE": "{count}/s",
+      "RETENTION_DAYS": "History retention",
+      "RETENTION_DESCRIPTION": "Orders and messages older than this period are removed automatically, regardless of status.",
+      "REQUESTS": "Requests",
+      "ENABLED": "Active instance",
+      "ENABLED_DESCRIPTION": "Credentials from inactive instances cannot submit new requests.",
+      "SAVE": "Save instance",
+      "SAVED": "Instance saved.",
+      "VIEW": "View",
+      "EDIT": "Edit",
+      "ROTATE": "Generate new credentials",
+      "DEACTIVATE": "Deactivate",
+      "ACTIVATE": "Activate",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "BACK": "Back",
+      "CONTINUE": "Continue",
+      "EMPTY_TITLE": "No instances created",
+      "EMPTY": "Create the first instance to connect an external system to a WhatsApp Business Cloud channel."
+    },
+    "TYPES": {
+      "SGP_GENERIC": {
+        "NAME": "Generic SGP",
+        "DESCRIPTION": "Integration compatible with the generic msg, to, and token parameter contract."
+      },
+      "IXC": {
+        "NAME": "IXC",
+        "DESCRIPTION": "Integration compatible with the IXC username, password, recipient, and semantic text contract."
+      }
+    },
+    "DETAIL": {
+      "BACK": "Back to instances",
+      "TYPE_AND_CHANNEL": "{type} · {channel}",
+      "TABS": {
+        "LABEL": "Instance sections",
+        "OVERVIEW": "Overview",
+        "ORDERS": "Orders",
+        "INSTRUCTIONS": "Instructions",
+        "HISTORY": "History"
+      },
+      "OVERVIEW": {
+        "TITLE": "Instance configuration",
+        "TOKEN": "Token identifier"
+      }
+    },
+    "ORDERS": {
+      "TITLE": "Orders and payments",
+      "DESCRIPTION": "Define the default PIX data and messages used for order updates.",
+      "CONFIGURATION_TITLE": "Order configuration",
+      "CONFIGURE": "Configure orders",
+      "EDIT": "Edit configuration",
+      "CONFIGURED": "The default PIX data is complete.",
+      "WARNING_TITLE": "Incomplete PIX configuration",
+      "WARNING_DESCRIPTION": "Provide the merchant name, PIX key type, and key to accept orders that depend on instance defaults.",
+      "MERCHANT_NAME": "Merchant name",
+      "KEY_TYPE": "Key type",
+      "PIX_KEY": "PIX key",
+      "SELECT_KEY_TYPE": "Select the type",
+      "NOT_CONFIGURED": "Not configured",
+      "PRIORITY": "Values sent by the ERP take priority. These defaults are used only when the corresponding request field is absent.",
+      "KEEP_KEY": "Keep {hint}",
+      "KEEP_KEY_DESCRIPTION": "Leave this field empty to preserve the current protected key.",
+      "SHOW_KEY": "Show entered key",
+      "HIDE_KEY": "Hide entered key",
+      "REMOVE_KEY": "Remove configured key",
+      "REMOVE_KEY_DESCRIPTION": "New PIX orders will have to provide the key in the request.",
+      "SAVED": "Order configuration saved.",
+      "RETENTION": {
+        "TITLE": "History retention",
+        "VALUE": "{count} days"
+      },
+      "LIST": {
+        "TITLE": "Sent orders",
+        "DESCRIPTION": "Review orders and payments, and manually update items that are still available through Meta.",
+        "EMPTY": "No orders were found for the selected filters."
+      },
+      "FILTERS": {
+        "RECIPIENT": "Recipient",
+        "REFERENCE": "Order reference",
+        "ORDER_STATUS": "Order status",
+        "PAYMENT_STATUS": "Payment status",
+        "DATE_FROM": "Start date",
+        "DATE_TO": "End date",
+        "ALL_ORDER_STATUSES": "All order statuses",
+        "ALL_PAYMENT_STATUSES": "All payment statuses",
+        "APPLY": "Filter",
+        "CLEAR": "Clear filters"
+      },
+      "ORDER_STATUSES": {
+        "PENDING": "Pending",
+        "PROCESSING": "Processing",
+        "PARTIALLY_SHIPPED": "Partially shipped",
+        "SHIPPED": "Shipped",
+        "COMPLETED": "Completed",
+        "CANCELED": "Canceled"
+      },
+      "PAYMENT_STATUSES": {
+        "PENDING": "Pending",
+        "CAPTURED": "Paid",
+        "FAILED": "Failed",
+        "NOT_INFORMED": "Not informed"
+      },
+      "SELECTION": {
+        "COUNT": "{count} orders selected",
+        "ALL_FILTERED": "Select all {count} filtered orders",
+        "CLEAR": "Clear selection",
+        "SELECT_PAGE": "Select updateable orders on this page",
+        "SELECT_ORDER": "Select order {reference}",
+        "NOT_UPDATEABLE": "This order is still processing, has an uncertain result, or has no message accepted by Meta."
+      },
+      "TABLE": {
+        "DATE": "Date",
+        "REFERENCE": "Reference",
+        "RECIPIENT": "Recipient",
+        "ORDER_STATUS": "Order",
+        "PAYMENT_STATUS": "Payment",
+        "LAST_UPDATE": "Latest update",
+        "UPDATE_VALUE": "{status} at {date}",
+        "NO_UPDATE": "No update"
+      },
+      "BULK": {
+        "OPEN": "Update status",
+        "TITLE": "Update orders",
+        "DESCRIPTION_SELECTED": "Set the new statuses for the {count} selected orders.",
+        "DESCRIPTION_FILTER": "Set the new statuses for all {count} orders matching the applied filter.",
+        "KEEP": "Keep current status",
+        "ASYNC_NOTICE": "The update will run in the background in safe batches. The history will refresh as Meta responds.",
+        "INVALID_COMBINATION": "A canceled order cannot receive a captured payment in the same update.",
+        "CONFIRM": "Confirm update",
+        "ACCEPTED": "{count} orders were queued for update."
+      },
+      "PAGINATION": {
+        "PER_PAGE": "Items per page"
+      },
+      "MODAL": {
+        "TITLE": "Configure orders",
+        "DESCRIPTION": "Define payment data and the text used in updates sent to customers.",
+        "TABS": {
+          "LABEL": "Order configuration sections",
+          "PAYMENT": "Payment",
+          "MESSAGES": "Messages"
+        },
+        "MESSAGES": {
+          "DESCRIPTION": "These texts are used when the integration omits message or mensagem. Use {placeholder} to insert the order reference.",
+          "RESTORE": "Restore default texts",
+          "ORDER_GROUP": "Order updates",
+          "PAYMENT_GROUP": "Payment updates",
+          "EVENTS": {
+            "ORDER_PENDING": "Order pending",
+            "ORDER_PROCESSING": "Order processing",
+            "ORDER_PARTIALLY_SHIPPED": "Order partially shipped",
+            "ORDER_SHIPPED": "Order shipped",
+            "ORDER_COMPLETED": "Order completed",
+            "ORDER_CANCELED": "Order canceled",
+            "PAYMENT_PENDING": "Payment pending",
+            "PAYMENT_CAPTURED": "Payment confirmed",
+            "PAYMENT_FAILED": "Payment not confirmed",
+            "CAPTURED_AND_COMPLETED": "Payment confirmed and order completed"
+          }
+        },
+        "SAVE": "Save configuration"
+      }
+    },
+    "TOKEN": {
+      "TITLE": "Endpoint token",
+      "DESCRIPTION": "This token is displayed only now. Store it in the integrated system secret vault. Generating another token immediately invalidates the previous one.",
+      "VALUE": "Access token",
+      "COPY": "Copy token",
+      "COPIED": "Token copied.",
+      "CLOSE": "Done"
+    },
+    "CREDENTIALS": {
+      "TOKEN_TITLE": "Instance token",
+      "TOKEN_DESCRIPTION": "This token is shown only now. Store it in the integrated system secret vault. Generating new credentials immediately invalidates the previous token.",
+      "IXC_TITLE": "IXC instance credentials",
+      "IXC_DESCRIPTION": "The password is shown only now. Store it in the integrated system secret vault. Generating new credentials immediately invalidates the previous password.",
+      "USERNAME": "Username",
+      "PASSWORD": "Password",
+      "PASSWORD_HINT": "Password identifier",
+      "TOKEN": "Access token",
+      "COPY_USERNAME": "Copy username",
+      "COPY_PASSWORD": "Copy password",
+      "COPY_TOKEN": "Copy token",
+      "USERNAME_COPIED": "Username copied.",
+      "PASSWORD_COPIED": "Password copied.",
+      "TOKEN_COPIED": "Token copied.",
+      "CLOSE": "Done"
+    },
+    "INTEGRATION": {
+      "TITLE": "Integration details",
+      "DESCRIPTION": "The integrated system submits semantic data through the contract below. ChatHub validates the fields, builds the Meta template, and processes the request in the background.",
+      "COPY_URL": "Copy URL",
+      "URL_COPIED": "URL copied.",
+      "TEST_EXAMPLE": "Complete integration example",
+      "CURL_DESCRIPTION": "The request must use exactly the GET method and the msg, to, and token parameters.",
+      "COPY_CURL": "Copy command",
+      "CURL_COPIED": "Command copied.",
+      "REQUEST": {
+        "TITLE": "Request",
+        "DESCRIPTION": "Use the GET method on the module public URL.",
+        "METHOD": "GET",
+        "IXC_DESCRIPTION": "Use GET, form-encoded POST, or JSON POST on the IXC contract public URL.",
+        "IXC_METHOD": "GET / POST",
+        "IXC_SECURITY": "In production, prefer POST so the password is not exposed in URLs, browser history, or proxy logs. GET remains available for IXC compatibility."
+      },
+      "PARAMETERS": {
+        "TITLE": "Parameters",
+        "DESCRIPTION": "All three parameters are part of the required contract.",
+        "NAME": "Parameter",
+        "PURPOSE": "Purpose",
+        "MSG": "Template and variables using [field]=value||[other]=value.",
+        "TO": "Recipient phone number with country code and digits only.",
+        "TOKEN": "Exclusive token generated for the endpoint. It identifies the account and channel.",
+        "USER": "Unique IXC instance username. It identifies the configured contract.",
+        "PW": "Password generated for the IXC instance and shown only after creation or rotation.",
+        "DEST": "Recipient phone number with country code. Punctuation is normalized and 10 to 15 digits are validated.",
+        "TEXT": "Template and variables using [field]=value||[other]=value."
+      },
+      "PROCESSING": {
+        "TITLE": "Processing",
+        "DESCRIPTION": "Delivery runs asynchronously through background workers.",
+        "ACCEPTED": "A 202 response confirms that the request was validated and queued. The history on this page later shows the result reported by Meta."
+      },
+      "GUIDE": {
+        "SCENARIOS_TITLE": "Build the message",
+        "SCENARIOS_DESCRIPTION": "Choose a scenario to review accepted fields, requirements, and a complete example.",
+        "RULES_TITLE": "Important rules",
+        "EXAMPLE_TITLE": "Request example",
+        "TABLE": {
+          "FIELD": "Field",
+          "REQUIREMENT": "Requirement",
+          "DESCRIPTION": "How to use"
+        },
+        "REQUIREMENTS": {
+          "REQUIRED": "Required",
+          "CONDITIONAL": "Conditional",
+          "OPTIONAL": "Optional"
+        },
+        "FIELDS": {
+          "TEMPLATE_NAME": "Exact template name approved by Meta. Accepts lowercase letters, numbers, and underscores.",
+          "TEMPLATE_LANGUAGE": "Approved template language. Defaults to pt_BR when omitted.",
+          "TEMPLATE_TYPE_SIMPLE": "For regular messages, omit it or set it to simple.",
+          "BODY_NAMED": "Value for a named body variable. Its name and count must match the approved template.",
+          "BODY_POSITIONAL": "Positional body values. Start at 1, keep a continuous sequence, and do not mix them with named variables.",
+          "HEADER_NAMED": "The single named text-header variable. Replace <name> with the name approved in the template.",
+          "HEADER_POSITIONAL": "The single positional text-header variable.",
+          "HEADER_TEXT_ALIAS": "Alternative way to submit the text-header value.",
+          "HEADER_PARAMETER_NAME": "Variable name when header_text is used with a named-variable template.",
+          "HEADER_DOCUMENT_TYPE": "Set to document. It may be omitted only when the URL path clearly ends in .pdf.",
+          "HEADER_LINK": "Public HTTPS URL that Meta can access to download the document, image, or video.",
+          "HEADER_FILENAME": "Displayed document name. When omitted, it is derived from the URL path.",
+          "HEADER_APPEND_PDF": "Use true to append .pdf to the URL path or false to preserve it.",
+          "HEADER_PDF_MODE": "Alternative to header_append_pdf. Accepts as_is or append.",
+          "HEADER_MEDIA_TYPE": "Set to image or video. It may be omitted only when the URL path contains a recognized extension.",
+          "BUTTON_TYPE": "Dynamic button type: url, copy_code, or quick_reply.",
+          "BUTTON_VALUE": "URL suffix, copy code, or quick-reply payload according to the button type.",
+          "ORDER_TEMPLATE_TYPE": "Marks the template as using the ORDER_DETAILS component.",
+          "ORDER_REFERENCE": "Unique order or invoice identifier in the channel. Accepts up to 60 letters, numbers, dots, hyphens, and underscores.",
+          "ORDER_TOTAL": "Order total. Accepts Brazilian monetary format such as 64,99 or a decimal using a dot.",
+          "ORDER_ITEM_NAME": "Single item name. Defaults to Fatura when omitted and no item list is provided.",
+          "ORDER_PIX_CODE": "PIX copy-and-paste code. Required only when PIX is included as a payment method.",
+          "ORDER_PIX_MERCHANT": "PIX merchant name. It may come from the request or the instance defaults.",
+          "ORDER_PIX_KEY": "PIX key. It may come from the request or the protected instance configuration.",
+          "ORDER_PIX_KEY_TYPE": "CPF, CNPJ, EMAIL, PHONE, or EVP. It may come from the request or the instance.",
+          "ORDER_BOLETO": "Boleto digit line. When submitted with PIX, it creates the second payment option for copying the barcode.",
+          "ORDER_ITEMS": "Optional list. For each continuous index starting at 0, submit id, name, amount, and quantity.",
+          "ORDER_AMOUNTS": "Optional financial summary. Total must equal subtotal + tax + shipping - discount.",
+          "ORDER_EXPIRATION": "Future ISO 8601 date with timezone or Unix timestamp. An expiration description is optional.",
+          "ORDER_OPTIONS": "Currency, goods type, and button position. Defaults are BRL, digital-goods, and index 0.",
+          "UPDATE_REFERENCE": "Previously sent order ID. Also accepts id_fatura, id-fatura, or reference_id.",
+          "UPDATE_STATUS": "Recognized status shortcut such as pago. Use it alone or submit detailed statuses.",
+          "UPDATE_ORDER_STATUS": "Specific order status. Required when status and payment_status are omitted.",
+          "UPDATE_PAYMENT_STATUS": "Specific payment status. Required when status and order_status are omitted.",
+          "UPDATE_PAYMENT_TIMESTAMP": "Payment time. It can only be submitted with a payment status.",
+          "UPDATE_MESSAGE": "Optional text displayed in the update sent to the customer.",
+          "UPDATE_DESCRIPTION": "Optional description associated with the new order status.",
+          "UPDATE_TOKEN": "Token from an SGP instance in the same account and channel that created the order.",
+          "UPDATE_IXC_USER": "Username generated for the IXC instance.",
+          "UPDATE_IXC_PASSWORD": "Password issued for the same IXC instance.",
+          "UPDATE_IXC_RECIPIENT": "Order phone number including country and area codes. It must match the original message recipient.",
+          "UPDATE_IXC_TEXT": "Required semantic content. Keep every update field inside it using [field]=value||[other]=value."
+        },
+        "SCENARIOS": {
+          "SIMPLE": {
+            "TITLE": "Simple message",
+            "DESCRIPTION": "Send a regular template with body variables and no media or order.",
+            "RULES": {
+              "MATCH_TEMPLATE": "Variable names and count must exactly match the template approved by Meta.",
+              "DEFAULTS": "template_language defaults to pt_BR and template_type defaults to simple when omitted."
+            }
+          },
+          "VARIABLES": {
+            "TITLE": "Variables",
+            "DESCRIPTION": "Fill a text header and body using named or positional variables.",
+            "RULES": {
+              "HEADER_LIMIT": "A text header accepts only one variable and cannot be combined with header_link.",
+              "BODY_MODE": "Choose either named or positional body variables. Both formats cannot be mixed.",
+              "POSITION_SEQUENCE": "Positional body variables must start at 1 and remain continuous."
+            }
+          },
+          "DOCUMENT": {
+            "TITLE": "PDF and document",
+            "DESCRIPTION": "Send a document through a public HTTPS URL in the template header.",
+            "RULES": {
+              "HTTPS": "Meta must access the URL without authentication, private redirects, or an invalid certificate.",
+              "TYPE_INFERENCE": "Although .pdf allows type inference, setting header_type=document makes the contract explicit and predictable.",
+              "PDF_OPTIONS": "Use either header_append_pdf or header_pdf_mode. Do not send conflicting options."
+            }
+          },
+          "MEDIA": {
+            "TITLE": "Image or video",
+            "DESCRIPTION": "Send an image or video using a header link.",
+            "RULES": {
+              "FORMATS": "Automatic inference recognizes jpg, jpeg, png, webp, mp4, and 3gp. Other URL paths require an explicit type.",
+              "HTTPS": "The link must use HTTPS and be publicly accessible by Meta.",
+              "NO_TEXT_VARIABLE": "Media headers do not accept a text variable or document-only options."
+            }
+          },
+          "BUTTONS": {
+            "TITLE": "Buttons",
+            "DESCRIPTION": "Fill dynamic values for buttons defined in the approved template.",
+            "RULES": {
+              "INDEX": "Accepted indexes range from 0 to 9 and must match the button position in the template.",
+              "TYPES": "url sends text that completes the URL; copy_code sends a code; quick_reply sends a payload.",
+              "MATCH_TEMPLATE": "The submitted type must match the button approved by Meta."
+            }
+          },
+          "ORDER": {
+            "TITLE": "Order and payment",
+            "DESCRIPTION": "Send an interactive order with items and PIX, boleto, or both.",
+            "RULES": {
+              "PAYMENT": "Submit at least order.payment.pix.code or order.payment.boleto.digitable_line.",
+              "PIX_AND_BOLETO": "To show PIX as the first button and barcode as the second, submit order.payment.pix.code and order.payment.boleto.digitable_line in the same request. The system preserves this order when building the payment methods.",
+              "NO_SECOND_DYNAMIC_BUTTON": "Do not submit button.1 to create the boleto button. PIX and boleto are payment methods in the same ORDER_DETAILS component; order.button_index only selects that component position in the template.",
+              "BOLETO_ONLY": "To offer barcode only, omit every PIX field and submit only order.payment.boleto.digitable_line.",
+              "PIX_DEFAULTS": "When PIX is used, merchant name, key, and type are required, but missing fields may be completed from the instance configuration.",
+              "TOTAL": "Total must equal subtotal + tax + shipping - discount. Invalid totals are rejected before queueing.",
+              "ITEMS": "Without order.items, the system creates a single item from order.item_name and order.total.",
+              "BUTTON_INDEX": "The order button index cannot match another button.<index> submitted in the same message."
+            }
+          },
+          "ORDER_UPDATE": {
+            "TITLE": "Update order",
+            "DESCRIPTION": "Update an order already accepted by Meta through the shared order endpoint.",
+            "RULES": {
+              "STATUS": "Submit status or at least one of order_status and payment_status.",
+              "AUTHENTICATION": "GET accepts token as a parameter. POST requires Authorization Bearer and accepts JSON or semantic text.",
+              "AUTHENTICATION_IXC": "Submit user, pw, dest, and text in the IXC envelope. Keep update fields inside text using [field]=value||[other]=value.",
+              "ACCEPTED": "A 202 response means queued. An identical update already applied returns 200 without another message."
+            }
+          }
+        }
+      },
+      "ORDER_UPDATES": {
+        "TITLE": "Order updates",
+        "DESCRIPTION": "All contracts in the same family and channel use their order route to update previously sent orders and payments.",
+        "METHODS": "GET / POST",
+        "AUTHENTICATION": "Use Bearer Token for POST requests. GET requests also accept the token parameter for ERP compatibility.",
+        "EXAMPLE_TITLE": "Order update example",
+        "EXAMPLE_DESCRIPTION": "A 202 response confirms that the update was queued. The visible Meta message runs in the background and preserves invoice update order."
+      },
+      "EXAMPLE": {
+        "RECIPIENT": "5575982479788",
+        "TEMPLATE_NAME": "lembrete_fatura_pdf_pix",
+        "DOCUMENT_URL": "https://sistema.asnetwork.net.br/boleto/9388-0CFLCN1OMD.pdf",
+        "CUSTOMER_NAME": "José Augusto Silva",
+        "HEADER_TITLE": "Invoice available",
+        "DUE_DATE": "10/08/2027",
+        "ORDER_REFERENCE": "9388",
+        "ORDER_TOTAL": "64,99",
+        "ITEM_NAME": "Internet invoice",
+        "PIX_CODE": "PIX_COPIA_E_COLA_COMPLETO",
+        "PIX_MERCHANT": "IBSoft Cloud",
+        "PIX_KEY": "12345678000199",
+        "BOLETO_LINE": "00190000090350182490218767625173516510000006499",
+        "TOKEN_PLACEHOLDER": "ENDPOINT_TOKEN",
+        "USERNAME_PLACEHOLDER": "INSTANCE_USERNAME",
+        "PASSWORD_PLACEHOLDER": "INSTANCE_PASSWORD"
+      }
+    },
+    "DELIVERIES": {
+      "TITLE": "Request history",
+      "DESCRIPTION": "Track API acceptance, background processing, and status updates reported by Meta.",
+      "ALL_ENDPOINTS": "All endpoints",
+      "ALL_STATUSES": "All statuses",
+      "FILTER": "Filter",
+      "DATE": "Received at",
+      "ENDPOINT": "Endpoint",
+      "RECIPIENT": "Recipient",
+      "TEMPLATE": "Template",
+      "STATUS": "Status",
+      "META_ID": "Meta ID",
+      "NOT_AVAILABLE": "Not available",
+      "EMPTY": "No external request has been recorded.",
+      "PER_PAGE": "Items per page",
+      "PREVIOUS": "Previous",
+      "NEXT": "Next",
+      "PAGE": "Page {page} of {total}"
+    },
+    "STATUSES": {
+      "QUEUED": "Queued",
+      "PROCESSING": "Processing",
+      "ACCEPTED": "Accepted by Meta",
+      "SENT": "Sent",
+      "DELIVERED": "Delivered",
+      "READ": "Read",
+      "FAILED": "Failed",
+      "UNCERTAIN": "Uncertain result",
+      "UNCHANGED": "Unchanged"
+    },
+    "ERRORS": {
+      "LOAD": "Could not load instances.",
+      "SAVE": "Could not save the instance.",
+      "ORDER_DEFAULTS_SAVE": "Could not save the order configuration.",
+      "ROTATE": "Could not generate new credentials.",
+      "COPY": "Could not copy the value.",
+      "DELIVERIES_LOAD": "Could not load the request history.",
+      "ORDERS_LOAD": "Could not load orders.",
+      "ORDERS_UPDATE": "Could not queue the order update."
+    }
+  }
+}
