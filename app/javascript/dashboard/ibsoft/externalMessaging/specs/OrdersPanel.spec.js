@@ -129,6 +129,32 @@ describe('OrdersPanel', () => {
     });
   });
 
+  it('keeps order filter controls visually aligned', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    const filterForm = wrapper.get('form');
+    const labels = filterForm.findAll('label');
+    const inputs = filterForm.findAll('input');
+    const selects = filterForm.findAll('ibsoft-select-stub');
+
+    expect(labels).toHaveLength(6);
+    expect(
+      labels.every(label => label.classes().includes('content-start'))
+    ).toBe(true);
+    expect(inputs.every(input => input.classes().includes('!mb-0'))).toBe(true);
+    expect(selects).toHaveLength(2);
+    selects.forEach(select => {
+      expect(select.classes()).toEqual(
+        expect.arrayContaining([
+          'h-10',
+          '[&>select]:!h-10',
+          '[&>select]:!bg-n-solid-1',
+        ])
+      );
+    });
+  });
+
   it('selects only orders that can still be updated', async () => {
     const wrapper = mountComponent();
     await flushPromises();
