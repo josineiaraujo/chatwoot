@@ -1198,6 +1198,8 @@ Objetivo:
 - Personalizar tema escuro, sidebar, item ativo, empty states e logos.
 - Ocultar seletor de idioma, versao/build e ID da conta via CSS personalizado,
   sem alterar componentes nativos para esses casos.
+- Ocultar temporariamente o item nativo `Calls` da sidebar via CSS global ate
+  que o upstream ofereca uma flag de visibilidade por instalacao ou conta.
 - Exibir LED SVG lilas pulsante em itens operacionais da sidebar enquanto seus
   contadores de nao lidos forem maiores que zero.
 - Respeitar `INSTALLATION_NAME=ChatHub` em previews nativos que exibem o nome
@@ -1253,7 +1255,9 @@ Risco principal:
 
 - Seletores CSS com `:has()` reduzem acoplamento no core, mas podem quebrar se o
   markup do upstream mudar. Apos atualizar o Chatwoot, validar visualmente
-  idioma, build, ID da conta, empty states, sidebar e listas.
+  idioma, build, ID da conta, `Calls`, empty states, sidebar e listas. O
+  seletor de `Calls` deve ser removido assim que houver controle nativo de
+  visibilidade para esse item.
 
 ### 5. Overrides de i18n Ibsoft
 

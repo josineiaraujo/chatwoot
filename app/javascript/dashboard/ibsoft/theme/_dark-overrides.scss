@@ -239,6 +239,12 @@ body.dark #app .ibsoft-inbox-empty-state::before {
   display: none !important;
 }
 
+// Temporary navigation override. Remove when the upstream Calls entry exposes
+// an installation/account visibility flag that can be disabled without CSS.
+#app nav > ul > li:has(a[href$='/calls']) {
+  display: none !important;
+}
+
 /* The private account-level signature module replaces Chatwoot's footer signature. */
 #app section:has(#message-signature-input),
 #app button:has(.i-ph-signature) {
