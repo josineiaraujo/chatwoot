@@ -6,9 +6,10 @@ FactoryBot.define do
     created_by { association :user, account: account }
     status { 'draft' }
     source_type { 'selection' }
+    dispatch_mode { 'bulk' }
     template_name { 'aviso_padrao' }
     template_language { 'pt_BR' }
-    conversation_mode { 'close_after_send' }
+    conversation_mode { 'direct' }
     template_variables { {} }
   end
 

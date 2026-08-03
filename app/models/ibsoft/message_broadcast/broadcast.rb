@@ -3,7 +3,8 @@
 # Table name: ibsoft_message_broadcasts
 #
 #  id                 :bigint           not null, primary key
-#  conversation_mode  :string           default("close_after_send"), not null
+#  conversation_mode  :string           default("direct"), not null
+#  dispatch_mode      :string           default("bulk"), not null
 #  finished_at        :datetime
 #  source_type        :string           not null
 #  started_at         :datetime
@@ -24,6 +25,7 @@
 # Indexes
 #
 #  idx_ibsoft_broadcasts_account_created                 (account_id,created_at)
+#  idx_ibsoft_broadcasts_dispatch                        (status,updated_at)
 #  index_ibsoft_message_broadcasts_on_account_id         (account_id)
 #  index_ibsoft_message_broadcasts_on_assignee_id        (assignee_id)
 #  index_ibsoft_message_broadcasts_on_created_by_id      (created_by_id)
@@ -46,8 +48,10 @@ class Ibsoft::MessageBroadcast::Broadcast < ApplicationRecord
   self.table_name = 'ibsoft_message_broadcasts'
 
   STATUSES = %w[draft queued running completed failed cancelled].freeze
+  DELETABLE_STATUSES = %w[draft completed failed cancelled].freeze
   SOURCE_TYPES = %w[selection group].freeze
-  CONVERSATION_MODES = %w[close_after_send keep_open].freeze
+  DISPATCH_MODES = %w[single bulk].freeze
+  CONVERSATION_MODES = %w[direct close_after_send keep_open].freeze
 
   belongs_to :account
   belongs_to :inbox
@@ -63,21 +67,29 @@ class Ibsoft::MessageBroadcast::Broadcast < ApplicationRecord
 
   validates :status, inclusion: { in: STATUSES }
   validates :source_type, inclusion: { in: SOURCE_TYPES }
+  validates :dispatch_mode, inclusion: { in: DISPATCH_MODES }
   validates :conversation_mode, inclusion: { in: CONVERSATION_MODES }
   validates :template_name, :template_language, presence: true
 
-  def payload
+  def single_dispatch? = dispatch_mode == 'single'
+  def direct_delivery? = conversation_mode == 'direct'
+  def deletable? = status.in?(DELETABLE_STATUSES)
+
+  def payload(recipients_count: nil)
     {
       id: id,
       inbox_id: inbox_id,
       erp_connection_id: erp_connection_id,
       status: status,
+      deletable: deletable?,
       source_type: source_type,
+      dispatch_mode: dispatch_mode,
       template_name: template_name,
       template_language: template_language,
       conversation_mode: conversation_mode,
       sent_by_id: sent_by_id,
-      recipients_count: recipients.count,
+      created_by: { id: created_by_id, name: created_by.name },
+      recipients_count: recipients_count.nil? ? recipients.count : recipients_count,
       started_at: started_at,
       finished_at: finished_at,
       created_at: created_at,

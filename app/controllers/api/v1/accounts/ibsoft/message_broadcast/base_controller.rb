@@ -16,23 +16,19 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::BaseController < Api::V1::Acc
   def ensure_active_erp_connection!
     return true if active_erp_connection.present?
 
-    render json: { error: 'active_erp_connection_missing' }, status: :unprocessable_entity
+    render json: { error: 'active_erp_connection_missing' }, status: :unprocessable_content
     false
   end
 
-  def ensure_ixc_provider!
-    return true if active_erp_connection&.provider == 'ixc'
+  def ensure_supported_erp_provider!
+    return true if Ibsoft::Erp::Adapters::Registry.supports_search?(active_erp_connection&.provider)
 
-    render json: { error: 'erp_provider_not_supported' }, status: :unprocessable_entity
+    render json: { error: 'erp_provider_not_supported' }, status: :unprocessable_content
     false
   end
 
-  def ixc_client
-    @ixc_client ||= Ibsoft::Erp::Adapters::Ixc::Client.new(active_erp_connection)
-  end
-
-  def ixc_lookups
-    @ixc_lookups ||= Ibsoft::Erp::Adapters::Ixc::Lookups.new(ixc_client)
+  def erp_lookups
+    @erp_lookups ||= Ibsoft::Erp::Adapters::Registry.lookups(active_erp_connection)
   end
 
   def filter_attributes

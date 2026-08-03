@@ -22,26 +22,58 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Recipients', type: 
          headers: admin_headers,
          as: :json
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.parsed_body['error']).to eq('active_erp_connection_missing')
   end
 
-  it 'rejects providers without a registered recipient search adapter' do
+  it 'previews normalized SGP customers through the same recipient contract' do
     create(
       :ibsoft_erp_connection,
       account: account,
       provider: 'sgp',
-      auth_type: 'basic',
+      auth_type: 'token_app',
+      base_url: 'https://sgp.example.com.br',
+      credentials: { app: 'sgp-app', token: 'sgp-token' },
       active: true
     )
+    sgp_request = stub_request(:post, 'https://sgp.example.com.br/api/ura/clientes/')
+                  .with do |request|
+      body = Rack::Utils.parse_nested_query(request.body)
+      body.slice('app', 'token', 'limit', 'offset') == {
+        'app' => 'sgp-app',
+        'token' => 'sgp-token',
+        'limit' => '100',
+        'offset' => '0'
+      } && body.exclude?('omitir_contratos')
+    end
+                  .to_return(
+                    status: 200,
+                    body: {
+                      clientes: [sgp_customer_record],
+                      paginacao: { total: 1, parcial: 1, limit: 100, offset: 0 }
+                    }.to_json,
+                    headers: { 'Content-Type' => 'application/json' }
+                  )
+    perform_cache_jobs_inline
 
     post base_url,
-         params: { mode: 'direct', filters: {} },
+         params: { mode: 'direct', filters: { active: true }, limit: 10 },
          headers: admin_headers,
          as: :json
 
-    expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.parsed_body['error']).to eq('erp_provider_not_supported')
+    expect(response).to have_http_status(:accepted)
+
+    post base_url,
+         params: { mode: 'direct', filters: { active: true }, limit: 10 },
+         headers: admin_headers,
+         as: :json
+
+    customer = response.parsed_body['customers'].first
+    expect(response).to have_http_status(:success)
+    expect(customer).to include('external_id' => '398', 'name' => 'Cliente SGP')
+    expect(customer.dig('phone_selection', 'primary_phone')).to eq('+5575999999999')
+    expect(customer.dig('phone_selection', 'fallback_phone')).to eq('+5575988888888')
+    expect(sgp_request).to have_been_requested.once
   end
 
   it 'returns normalized customers with primary and fallback phones' do
@@ -177,5 +209,34 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Recipients', type: 
                registros: [{ id: '10', nome: 'Estado da Bahia', sigla: 'BA' }],
                total: 1
              })
+  end
+
+  def sgp_customer_record
+    {
+      id: 398,
+      nome: 'Cliente SGP',
+      cpfcnpj: '00000000000',
+      endereco: sgp_customer_address,
+      contatos: {
+        celulares: %w[75999999999 75988888888],
+        telefones: []
+      },
+      contratos: [sgp_customer_contract]
+    }
+  end
+
+  def sgp_customer_address
+    {
+      uf: 'BA', cidade: 'Salvador', cep: '40000-000',
+      logradouro: 'Rua SGP', numero: 10, bairro: 'Centro'
+    }
+  end
+
+  def sgp_customer_contract
+    {
+      contrato: 44,
+      status: '1',
+      servicos: [{ id: 900, login: 'cliente398', plano: { id: 101, descricao: 'Fibra' } }]
+    }
   end
 end

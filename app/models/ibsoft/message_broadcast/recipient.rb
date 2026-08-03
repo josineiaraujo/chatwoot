@@ -4,12 +4,14 @@
 #
 #  id                       :bigint           not null, primary key
 #  customer_name            :string           not null
+#  enqueued_at              :datetime
 #  error_code               :string
 #  error_message            :text
 #  fallback_phone           :string
 #  phone_status             :string           default("pending"), not null
 #  phone_used               :string
 #  primary_phone            :string
+#  processing_started_at    :datetime
 #  status                   :string           default("pending"), not null
 #  template_variable_values :jsonb            not null
 #  created_at               :datetime         not null
@@ -18,10 +20,13 @@
 #  conversation_id          :bigint
 #  external_customer_id     :string           not null
 #  message_id               :bigint
+#  meta_message_id          :string
 #
 # Indexes
 #
 #  idx_ibsoft_broadcast_recipients_customer                      (broadcast_id,external_customer_id) UNIQUE
+#  idx_ibsoft_broadcast_recipients_dispatch                      (status,enqueued_at)
+#  idx_ibsoft_broadcast_recipients_meta_message                  (meta_message_id) UNIQUE WHERE (meta_message_id IS NOT NULL)
 #  index_ibsoft_message_broadcast_recipients_on_broadcast_id     (broadcast_id)
 #  index_ibsoft_message_broadcast_recipients_on_conversation_id  (conversation_id)
 #  index_ibsoft_message_broadcast_recipients_on_message_id       (message_id)
@@ -35,7 +40,7 @@
 class Ibsoft::MessageBroadcast::Recipient < ApplicationRecord
   self.table_name = 'ibsoft_message_broadcast_recipients'
 
-  STATUSES = %w[pending queued processing sent failed skipped].freeze
+  STATUSES = %w[pending queued processing accepted sent delivered read failed skipped uncertain].freeze
   PHONE_STATUSES = %w[pending primary fallback unavailable invalid].freeze
 
   belongs_to :broadcast,
@@ -59,12 +64,14 @@ class Ibsoft::MessageBroadcast::Recipient < ApplicationRecord
       phone_used: phone_used,
       phone_status: phone_status,
       status: status,
+      meta_message_id: meta_message_id,
       template_variable_values: template_variable_values,
       conversation_id: conversation_id,
       conversation_display_id: conversation&.display_id,
       message_id: message_id,
       error_code: error_code,
-      error_message: error_message
+      error_message: error_message,
+      updated_at: updated_at
     }
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_29_170000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1395,10 +1395,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_29_170000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "template_variable_values", default: {}, null: false
+    t.string "meta_message_id"
+    t.datetime "enqueued_at"
+    t.datetime "processing_started_at"
     t.index ["broadcast_id", "external_customer_id"], name: "idx_ibsoft_broadcast_recipients_customer", unique: true
     t.index ["broadcast_id"], name: "index_ibsoft_message_broadcast_recipients_on_broadcast_id"
     t.index ["conversation_id"], name: "index_ibsoft_message_broadcast_recipients_on_conversation_id"
     t.index ["message_id"], name: "index_ibsoft_message_broadcast_recipients_on_message_id"
+    t.index ["meta_message_id"], name: "idx_ibsoft_broadcast_recipients_meta_message", unique: true, where: "(meta_message_id IS NOT NULL)"
+    t.index ["status", "enqueued_at"], name: "idx_ibsoft_broadcast_recipients_dispatch"
   end
 
   create_table "ibsoft_message_broadcasts", force: :cascade do |t|
@@ -1412,13 +1417,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_29_170000) do
     t.string "source_type", null: false
     t.string "template_name", null: false
     t.string "template_language", null: false
-    t.string "conversation_mode", default: "close_after_send", null: false
+    t.string "conversation_mode", default: "direct", null: false
     t.jsonb "template_variables", default: {}, null: false
     t.datetime "started_at"
     t.datetime "finished_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "sent_by_id"
+    t.string "dispatch_mode", default: "bulk", null: false
     t.index ["account_id", "created_at"], name: "idx_ibsoft_broadcasts_account_created"
     t.index ["account_id"], name: "index_ibsoft_message_broadcasts_on_account_id"
     t.index ["assignee_id"], name: "index_ibsoft_message_broadcasts_on_assignee_id"
@@ -1426,6 +1432,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_29_170000) do
     t.index ["erp_connection_id"], name: "index_ibsoft_message_broadcasts_on_erp_connection_id"
     t.index ["inbox_id"], name: "index_ibsoft_message_broadcasts_on_inbox_id"
     t.index ["sent_by_id"], name: "index_ibsoft_message_broadcasts_on_sent_by_id"
+    t.index ["status", "updated_at"], name: "idx_ibsoft_broadcasts_dispatch"
     t.index ["team_id"], name: "index_ibsoft_message_broadcasts_on_team_id"
   end
 

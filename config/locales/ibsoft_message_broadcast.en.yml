@@ -3,3 +3,7 @@ en:
     message_broadcast:
       errors:
         template_not_found: "Message template not found or not approved"
+        invalid_channel: "The selected channel is not a valid WhatsApp Business Cloud channel"
+        meta_rejected: "Meta rejected the message delivery"
+        delivery_result_uncertain: "It was not possible to confirm whether Meta received the message"
+        worker_interrupted: "Processing stopped after delivery started; the result must be verified"

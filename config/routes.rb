@@ -411,10 +411,13 @@ Rails.application.routes.draw do
 
             namespace :message_broadcast do
               resources :groups
+              delete 'broadcasts/bulk_destroy', to: 'broadcast_deletions#bulk_destroy'
+              delete 'broadcasts/:id', to: 'broadcast_deletions#destroy'
               resources :broadcasts, only: [:index, :show, :create] do
                 post :send_broadcast, on: :member
               end
               get 'templates', to: 'templates#index'
+              get 'capabilities', to: 'lookups#capabilities'
               get 'lookups/states', to: 'lookups#states'
               get 'lookups/cities', to: 'lookups#cities'
               get 'lookups/plans', to: 'lookups#plans'

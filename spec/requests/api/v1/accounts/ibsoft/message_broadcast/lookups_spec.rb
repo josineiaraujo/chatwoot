@@ -212,4 +212,193 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
       'active' => true
     )
   end
+
+  context 'with SGP as the active ERP' do
+    before do
+      create(
+        :ibsoft_erp_connection,
+        account: account,
+        provider: 'sgp',
+        auth_type: 'token_app',
+        base_url: 'https://sgp.example.com.br',
+        credentials: { app: 'sgp-app', token: 'sgp-token' },
+        active: true
+      )
+    end
+
+    it 'describes the SGP search capabilities without exposing IXC-only filters' do
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/capabilities",
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include('provider' => 'sgp')
+      expect(response.parsed_body.dig('capabilities', 'search_modes')).to eq(
+        %w[direct contracts concentrators]
+      )
+      expect(response.parsed_body.dig('capabilities', 'contract_filters')).to include(
+        'internet_status' => false
+      )
+      expect(response.parsed_body.dig('capabilities', 'concentrator_filters')).to include(
+        'manual_concentrator_ids' => false,
+        'transmitter_kind' => 'nas',
+        'transmission_interfaces' => false,
+        'ftth_boxes' => false
+      )
+    end
+
+    it 'lists SGP plans through the provider-neutral lookup endpoint' do
+      request = stub_request(:get, 'https://sgp.example.com.br/api/ura/consultaplano/')
+                .with do |sgp_request|
+        payload = JSON.parse(sgp_request.body)
+        payload.slice('app', 'token') == {
+          'app' => 'sgp-app',
+          'token' => 'sgp-token'
+        }
+      end
+                .to_return(
+                  status: 200,
+                  body: {
+                    planos: [
+                      { id: 101, descricao: 'Fibra 600 Mega', preco: '99.90' }
+                    ],
+                    total_planos: 1
+                  }.to_json,
+                  headers: { 'Content-Type' => 'application/json' }
+                )
+
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/plans",
+          params: { query: '600' },
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(request).to have_been_requested.once
+      expect(response.parsed_body['plans']).to contain_exactly(
+        include(
+          'id' => '101',
+          'name' => 'Fibra 600 Mega',
+          'active' => true,
+          'price' => '99.90'
+        )
+      )
+    end
+
+    it 'derives Brazilian states from SGP customer addresses' do
+      request = stub_request(:post, 'https://sgp.example.com.br/api/ura/clientes/')
+                .to_return(
+                  status: 200,
+                  body: {
+                    clientes: [
+                      { id: 398, endereco: { uf: 'BA', cidade: 'Salvador' } },
+                      { id: 399, endereco: { uf: 'DF', cidade: 'Brasília' } },
+                      { id: 400, endereco: { uf: 'BA', cidade: 'Feira de Santana' } },
+                      { id: 401, endereco: { uf: 'BAIRES', cidade: 'Buenos Aires' } }
+                    ],
+                    paginacao: { total: 4, offset: 0, parcial: 4, limit: 100 }
+                  }.to_json,
+                  headers: { 'Content-Type' => 'application/json' }
+                )
+
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/states",
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(request).to have_been_requested.once
+      expect(response.parsed_body['states']).to contain_exactly(
+        include('id' => 'BA', 'name' => 'Bahia', 'abbreviation' => 'BA'),
+        include('id' => 'DF', 'name' => 'Distrito Federal', 'abbreviation' => 'DF')
+      )
+    end
+
+    it 'derives SGP cities for the selected Brazilian state' do
+      request = stub_request(:post, 'https://sgp.example.com.br/api/ura/clientes/')
+                .to_return(
+                  status: 200,
+                  body: {
+                    clientes: [
+                      { id: 398, endereco: { uf: 'BA', cidade: 'Salvador' } },
+                      { id: 399, endereco: { uf: 'BA', cidade: 'Feira de Santana' } },
+                      { id: 400, endereco: { uf: 'DF', cidade: 'Brasília' } }
+                    ],
+                    paginacao: { total: 3, offset: 0, parcial: 3, limit: 100 }
+                  }.to_json,
+                  headers: { 'Content-Type' => 'application/json' }
+                )
+
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/cities",
+          params: { state_id: 'BA', query: 'feira' },
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(request).to have_been_requested.once
+      expect(response.parsed_body['cities']).to contain_exactly(
+        include(
+          'id' => 'BA|Feira de Santana',
+          'name' => 'Feira de Santana',
+          'state_id' => 'BA'
+        )
+      )
+    end
+
+    it 'lists SGP POPs through the provider-neutral lookup endpoint' do
+      request = stub_request(:post, 'https://sgp.example.com.br/api/ura/pops/')
+                .to_return(
+                  status: 200,
+                  body: [
+                    { id: 1, pop: 'POP Salvador' },
+                    { id: 2, pop: 'POP Feira de Santana' }
+                  ].to_json,
+                  headers: { 'Content-Type' => 'application/json' }
+                )
+
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/pops",
+          params: { query: 'salvador' },
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(request).to have_been_requested.once
+      expect(response.parsed_body['pops']).to contain_exactly(
+        include('id' => '1', 'name' => 'POP Salvador')
+      )
+    end
+
+    it 'lists SGP NAS devices as transmitters without changing the frontend contract' do
+      request = stub_request(:post, 'https://sgp.example.com.br/api/ura/nas/list/')
+                .to_return(
+                  status: 200,
+                  body: [
+                    {
+                      id: 9,
+                      descricao: 'NAS principal',
+                      identificador: 'nas-9',
+                      endereco_ip: '192.0.2.9',
+                      pops: [{ id: 1 }]
+                    }
+                  ].to_json,
+                  headers: { 'Content-Type' => 'application/json' }
+                )
+
+      get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/transmitters",
+          params: { query: 'principal' },
+          headers: headers,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(request).to have_been_requested.once
+      expect(response.parsed_body['transmitters']).to contain_exactly(
+        include(
+          'id' => '9',
+          'name' => 'NAS principal',
+          'identifier' => 'nas-9',
+          'ip' => '192.0.2.9',
+          'active' => true,
+          'pop_ids' => ['1']
+        )
+      )
+    end
+  end
 end
