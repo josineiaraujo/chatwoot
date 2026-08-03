@@ -20,6 +20,7 @@ misturar regra de negocio com o core do produto.
 - Logos ChatHub em empty states de conversas.
 - Ajustes visuais do topo da sidebar.
 - LED lilas pulsante para itens operacionais com nao lidos na sidebar.
+- Ocultacao temporaria do item nativo `Calls` na sidebar via CSS global.
 - Override de textos para manter `Atencao` na area operacional e exibir
   `Canais de comunicacao` nas telas administrativas de canais.
 
@@ -61,6 +62,9 @@ misturar regra de negocio com o core do produto.
   concentradas nos tokens privados do patch.
 - Se precisar tocar em componente original, manter a mudanca pequena e
   documentada nesta lista de acoplamentos.
+- Remover o seletor CSS de `Calls` quando o upstream oferecer uma flag de
+  visibilidade por instalacao ou conta para esse item. Ate la, validar o
+  seletor `href$='/calls'` depois de cada sincronizacao com o upstream.
 - Nao misturar alteracoes deste patch com modulos privados como chat interno ou
   ERP no mesmo commit, salvo quando for apenas uma classe visual compartilhada.
 
@@ -69,6 +73,8 @@ misturar regra de negocio com o core do produto.
 - Rodar ESLint nos componentes tocados.
 - Verificar tema claro e escuro.
 - Verificar sidebar recolhida/expandida.
+- Verificar que `Calls` permanece oculto na sidebar e que os demais itens nao
+  foram afetados.
 - Verificar conversas, mencoes, nao atendidas e empty state sem conversa
   selecionada.
 - Verificar lista do chat interno com item selecionado.
