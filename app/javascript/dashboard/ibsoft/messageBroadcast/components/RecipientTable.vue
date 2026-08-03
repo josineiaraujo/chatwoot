@@ -17,6 +17,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showContinue: {
+    type: Boolean,
+    default: true,
+  },
+  emptyMessage: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['continue', 'remove', 'update']);
@@ -179,6 +187,7 @@ watch(
         </p>
       </div>
       <Button
+        v-if="showContinue"
         icon="i-lucide-arrow-right"
         :label="t('IBSOFT_THEME.MESSAGE_BROADCAST.ACTIONS.CONTINUE')"
         :disabled="!canContinue"
@@ -285,15 +294,28 @@ watch(
               <div v-else class="grid gap-1">
                 <span class="text-n-slate-12">
                   {{
-                    recipient.phone_selection?.primary_phone ||
-                    t('IBSOFT_THEME.MESSAGE_BROADCAST.RESULTS.NO_PHONE')
+                    t(
+                      'IBSOFT_THEME.MESSAGE_BROADCAST.RECIPIENTS.PRIMARY_PHONE_VALUE',
+                      {
+                        phone:
+                          recipient.phone_selection?.primary_phone ||
+                          t('IBSOFT_THEME.MESSAGE_BROADCAST.RESULTS.NO_PHONE'),
+                      }
+                    )
                   }}
                 </span>
                 <span
                   v-if="recipient.phone_selection?.fallback_phone"
                   class="text-xs text-n-slate-10"
                 >
-                  {{ recipient.phone_selection.fallback_phone }}
+                  {{
+                    t(
+                      'IBSOFT_THEME.MESSAGE_BROADCAST.RECIPIENTS.FALLBACK_PHONE_VALUE',
+                      {
+                        phone: recipient.phone_selection.fallback_phone,
+                      }
+                    )
+                  }}
                 </span>
               </div>
             </td>
@@ -370,7 +392,7 @@ watch(
     </div>
 
     <div v-else class="px-6 py-10 text-center text-sm text-n-slate-11">
-      {{ t('IBSOFT_THEME.MESSAGE_BROADCAST.RECIPIENTS.EMPTY') }}
+      {{ emptyMessage || t('IBSOFT_THEME.MESSAGE_BROADCAST.RECIPIENTS.EMPTY') }}
     </div>
 
     <PaginationFooter

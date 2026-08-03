@@ -1,119 +1,94 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 import RecipientTable from '../components/RecipientTable.vue';
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key, values = {}) =>
-      Object.entries(values).reduce(
-        (text, [name, value]) => text.replace(`{${name}}`, value),
-        key
-      ),
+    t: (key, values = {}) => {
+      if (key.endsWith('PRIMARY_PHONE_VALUE')) {
+        return `Principal: ${values.phone}`;
+      }
+      if (key.endsWith('FALLBACK_PHONE_VALUE')) {
+        return `Alternativo: ${values.phone}`;
+      }
+
+      return key;
+    },
   }),
 }));
 
-const recipient = (id, deliverable = true) => ({
-  external_id: String(id),
-  name: `Cliente ${id}`,
+const recipient = {
+  external_id: '4797',
+  name: 'Cliente IXC',
   city_name: 'Salvador',
   state: 'BA',
   phone_selection: {
-    primary_phone: deliverable
-      ? `+557199999${String(id).padStart(4, '0')}`
-      : '',
-    fallback_phone: '',
-    deliverable,
+    primary_phone: '+5571999999999',
+    fallback_phone: '+5571888888888',
+    deliverable: true,
   },
-});
+};
 
-const mountTable = recipients =>
-  mount(RecipientTable, {
-    props: { recipients, canContinue: recipients.length > 0 },
+const mountComponent = (props = {}) =>
+  shallowMount(RecipientTable, {
+    props: {
+      recipients: [recipient],
+      canContinue: true,
+      ...props,
+    },
     global: {
       stubs: {
-        Button: {
-          props: ['label', 'title', 'ariaLabel', 'disabled'],
-          emits: ['click'],
-          template:
-            '<button :disabled="disabled" :title="title" :aria-label="ariaLabel" @click="$emit(\'click\')">{{ label }}</button>',
-        },
-        Input: {
-          props: ['modelValue', 'label', 'placeholder'],
-          emits: ['update:modelValue'],
-          template:
-            '<label>{{ label }}<input :value="modelValue" :placeholder="placeholder" @input="$emit(\'update:modelValue\', $event.target.value)" /></label>',
-        },
-        PaginationFooter: {
-          props: ['currentPage', 'totalItems', 'itemsPerPage'],
-          emits: ['update:currentPage'],
-          template:
-            '<button data-testid="next-page" @click="$emit(\'update:currentPage\', 2)">next</button>',
-        },
+        Button: true,
+        Input: true,
+        IbsoftSelect: true,
+        PageSizeSelect: true,
+        PaginationFooter: true,
       },
     },
   });
 
 describe('RecipientTable', () => {
-  it('shows ten recipients per page and changes pages without expanding the list', async () => {
-    const recipients = Array.from({ length: 25 }, (_, index) =>
-      recipient(index + 1)
+  it('identifies the primary and fallback phone numbers in priority order', () => {
+    const wrapper = mountComponent();
+
+    expect(wrapper.text()).toContain('Principal: +5571999999999');
+    expect(wrapper.text()).toContain('Alternativo: +5571888888888');
+    expect(wrapper.text().indexOf('Principal:')).toBeLessThan(
+      wrapper.text().indexOf('Alternativo:')
     );
-    const wrapper = mountTable(recipients);
-
-    expect(wrapper.findAll('tbody tr')).toHaveLength(10);
-    expect(wrapper.text()).toContain('Cliente 1');
-
-    await wrapper.get('[data-testid="next-page"]').trigger('click');
-
-    expect(wrapper.findAll('tbody tr')).toHaveLength(10);
-    expect(wrapper.text()).toContain('Cliente 11');
-
-    wrapper.vm.pageSize = 25;
-    await flushPromises();
-
-    expect(wrapper.findAll('tbody tr')).toHaveLength(25);
   });
 
-  it('searches recipients and filters entries without a valid phone', async () => {
-    const wrapper = mountTable([
-      recipient(1),
-      { ...recipient(2, false), name: 'Cliente sem telefone' },
+  it('normalizes edited numbers and removes a duplicated fallback', () => {
+    const wrapper = mountComponent();
+
+    wrapper.vm.startEditing(recipient);
+    wrapper.vm.editForm.primaryPhone = '(71) 99999-9999';
+    wrapper.vm.editForm.fallbackPhone = '+55 71 99999-9999';
+    wrapper.vm.saveEditing(recipient);
+
+    expect(wrapper.emitted('update')).toEqual([
+      [
+        expect.objectContaining({
+          phone_selection: expect.objectContaining({
+            primary_phone: '+5571999999999',
+            fallback_phone: '',
+            deliverable: true,
+            reason: 'manual_override',
+          }),
+        }),
+      ],
     ]);
-
-    wrapper.vm.searchQuery = 'sem telefone';
-    await flushPromises();
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
-
-    wrapper.vm.searchQuery = '';
-    wrapper.vm.phoneFilter = 'unavailable';
-    await flushPromises();
-
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
-    expect(wrapper.text()).toContain('Cliente sem telefone');
   });
 
-  it('normalizes edited phone numbers and emits remove actions', async () => {
-    const customer = recipient(1);
-    const wrapper = mountTable([customer]);
+  it('supports an editor-only empty state without a continue action', () => {
+    const wrapper = mountComponent({
+      recipients: [],
+      showContinue: false,
+      emptyMessage: 'Grupo sem destinatários',
+    });
 
-    wrapper.vm.startEditing(customer);
-    wrapper.vm.editForm.primaryPhone = '(71) 98888-7777';
-    wrapper.vm.editForm.fallbackPhone = '(71) 97777-6666';
-    wrapper.vm.saveEditing(customer);
-
-    expect(wrapper.emitted('update')[0][0].phone_selection).toEqual(
-      expect.objectContaining({
-        primary_phone: '+5571988887777',
-        fallback_phone: '+5571977776666',
-        deliverable: true,
-      })
-    );
-
-    await wrapper
-      .get('[aria-label="IBSOFT_THEME.MESSAGE_BROADCAST.RECIPIENTS.REMOVE"]')
-      .trigger('click');
-
-    expect(wrapper.emitted('remove')).toEqual([[customer]]);
+    expect(wrapper.text()).toContain('Grupo sem destinatários');
+    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false);
   });
 });

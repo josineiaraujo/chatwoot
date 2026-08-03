@@ -68,7 +68,9 @@ describe('TemplateWorkspace', () => {
         stubs: {
           Button: ButtonStub,
           Spinner: true,
-          Teleport: true,
+          TeleportWithDirection: {
+            template: '<div dir="ltr"><slot /></div>',
+          },
           TemplateBasicsStep: ValidBasicsStub,
           TemplateContentStep: true,
           TemplateReviewStep: true,
