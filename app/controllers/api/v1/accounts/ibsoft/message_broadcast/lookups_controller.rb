@@ -1,16 +1,23 @@
 class Api::V1::Accounts::Ibsoft::MessageBroadcast::LookupsController < Api::V1::Accounts::Ibsoft::MessageBroadcast::BaseController
   before_action :ensure_active_erp_connection!
-  before_action :ensure_ixc_provider!
+  before_action :ensure_supported_erp_provider!
+
+  def capabilities
+    render json: {
+      provider: active_erp_connection.provider,
+      capabilities: Ibsoft::Erp::Adapters::Registry.capabilities(active_erp_connection.provider)
+    }
+  end
 
   def states
     render json: {
-      states: ixc_lookups.states(query: params[:query], limit: lookup_limit)
+      states: erp_lookups.states(query: params[:query], limit: lookup_limit)
     }
   end
 
   def cities
     render json: {
-      cities: ixc_lookups.cities(
+      cities: erp_lookups.cities(
         state_id: params[:state_id],
         query: params[:query],
         limit: lookup_limit
@@ -20,7 +27,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::LookupsController < Api::V1::
 
   def plans
     render json: {
-      plans: ixc_lookups.plans(
+      plans: erp_lookups.plans(
         query: params[:query],
         active: active_filter,
         limit: lookup_limit
@@ -30,7 +37,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::LookupsController < Api::V1::
 
   def pops
     render json: {
-      pops: ixc_lookups.pops(
+      pops: erp_lookups.pops(
         query: params[:query],
         limit: lookup_limit
       )
@@ -39,7 +46,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::LookupsController < Api::V1::
 
   def transmitters
     render json: {
-      transmitters: ixc_lookups.transmitters(
+      transmitters: erp_lookups.transmitters(
         query: params[:query],
         limit: lookup_limit
       )

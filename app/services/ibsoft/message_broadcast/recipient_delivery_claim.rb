@@ -10,7 +10,11 @@ class Ibsoft::MessageBroadcast::RecipientDeliveryClaim
     # rubocop:disable Rails/SkipsModelValidations
     claimed = Ibsoft::MessageBroadcast::Recipient
               .where(id: recipient.id, status: ELIGIBLE_STATUSES)
-              .update_all(status: 'processing', updated_at: Time.current)
+              .update_all(
+                status: 'processing',
+                processing_started_at: Time.current,
+                updated_at: Time.current
+              )
     # rubocop:enable Rails/SkipsModelValidations
 
     recipient.reload if claimed == 1
@@ -26,6 +30,7 @@ class Ibsoft::MessageBroadcast::RecipientDeliveryClaim
         status: 'failed',
         error_code: 'unexpected_delivery_error',
         error_message: error.message,
+        processing_started_at: nil,
         updated_at: Time.current
       )
     # rubocop:enable Rails/SkipsModelValidations

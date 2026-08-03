@@ -11,6 +11,10 @@ class MessageBroadcastAPI extends ApiClient {
     return axios.get(`${this.url}/groups`);
   }
 
+  getGroup(groupId) {
+    return axios.get(`${this.url}/groups/${groupId}`);
+  }
+
   createGroup(payload) {
     return axios.post(`${this.url}/groups`, payload);
   }
@@ -35,8 +39,22 @@ class MessageBroadcastAPI extends ApiClient {
     return axios.post(`${this.url}/broadcasts/${broadcastId}/send_broadcast`);
   }
 
+  deleteBroadcast(broadcastId) {
+    return axios.delete(`${this.url}/broadcasts/${broadcastId}`);
+  }
+
+  deleteBroadcasts(ids) {
+    return axios.delete(`${this.url}/broadcasts/bulk_destroy`, {
+      data: { ids },
+    });
+  }
+
   getTemplates(params = {}) {
     return axios.get(`${this.url}/templates`, { params });
+  }
+
+  getCapabilities() {
+    return axios.get(`${this.url}/capabilities`);
   }
 
   getStates(params = {}) {

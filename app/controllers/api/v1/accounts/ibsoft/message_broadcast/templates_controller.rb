@@ -5,6 +5,6 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::TemplatesController < Api::V1
 
     render json: { templates: templates }
   rescue Ibsoft::MessageBroadcast::TemplateCatalog::UnsupportedInboxError
-    render json: { error: 'unsupported_whatsapp_inbox' }, status: :unprocessable_entity
+    render json: { error: 'unsupported_whatsapp_inbox' }, status: :unprocessable_content
   end
 end

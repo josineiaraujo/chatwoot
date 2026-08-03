@@ -1275,7 +1275,12 @@
         "NOT_INFORMED": "Não informado"
       },
       "PAGINATION": {
-        "ITEMS_PER_PAGE": "Itens por página"
+        "ITEMS_PER_PAGE": "Itens por página",
+        "NAVIGATION": "Navegação do histórico de disparos",
+        "FIRST": "Primeira página",
+        "PREVIOUS": "Página anterior",
+        "NEXT": "Próxima página",
+        "LAST": "Última página"
       },
       "MODES": {
         "MENU_LABEL": "Tipos de busca de clientes",
@@ -1306,6 +1311,7 @@
         "CONCENTRATOR": "Concentrador",
         "POP_IDS": "POPs",
         "TRANSMITTER": "Transmissor",
+        "NAS": "Concentrador NAS",
         "TRANSMISSION_INTERFACE": "Interface de transmissão",
         "FTTH_BOX": "Caixa FTTH",
         "TRANSMITTER_PORT": "Porta do transmissor",
@@ -1319,7 +1325,7 @@
         "ANY_INTERNET": "Qualquer status de internet"
       },
       "LOOKUPS": {
-        "PLANS_TITLE": "Planos de acesso do IXC",
+        "PLANS_TITLE": "Planos de acesso do ERP",
         "PLANS_PLACEHOLDER": "Selecionar planos de acesso",
         "PLANS_SEARCH": "Pesquisar planos de acesso",
         "STATES_SEARCH": "Pesquisar estados",
@@ -1330,10 +1336,12 @@
         "CLEAR_SELECTION": "Limpar seleção",
         "TRANSMITTERS_PLACEHOLDER": "Selecionar transmissores",
         "TRANSMITTERS_SEARCH": "Pesquisar transmissores",
-        "LOADING": "Carregando opções do IXC...",
-        "EMPTY": "Nenhuma opção encontrada no IXC para esta busca.",
+        "NAS_PLACEHOLDER": "Selecionar concentradores NAS",
+        "NAS_SEARCH": "Pesquisar concentradores NAS",
+        "LOADING": "Carregando opções do ERP...",
+        "EMPTY": "Nenhuma opção encontrada no ERP para esta busca.",
         "SELECTED": "{count} selecionado(s)",
-        "LOAD_ERROR": "Não foi possível carregar as opções do IXC."
+        "LOAD_ERROR": "Não foi possível carregar as opções do ERP."
       },
       "CONTRACT_STATUS": {
         "ACTIVE": "Ativo",
@@ -1356,6 +1364,8 @@
         "SEARCH": "Buscar clientes",
         "SELECT_PAGE": "Selecionar página",
         "UNSELECT_PAGE": "Limpar seleção",
+        "SELECT_RECIPIENT": "Selecionar destinatário",
+        "ADD_CLIENTS": "Adicionar clientes",
         "ADD_SELECTED": "Adicionar selecionados",
         "ADD_ALL_RESULTS": "Adicionar todos os resultados",
         "ADD_GROUPS": "Adicionar grupos",
@@ -1364,19 +1374,81 @@
         "ADD_VARIABLE": "Adicionar variável",
         "SAVE_DRAFT": "Salvar como rascunho",
         "SAVE_GROUP": "Salvar grupo",
-        "SEND_NOW": "Disparar agora"
+        "SEND_NOW": "Disparar agora",
+        "SEND_SINGLE": "Enviar mensagem",
+        "START_BROADCAST": "Iniciar disparo"
+      },
+      "SELECTION_DIALOG": {
+        "RECIPIENTS_TITLE": "Adicionar clientes",
+        "GROUP_TITLE": "Criar grupo",
+        "GROUP_EDIT_TITLE": "Adicionar destinatários ao grupo",
+        "GROUP_NAME_LABEL": "Nome do grupo",
+        "GROUP_NAME_PLACEHOLDER": "Informe um nome para este grupo",
+        "SELECT_PAGE": "Selecionar página ({count})",
+        "SELECT_ALL": "Selecionar todos os resultados ({count})",
+        "CLEAR_SELECTION": "Limpar seleção",
+        "SELECTED_COUNT": "Itens selecionados: {count}",
+        "ADD_RECIPIENTS": "Adicionar à lista ({count})",
+        "ADD_TO_GROUP": "Adicionar ao grupo ({count})",
+        "CREATE_GROUP": "Criar grupo ({count})",
+        "CANCEL": "Cancelar"
       },
       "HISTORY": {
         "TITLE": "Histórico de disparos",
         "DESCRIPTION": "Acompanhe rascunhos e execuções anteriores antes de iniciar um novo disparo.",
         "EMPTY": "Nenhum disparo foi criado ainda.",
-        "RECIPIENTS": "{count} destinatários",
-        "ID": "Disparo #{id}"
+        "REFRESH": "Atualizar histórico",
+        "SELECTION": {
+          "COUNT": "Selecionados: {count}",
+          "SELECT_PAGE": "Selecionar disparos disponíveis nesta página",
+          "SELECT_BROADCAST": "Selecionar disparo {name}",
+          "CLEAR": "Limpar seleção",
+          "DELETE": "Excluir selecionados"
+        },
+        "DELETE": {
+          "ONE_TITLE": "Excluir disparo?",
+          "ONE_DESCRIPTION": "O disparo e seus registros de destinatários serão excluídos permanentemente.",
+          "MANY_TITLE": "Excluir disparos selecionados?",
+          "MANY_DESCRIPTION": "Os {count} disparos selecionados e seus registros de destinatários serão excluídos permanentemente.",
+          "CONFIRM": "Excluir",
+          "CANCEL": "Cancelar"
+        },
+        "TABLE": {
+          "BROADCAST": "Disparo",
+          "TYPE": "Tipo de envio",
+          "RECIPIENTS": "Destinatários",
+          "DELIVERY": "Registro da mensagem",
+          "STATUS": "Status",
+          "AUTHOR": "Autor",
+          "UNKNOWN_AUTHOR": "Não informado",
+          "DATE": "Criado em",
+          "ACTIONS": "Ações",
+          "VIEW": "Visualizar disparo",
+          "DELETE": "Excluir disparo",
+          "DELETE_ACTIVE": "Um disparo na fila ou em execução não pode ser excluído"
+        }
       },
       "STEPS": {
-        "SOURCE": "Origem",
+        "SETUP": "Início",
         "RECIPIENTS": "Destinatários",
-        "REVIEW": "Envio"
+        "CONTENT": "Mensagem",
+        "DELIVERY": "Entrega",
+        "REVIEW": "Revisão"
+      },
+      "WORKSPACE": {
+        "TITLE": "Novo disparo",
+        "CLOSE": "Fechar criação do disparo",
+        "DISCARD_TITLE": "Descartar este disparo?",
+        "DISCARD_DESCRIPTION": "As seleções e configurações ainda não salvas serão perdidas.",
+        "DISCARD_CONFIRM": "Descartar disparo",
+        "DISCARD_CANCEL": "Continuar editando"
+      },
+      "DISPATCH": {
+        "TITLE": "Como deseja enviar?",
+        "SINGLE_TITLE": "Um destinatário",
+        "SINGLE_DESCRIPTION": "Localize uma pessoa e envie a mensagem ao concluir.",
+        "BULK_TITLE": "Vários destinatários",
+        "BULK_DESCRIPTION": "Monte uma lista e processe o disparo em segundo plano."
       },
       "SOURCE": {
         "SEARCH_TITLE": "Pesquisar e selecionar",
@@ -1406,6 +1478,8 @@
         "FILTERED_EMPTY": "Nenhum destinatário corresponde à busca e ao filtro selecionados.",
         "SEARCH_PLACEHOLDER": "Pesquisar destinatários",
         "REMOVE": "Remover destinatário",
+        "PRIMARY_PHONE_VALUE": "Principal: {phone}",
+        "FALLBACK_PHONE_VALUE": "Alternativo: {phone}",
         "EXTERNAL_ID": "Código no ERP: {id}",
         "UNKNOWN_LOCATION": "Localização não informada",
         "PAGINATION": "Exibindo {startItem} a {endItem} de {totalItems} destinatários",
@@ -1434,21 +1508,49 @@
         "TEMPLATE_META": "{name} · {language}",
         "CONVERSATION": "Conversa #{id}",
         "SUMMARY": "Resumo do disparo",
+        "AUTHOR": "Autor",
         "STATUS": "Status",
-        "CREATED_AT": "Criado em"
+        "PHONE_USED": "Enviado para {phone}",
+        "CREATED_AT": "Criado em",
+        "CLOSE": "Fechar"
       },
       "GROUPS": {
         "TITLE": "Grupos fixos",
-        "DESCRIPTION": "Selecione um ou mais grupos para adicionar seus membros aos destinatários.",
+        "DESCRIPTION": "Selecione um ou mais grupos para definir o público do disparo.",
         "SELECT": "Selecionar grupo",
         "LOAD": "Carregar grupo",
         "SAVE_TITLE": "Salvar seleção como grupo",
         "SAVE_DESCRIPTION": "Selecione clientes nos resultados da busca e salve como um novo grupo fixo.",
         "CREATE_FROM_FILTERS": "Criar grupo por filtros",
-        "MEMBERS": "{count} integrantes"
+        "MEMBERS": "{count} integrantes",
+        "SELECTION_SUMMARY": "Grupos selecionados: {groups}",
+        "EDITOR": {
+          "ACTION": "Editar grupo",
+          "TITLE": "Editar grupo",
+          "NAME": "Nome do grupo",
+          "NAME_PLACEHOLDER": "Informe um nome para este grupo",
+          "ADD_MEMBERS": "Adicionar destinatários",
+          "EMPTY": "Este grupo ainda não possui destinatários.",
+          "SAVE": "Salvar grupo",
+          "CANCEL": "Cancelar"
+        }
+      },
+      "CONTENT": {
+        "TITLE": "Escolha a mensagem",
+        "DESCRIPTION": "Selecione um modelo aprovado e configure suas variáveis.",
+        "SEARCH_TEMPLATE": "Pesquisar modelos",
+        "EMPTY_TEMPLATES": "Nenhum modelo aprovado foi encontrado para este canal."
+      },
+      "DELIVERY": {
+        "TITLE": "Como a mensagem deve ser registrada?",
+        "DESCRIPTION": "O envio direto pela Meta não cria contato, conversa ou mensagem no ChatHub.",
+        "DIRECT_TITLE": "Enviar diretamente pela Meta",
+        "DIRECT_DESCRIPTION": "Entrega a mensagem sem criar registros de atendimento. Esta é a opção padrão.",
+        "CONVERSATION_TITLE": "Registrar em uma conversa",
+        "CONVERSATION_DESCRIPTION": "Reutiliza uma conversa aberta ou cria uma nova para registrar a mensagem."
       },
       "REVIEW": {
-        "TITLE": "Preparação do disparo",
+        "TITLE": "Revise antes de enviar",
         "SELECTED_COUNT": "{count} selecionados, {deliverable} com telefone válido.",
         "INBOX": "Canal WhatsApp",
         "SELECT_INBOX": "Selecione um canal",
@@ -1461,6 +1563,9 @@
         "TEMPLATE_NAME": "Nome do template",
         "TEMPLATE_LANGUAGE": "Idioma do template",
         "CONVERSATION_MODE": "Após o envio",
+        "SEND_TYPE": "Tipo de envio",
+        "DELIVERY": "Registro da mensagem",
+        "PHONE_PRIORITY": "O telefone principal será usado primeiro. O alternativo só será tentado se a Meta rejeitar definitivamente o principal; falhas incertas não geram uma segunda tentativa.",
         "SUMMARY": "Resumo",
         "DELIVERABLE": "Com telefone válido",
         "CLOSE_AFTER_SEND": "Criar e encerrar conversa",
@@ -1473,7 +1578,16 @@
         "EMPTY": "Este modelo não possui variáveis para preencher.",
         "CUSTOMER_FIELD": "Campo do cliente",
         "FIXED_VALUE": "Valor fixo",
-        "FIXED_PLACEHOLDER": "Texto fixo sem quebra de linha"
+        "FIXED_PLACEHOLDER": "Texto fixo sem quebra de linha",
+        "HEADER_MEDIA_URL": "Arquivo do cabeçalho",
+        "HEADER_IMAGE_URL": "Imagem do cabeçalho",
+        "HEADER_VIDEO_URL": "Vídeo do cabeçalho",
+        "HEADER_DOCUMENT_URL": "Documento do cabeçalho",
+        "MEDIA_URL_PLACEHOLDER": "URL pública do arquivo (HTTP ou HTTPS)",
+        "DYNAMIC_URL_BUTTON": "Parâmetro do link - {button}",
+        "DYNAMIC_URL_PLACEHOLDER": "Parte dinâmica da URL do botão",
+        "COPY_CODE_BUTTON": "Código para copiar - {button}",
+        "COPY_CODE_PLACEHOLDER": "Código com até 15 caracteres"
       },
       "TEMPLATE_COMPONENTS": {
         "HEADER": "Cabeçalho",
@@ -1488,7 +1602,8 @@
         "ADDRESS": "Endereço",
         "CITY": "Cidade",
         "STATE": "Estado",
-        "PRIMARY_PHONE": "Telefone principal"
+        "PRIMARY_PHONE": "Telefone principal",
+        "FALLBACK_PHONE": "Telefone alternativo"
       },
       "STATUS": {
         "DRAFT": "Rascunho",
@@ -1500,12 +1615,26 @@
         "PENDING": "Pendente",
         "PROCESSING": "Processando",
         "SENT": "Enviado",
+        "ACCEPTED": "Aceito pela Meta",
+        "DELIVERED": "Entregue",
+        "READ": "Lido",
+        "UNCERTAIN": "Resultado incerto",
         "SKIPPED": "Ignorado"
       },
       "ALERTS": {
         "GROUP_CREATED": "Grupo salvo com sucesso.",
+        "GROUP_CREATE_ERROR": "Não foi possível criar o grupo.",
+        "GROUP_UPDATED": "Grupo atualizado com sucesso.",
+        "GROUP_LOAD_ERROR": "Não foi possível carregar o grupo.",
+        "GROUP_UPDATE_ERROR": "Não foi possível atualizar o grupo.",
+        "SELECTION_EXPIRED": "Esta busca expirou. Faça uma nova busca para selecionar todos os resultados.",
         "DRAFT_CREATED": "Rascunho #{id} criado com sucesso.",
-        "DETAIL_LOAD_ERROR": "Não foi possível abrir este rascunho.",
+        "HISTORY_LOAD_ERROR": "Não foi possível atualizar o histórico de disparos.",
+        "DETAIL_LOAD_ERROR": "Não foi possível abrir este disparo.",
+        "DELETE_ONE_SUCCESS": "Disparo excluído com sucesso.",
+        "DELETE_MANY_SUCCESS": "{count} disparos excluídos com sucesso.",
+        "DELETE_ACTIVE_ERROR": "A seleção contém um disparo na fila ou em execução. Nenhum item foi excluído.",
+        "DELETE_ERROR": "Não foi possível excluir os disparos selecionados.",
         "SEND_STARTED": "Envio iniciado. Os status serão atualizados conforme o processamento avançar."
       }
     },

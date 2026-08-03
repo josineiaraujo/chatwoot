@@ -4,17 +4,12 @@ class Ibsoft::MessageBroadcast::BroadcastSender
   end
 
   def call
-    return unless execution_claim.acquire
+    return false unless execution_claim.acquire
 
-    deliverable_recipients.find_each do |recipient|
-      Ibsoft::MessageBroadcast::RecipientSender.new(
-        broadcast: broadcast,
-        recipient: recipient
-      ).call
-    end
-    finish_broadcast!
+    broadcast.single_dispatch? ? deliver_single : enqueue_bulk
+    true
   rescue StandardError
-    fail_broadcast! if broadcast.persisted?
+    fail_single_broadcast! if broadcast.persisted? && broadcast.single_dispatch?
     raise
   end
 
@@ -22,17 +17,34 @@ class Ibsoft::MessageBroadcast::BroadcastSender
 
   attr_reader :broadcast
 
-  def deliverable_recipients
-    broadcast.recipients.where(status: %w[pending queued])
+  def deliver_single
+    recipient = broadcast.recipients.where(status: %w[pending queued]).order(:id).first
+    Ibsoft::MessageBroadcast::RecipientSender.new(broadcast: broadcast, recipient: recipient).call if recipient
+    Ibsoft::MessageBroadcast::BroadcastFinalizer.new(broadcast: broadcast).call
   end
 
-  def finish_broadcast!
-    status = broadcast.recipients.exists?(status: %w[pending queued processing failed]) ? 'failed' : 'completed'
-    broadcast.update!(status: status, finished_at: Time.current)
+  def enqueue_bulk
+    broadcast.recipients.where(status: 'queued').order(:id).pluck(:id).each do |recipient_id|
+      enqueue_recipient(recipient_id)
+    end
+    Ibsoft::MessageBroadcast::BroadcastFinalizer.new(broadcast: broadcast).call
   end
 
-  def fail_broadcast!
-    # Preserve a terminal state written by another execution.
+  def enqueue_recipient(recipient_id)
+    Ibsoft::MessageBroadcast::SendRecipientJob.perform_later(recipient_id)
+    now = Time.current
+    # rubocop:disable Rails/SkipsModelValidations
+    Ibsoft::MessageBroadcast::Recipient
+      .where(id: recipient_id, status: 'queued')
+      .update_all(enqueued_at: now, updated_at: now)
+    # rubocop:enable Rails/SkipsModelValidations
+  rescue StandardError => e
+    Rails.logger.error(
+      "[Ibsoft::MessageBroadcast] enqueue failed recipient=#{recipient_id} error=#{e.class}"
+    )
+  end
+
+  def fail_single_broadcast!
     # rubocop:disable Rails/SkipsModelValidations
     Ibsoft::MessageBroadcast::Broadcast
       .where(id: broadcast.id, status: 'running')

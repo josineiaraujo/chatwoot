@@ -446,7 +446,12 @@
         "NOT_INFORMED": "Not provided"
       },
       "PAGINATION": {
-        "ITEMS_PER_PAGE": "Items per page"
+        "ITEMS_PER_PAGE": "Items per page",
+        "NAVIGATION": "Broadcast history navigation",
+        "FIRST": "First page",
+        "PREVIOUS": "Previous page",
+        "NEXT": "Next page",
+        "LAST": "Last page"
       },
       "MODES": {
         "MENU_LABEL": "Customer search types",
@@ -477,6 +482,7 @@
         "CONCENTRATOR": "Concentrator",
         "POP_IDS": "POPs",
         "TRANSMITTER": "Transmitter",
+        "NAS": "NAS concentrator",
         "TRANSMISSION_INTERFACE": "Transmission interface",
         "FTTH_BOX": "FTTH box",
         "TRANSMITTER_PORT": "Transmitter port",
@@ -490,7 +496,7 @@
         "ANY_INTERNET": "Any internet status"
       },
       "LOOKUPS": {
-        "PLANS_TITLE": "IXC access plans",
+        "PLANS_TITLE": "ERP access plans",
         "PLANS_PLACEHOLDER": "Select access plans",
         "PLANS_SEARCH": "Search access plans",
         "STATES_SEARCH": "Search states",
@@ -501,10 +507,12 @@
         "CLEAR_SELECTION": "Clear selection",
         "TRANSMITTERS_PLACEHOLDER": "Select transmitters",
         "TRANSMITTERS_SEARCH": "Search transmitters",
-        "LOADING": "Loading IXC options...",
-        "EMPTY": "No IXC option found for this search.",
+        "NAS_PLACEHOLDER": "Select NAS concentrators",
+        "NAS_SEARCH": "Search NAS concentrators",
+        "LOADING": "Loading ERP options...",
+        "EMPTY": "No ERP option found for this search.",
         "SELECTED": "{count} selected",
-        "LOAD_ERROR": "Could not load IXC options."
+        "LOAD_ERROR": "Could not load ERP options."
       },
       "CONTRACT_STATUS": {
         "ACTIVE": "Active",
@@ -527,6 +535,8 @@
         "SEARCH": "Search customers",
         "SELECT_PAGE": "Select page",
         "UNSELECT_PAGE": "Clear selection",
+        "SELECT_RECIPIENT": "Select recipient",
+        "ADD_CLIENTS": "Add customers",
         "ADD_SELECTED": "Add selected",
         "ADD_ALL_RESULTS": "Add all results",
         "ADD_GROUPS": "Add groups",
@@ -535,19 +545,81 @@
         "ADD_VARIABLE": "Add variable",
         "SAVE_DRAFT": "Save as draft",
         "SAVE_GROUP": "Save group",
-        "SEND_NOW": "Send now"
+        "SEND_NOW": "Send now",
+        "SEND_SINGLE": "Send message",
+        "START_BROADCAST": "Start broadcast"
+      },
+      "SELECTION_DIALOG": {
+        "RECIPIENTS_TITLE": "Add customers",
+        "GROUP_TITLE": "Create group",
+        "GROUP_EDIT_TITLE": "Add recipients to group",
+        "GROUP_NAME_LABEL": "Group name",
+        "GROUP_NAME_PLACEHOLDER": "Enter a name for this group",
+        "SELECT_PAGE": "Select page ({count})",
+        "SELECT_ALL": "Select all results ({count})",
+        "CLEAR_SELECTION": "Clear selection",
+        "SELECTED_COUNT": "Selected items: {count}",
+        "ADD_RECIPIENTS": "Add to list ({count})",
+        "ADD_TO_GROUP": "Add to group ({count})",
+        "CREATE_GROUP": "Create group ({count})",
+        "CANCEL": "Cancel"
       },
       "HISTORY": {
         "TITLE": "Broadcast history",
         "DESCRIPTION": "Review drafts and previous runs before starting another broadcast.",
         "EMPTY": "No broadcast has been created yet.",
-        "RECIPIENTS": "{count} recipients",
-        "ID": "Broadcast #{id}"
+        "REFRESH": "Refresh history",
+        "SELECTION": {
+          "COUNT": "Selected: {count}",
+          "SELECT_PAGE": "Select available broadcasts on this page",
+          "SELECT_BROADCAST": "Select broadcast {name}",
+          "CLEAR": "Clear selection",
+          "DELETE": "Delete selected"
+        },
+        "DELETE": {
+          "ONE_TITLE": "Delete broadcast?",
+          "ONE_DESCRIPTION": "The broadcast and its recipient records will be permanently deleted.",
+          "MANY_TITLE": "Delete selected broadcasts?",
+          "MANY_DESCRIPTION": "The {count} selected broadcasts and their recipient records will be permanently deleted.",
+          "CONFIRM": "Delete",
+          "CANCEL": "Cancel"
+        },
+        "TABLE": {
+          "BROADCAST": "Broadcast",
+          "TYPE": "Sending type",
+          "RECIPIENTS": "Recipients",
+          "DELIVERY": "Message record",
+          "STATUS": "Status",
+          "AUTHOR": "Author",
+          "UNKNOWN_AUTHOR": "Not provided",
+          "DATE": "Created at",
+          "ACTIONS": "Actions",
+          "VIEW": "View broadcast",
+          "DELETE": "Delete broadcast",
+          "DELETE_ACTIVE": "A queued or running broadcast cannot be deleted"
+        }
       },
       "STEPS": {
-        "SOURCE": "Source",
+        "SETUP": "Start",
         "RECIPIENTS": "Recipients",
-        "REVIEW": "Sending"
+        "CONTENT": "Message",
+        "DELIVERY": "Delivery",
+        "REVIEW": "Review"
+      },
+      "WORKSPACE": {
+        "TITLE": "New broadcast",
+        "CLOSE": "Close broadcast builder",
+        "DISCARD_TITLE": "Discard this broadcast?",
+        "DISCARD_DESCRIPTION": "The unsaved selections and settings in this broadcast will be lost.",
+        "DISCARD_CONFIRM": "Discard broadcast",
+        "DISCARD_CANCEL": "Continue editing"
+      },
+      "DISPATCH": {
+        "TITLE": "How do you want to send?",
+        "SINGLE_TITLE": "One recipient",
+        "SINGLE_DESCRIPTION": "Find one person and send the message when finished.",
+        "BULK_TITLE": "Multiple recipients",
+        "BULK_DESCRIPTION": "Build a list and process the broadcast in the background."
       },
       "SOURCE": {
         "SEARCH_TITLE": "Search and select",
@@ -577,6 +649,8 @@
         "FILTERED_EMPTY": "No recipients match the selected search and filter.",
         "SEARCH_PLACEHOLDER": "Search recipients",
         "REMOVE": "Remove recipient",
+        "PRIMARY_PHONE_VALUE": "Primary: {phone}",
+        "FALLBACK_PHONE_VALUE": "Fallback: {phone}",
         "EXTERNAL_ID": "ERP ID: {id}",
         "UNKNOWN_LOCATION": "Location not provided",
         "PAGINATION": "Showing {startItem} to {endItem} of {totalItems} recipients",
@@ -605,21 +679,49 @@
         "TEMPLATE_META": "{name} · {language}",
         "CONVERSATION": "Conversation #{id}",
         "SUMMARY": "Broadcast summary",
+        "AUTHOR": "Author",
         "STATUS": "Status",
-        "CREATED_AT": "Created at"
+        "PHONE_USED": "Sent to {phone}",
+        "CREATED_AT": "Created at",
+        "CLOSE": "Close"
       },
       "GROUPS": {
         "TITLE": "Fixed groups",
-        "DESCRIPTION": "Select one or more groups to add their members to the recipients.",
+        "DESCRIPTION": "Select one or more groups to define the broadcast audience.",
         "SELECT": "Select group",
         "LOAD": "Load group",
         "SAVE_TITLE": "Save selection as group",
         "SAVE_DESCRIPTION": "Select customers from the search results and save them as a new fixed group.",
         "CREATE_FROM_FILTERS": "Create group from filters",
-        "MEMBERS": "{count} members"
+        "MEMBERS": "{count} members",
+        "SELECTION_SUMMARY": "Selected groups: {groups}",
+        "EDITOR": {
+          "ACTION": "Edit group",
+          "TITLE": "Edit group",
+          "NAME": "Group name",
+          "NAME_PLACEHOLDER": "Enter a name for this group",
+          "ADD_MEMBERS": "Add recipients",
+          "EMPTY": "This group has no recipients yet.",
+          "SAVE": "Save group",
+          "CANCEL": "Cancel"
+        }
+      },
+      "CONTENT": {
+        "TITLE": "Choose the message",
+        "DESCRIPTION": "Select an approved template and configure its variables.",
+        "SEARCH_TEMPLATE": "Search templates",
+        "EMPTY_TEMPLATES": "No approved template was found for this channel."
+      },
+      "DELIVERY": {
+        "TITLE": "How should the message be recorded?",
+        "DESCRIPTION": "Direct Meta delivery does not create a contact, conversation, or message in ChatHub.",
+        "DIRECT_TITLE": "Send directly through Meta",
+        "DIRECT_DESCRIPTION": "Delivers the message without creating service records. This is the default option.",
+        "CONVERSATION_TITLE": "Record in a conversation",
+        "CONVERSATION_DESCRIPTION": "Reuses an open conversation or creates a new one to record the message."
       },
       "REVIEW": {
-        "TITLE": "Broadcast preparation",
+        "TITLE": "Review before sending",
         "SELECTED_COUNT": "{count} selected, {deliverable} with valid phone.",
         "INBOX": "WhatsApp channel",
         "SELECT_INBOX": "Select a channel",
@@ -632,6 +734,9 @@
         "TEMPLATE_NAME": "Template name",
         "TEMPLATE_LANGUAGE": "Template language",
         "CONVERSATION_MODE": "After sending",
+        "SEND_TYPE": "Sending type",
+        "DELIVERY": "Message record",
+        "PHONE_PRIORITY": "The primary phone is used first. The fallback is tried only when Meta definitively rejects the primary; uncertain failures do not trigger a second attempt.",
         "SUMMARY": "Summary",
         "DELIVERABLE": "With valid phone",
         "CLOSE_AFTER_SEND": "Create and close conversation",
@@ -644,7 +749,16 @@
         "EMPTY": "This template has no variables to fill.",
         "CUSTOMER_FIELD": "Customer field",
         "FIXED_VALUE": "Fixed value",
-        "FIXED_PLACEHOLDER": "Fixed text without line breaks"
+        "FIXED_PLACEHOLDER": "Fixed text without line breaks",
+        "HEADER_MEDIA_URL": "Header file",
+        "HEADER_IMAGE_URL": "Header image",
+        "HEADER_VIDEO_URL": "Header video",
+        "HEADER_DOCUMENT_URL": "Header document",
+        "MEDIA_URL_PLACEHOLDER": "Public file URL (HTTP or HTTPS)",
+        "DYNAMIC_URL_BUTTON": "Link parameter - {button}",
+        "DYNAMIC_URL_PLACEHOLDER": "Dynamic part of the button URL",
+        "COPY_CODE_BUTTON": "Copy code - {button}",
+        "COPY_CODE_PLACEHOLDER": "Code with up to 15 characters"
       },
       "TEMPLATE_COMPONENTS": {
         "HEADER": "Header",
@@ -659,7 +773,8 @@
         "ADDRESS": "Address",
         "CITY": "City",
         "STATE": "State",
-        "PRIMARY_PHONE": "Primary phone"
+        "PRIMARY_PHONE": "Primary phone",
+        "FALLBACK_PHONE": "Fallback phone"
       },
       "STATUS": {
         "DRAFT": "Draft",
@@ -671,12 +786,26 @@
         "PENDING": "Pending",
         "PROCESSING": "Processing",
         "SENT": "Sent",
+        "ACCEPTED": "Accepted by Meta",
+        "DELIVERED": "Delivered",
+        "READ": "Read",
+        "UNCERTAIN": "Uncertain result",
         "SKIPPED": "Skipped"
       },
       "ALERTS": {
         "GROUP_CREATED": "Group saved successfully.",
+        "GROUP_CREATE_ERROR": "The group could not be created.",
+        "GROUP_UPDATED": "Group updated successfully.",
+        "GROUP_LOAD_ERROR": "The group could not be loaded.",
+        "GROUP_UPDATE_ERROR": "The group could not be updated.",
+        "SELECTION_EXPIRED": "This search expired. Run a new search to select all results.",
         "DRAFT_CREATED": "Draft #{id} created successfully.",
-        "DETAIL_LOAD_ERROR": "Could not open this draft.",
+        "HISTORY_LOAD_ERROR": "Could not refresh the broadcast history.",
+        "DETAIL_LOAD_ERROR": "Could not open this broadcast.",
+        "DELETE_ONE_SUCCESS": "Broadcast deleted successfully.",
+        "DELETE_MANY_SUCCESS": "{count} broadcasts deleted successfully.",
+        "DELETE_ACTIVE_ERROR": "The selection contains a queued or running broadcast. No items were deleted.",
+        "DELETE_ERROR": "Could not delete the selected broadcasts.",
         "SEND_STARTED": "Sending started. Statuses will update as processing advances."
       }
     },

@@ -54,6 +54,20 @@ describe('WhatsAppTemplatePreview', () => {
     );
   });
 
+  it('renders a copy-code template button with its semantic icon', () => {
+    const wrapper = renderPreview(
+      createDraft({
+        model: 'standard',
+        body: { text: 'Use o código abaixo.' },
+        buttons: [{ type: 'COPY_CODE', text: 'Copiar código' }],
+      })
+    );
+
+    const action = wrapper.get('[data-testid="preview-action"]');
+    expect(action.text()).toContain('Copiar código');
+    expect(action.get('.i-lucide-copy').exists()).toBe(true);
+  });
+
   it('renders the catalog product card and its exclusive action', () => {
     const wrapper = renderPreview(
       createDraft({

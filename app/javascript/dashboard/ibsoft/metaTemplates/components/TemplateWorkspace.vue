@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import { useAlert } from 'dashboard/composables';
 import metaTemplatesAPI from '../api';
 import {
@@ -216,7 +217,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <TeleportWithDirection to="body">
     <div
       class="fixed inset-0 z-[100] flex min-h-0 flex-col bg-n-background"
       data-testid="meta-template-workspace"
@@ -354,5 +355,5 @@ onBeforeUnmount(() => {
         />
       </footer>
     </div>
-  </Teleport>
+  </TeleportWithDirection>
 </template>

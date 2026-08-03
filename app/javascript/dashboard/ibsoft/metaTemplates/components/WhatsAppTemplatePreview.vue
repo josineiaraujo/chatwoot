@@ -401,7 +401,9 @@ const specialAction = computed(() => {
                   ? 'i-lucide-phone'
                   : button.type === 'URL'
                     ? 'i-lucide-external-link'
-                    : 'i-lucide-reply',
+                    : button.type === 'COPY_CODE'
+                      ? 'i-lucide-copy'
+                      : 'i-lucide-reply',
               ]"
             />
             {{ button.text }}

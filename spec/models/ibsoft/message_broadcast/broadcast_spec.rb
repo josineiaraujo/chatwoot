@@ -23,4 +23,16 @@ RSpec.describe Ibsoft::MessageBroadcast::Broadcast do
 
     expect(Ibsoft::MessageBroadcast::Recipient.exists?(recipient.id)).to be(false)
   end
+
+  it 'allows deletion only outside active processing states' do
+    expect(described_class::DELETABLE_STATUSES).to contain_exactly(
+      'draft', 'completed', 'failed', 'cancelled'
+    )
+
+    described_class::STATUSES.each do |status|
+      broadcast = build(:ibsoft_message_broadcast, status: status)
+
+      expect(broadcast.deletable?).to eq(described_class::DELETABLE_STATUSES.include?(status))
+    end
+  end
 end

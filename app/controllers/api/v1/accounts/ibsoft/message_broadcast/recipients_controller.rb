@@ -16,7 +16,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::RecipientsController < Api::V
 
     render json: search_result, status: search_result[:status] == 'building' ? :accepted : :ok
   rescue KeyError
-    render json: { error: 'invalid_search_mode' }, status: :unprocessable_entity
+    render json: { error: 'invalid_search_mode' }, status: :unprocessable_content
   end
 
   private
@@ -24,7 +24,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::RecipientsController < Api::V
   def ensure_supported_search_provider!
     return true if Ibsoft::MessageBroadcast::RecipientSearch.supports?(active_erp_connection&.provider)
 
-    render json: { error: 'erp_provider_not_supported' }, status: :unprocessable_entity
+    render json: { error: 'erp_provider_not_supported' }, status: :unprocessable_content
     false
   end
 end

@@ -1,12 +1,9 @@
 class Ibsoft::MessageBroadcast::RecipientSearch
   DEFAULT_PER_PAGE = 10
   MAX_PER_PAGE = 500
-  SEARCH_ADAPTERS = {
-    'ixc' => Ibsoft::Erp::Adapters::Ixc::CustomerSearch
-  }.freeze
 
   def self.supports?(provider)
-    SEARCH_ADAPTERS.key?(provider.to_s)
+    Ibsoft::Erp::Adapters::Registry.supports_search?(provider)
   end
 
   def initialize(account:, connection:)
@@ -111,8 +108,7 @@ class Ibsoft::MessageBroadcast::RecipientSearch
   end
 
   def search_adapter
-    adapter_class = SEARCH_ADAPTERS.fetch(connection.provider)
-    adapter_class.new(connection)
+    Ibsoft::Erp::Adapters::Registry.search(connection)
   end
 
   def customer_payload(customer)

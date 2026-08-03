@@ -82,6 +82,13 @@ ibsoft_external_messaging_cleanup_expired_records_job:
   class: 'Ibsoft::ExternalMessaging::CleanupExpiredRecordsJob'
   queue: scheduled_jobs
 
+# Recovers queued message broadcasts and marks interrupted deliveries as
+# uncertain instead of risking duplicate WhatsApp messages.
+ibsoft_message_broadcast_dispatch_pending_job:
+  cron: '*/1 * * * *'
+  class: 'Ibsoft::MessageBroadcast::DispatchPendingJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # removes old notifications (>1 month) and trims to 300 per user
 remove_old_notification_job:

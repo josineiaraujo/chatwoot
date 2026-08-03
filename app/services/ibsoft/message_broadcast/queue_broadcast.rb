@@ -52,7 +52,12 @@ class Ibsoft::MessageBroadcast::QueueBroadcast
     # rubocop:disable Rails/SkipsModelValidations
     Ibsoft::MessageBroadcast::Recipient
       .where(broadcast_id: broadcast.id, status: 'pending')
-      .update_all(status: 'queued', updated_at: now)
+      .update_all(
+        status: 'queued',
+        enqueued_at: nil,
+        processing_started_at: nil,
+        updated_at: now
+      )
     # rubocop:enable Rails/SkipsModelValidations
   end
 end
