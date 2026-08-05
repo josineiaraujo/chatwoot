@@ -34,7 +34,8 @@ class Ibsoft::ExternalMessaging::RetentionCleanup
 
   def expired_order_scope
     Ibsoft::ExternalMessaging::Order
-      .where(opening_delivery_id: expired_deliveries.select(:id))
+      .where(endpoint: endpoint)
+      .where('updated_at < ?', cutoff)
   end
 
   def purge_expired_updates(result)

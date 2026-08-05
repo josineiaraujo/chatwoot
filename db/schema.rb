@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1181,6 +1181,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "order_pix_key"
+    t.bigint "order_id"
     t.index ["account_id", "created_at"], name: "idx_ibsoft_external_deliveries_account_created"
     t.index ["account_id"], name: "index_ibsoft_external_message_deliveries_on_account_id"
     t.index ["endpoint_id", "created_at"], name: "idx_ibsoft_ext_deliveries_endpoint_created"
@@ -1189,6 +1190,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
     t.index ["endpoint_id"], name: "idx_ibsoft_external_deliveries_endpoint"
     t.index ["inbox_id", "meta_message_id"], name: "idx_ibsoft_external_deliveries_meta_message", unique: true, where: "(meta_message_id IS NOT NULL)"
     t.index ["inbox_id"], name: "index_ibsoft_external_message_deliveries_on_inbox_id"
+    t.index ["order_id"], name: "idx_ibsoft_ext_deliveries_order"
     t.index ["status", "enqueued_at"], name: "idx_ibsoft_external_deliveries_dispatch"
   end
 
@@ -1209,6 +1211,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
     t.string "order_pix_key_type"
     t.integer "retention_days", default: 30, null: false
     t.jsonb "order_update_messages", default: {}, null: false
+    t.boolean "allow_order_resends", default: true, null: false
     t.index ["account_id", "name"], name: "idx_ibsoft_external_endpoints_account_name", unique: true
     t.index ["account_id"], name: "index_ibsoft_external_message_endpoints_on_account_id"
     t.index ["created_by_id"], name: "index_ibsoft_external_message_endpoints_on_created_by_id"
@@ -1271,9 +1274,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
     t.string "payment_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id", "inbox_id", "reference_id"], name: "idx_ibsoft_ext_orders_tenant_reference", unique: true
+    t.bigint "endpoint_id", null: false
     t.index ["account_id", "order_status", "payment_status", "created_at"], name: "idx_ibsoft_ext_orders_account_status_created"
     t.index ["account_id"], name: "index_ibsoft_external_message_orders_on_account_id"
+    t.index ["endpoint_id", "reference_id"], name: "idx_ibsoft_ext_orders_endpoint_reference", unique: true
     t.index ["inbox_id"], name: "index_ibsoft_external_message_orders_on_inbox_id"
     t.index ["opening_delivery_id"], name: "idx_ibsoft_ext_orders_opening_delivery", unique: true
     t.check_constraint "order_status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'partially_shipped'::character varying, 'shipped'::character varying, 'completed'::character varying, 'canceled'::character varying]::text[])", name: "chk_ibsoft_ext_orders_order_status"
@@ -1962,6 +1966,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
   add_foreign_key "ibsoft_erp_connections", "accounts"
   add_foreign_key "ibsoft_external_message_deliveries", "accounts"
   add_foreign_key "ibsoft_external_message_deliveries", "ibsoft_external_message_endpoints", column: "endpoint_id"
+  add_foreign_key "ibsoft_external_message_deliveries", "ibsoft_external_message_orders", column: "order_id", on_delete: :nullify
   add_foreign_key "ibsoft_external_message_deliveries", "inboxes"
   add_foreign_key "ibsoft_external_message_endpoints", "accounts"
   add_foreign_key "ibsoft_external_message_endpoints", "inboxes"
@@ -1973,6 +1978,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_01_150000) do
   add_foreign_key "ibsoft_external_message_order_updates", "users", column: "requested_by_id"
   add_foreign_key "ibsoft_external_message_orders", "accounts"
   add_foreign_key "ibsoft_external_message_orders", "ibsoft_external_message_deliveries", column: "opening_delivery_id"
+  add_foreign_key "ibsoft_external_message_orders", "ibsoft_external_message_endpoints", column: "endpoint_id"
   add_foreign_key "ibsoft_external_message_orders", "inboxes"
   add_foreign_key "ibsoft_instagram_inbound_policies", "accounts", on_delete: :cascade
   add_foreign_key "ibsoft_instagram_inbound_policies", "inboxes", on_delete: :cascade

@@ -25,7 +25,6 @@ pt_BR:
           canceled: "Fatura cancelada"
     responses:
       accepted: "Solicitação aceita para processamento."
-      duplicate_order: "Já existe uma ordem registrada com este ID de fatura."
       manual_order_updates_accepted: "Atualizações manuais aceitas para processamento."
     errors:
       invalid_channel: "O canal configurado não é um WhatsApp Business Cloud válido."
@@ -35,6 +34,9 @@ pt_BR:
       idempotency_conflict: "A chave idempotente já foi utilizada com outro conteúdo."
       idempotency_key_required: "Não foi possível identificar internamente a solicitação."
       idempotency_key_invalid: "A chave idempotente deve possuir no máximo 255 bytes."
+      order_resend_disabled: "Esta instância não permite reenviar uma ordem com a mesma referência."
+      order_recipient_mismatch: "Esta referência já pertence a outro destinatário nesta instância."
+      order_resend_finalized: "Esta ordem já foi finalizada ou paga e não pode receber novos envios."
       invalid_request: "A solicitação de envio é inválida."
       payload_required: "Informe as variáveis da mensagem."
       method_not_allowed: "Método não permitido. Use GET."

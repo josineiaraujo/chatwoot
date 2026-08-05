@@ -22,6 +22,8 @@
       "REQUESTS": "Requests",
       "ENABLED": "Active instance",
       "ENABLED_DESCRIPTION": "Credentials from inactive instances cannot submit new requests.",
+      "ALLOW_ORDER_RESENDS": "Allow resending the same order",
+      "ALLOW_ORDER_RESENDS_DESCRIPTION": "New billing messages with the same reference are linked to the existing order while keeping a separate history entry for each delivery.",
       "SAVE": "Save instance",
       "SAVED": "Instance saved.",
       "VIEW": "View",

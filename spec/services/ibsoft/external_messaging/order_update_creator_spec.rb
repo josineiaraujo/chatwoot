@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateCreator do
   let(:order) { create(:ibsoft_external_message_order) }
-  let(:endpoint) { order.opening_delivery.endpoint }
+  let(:endpoint) { order.endpoint }
   let(:command) do
     {
       reference_id: order.reference_id,
@@ -104,6 +104,22 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateCreator do
       recipient: order.opening_delivery.recipient
     ).call
     expect(result.created).to be(true)
+  end
+
+  it 'allows updates after a successful resend when the opening delivery failed' do
+    order.opening_delivery.update!(status: 'failed', meta_message_id: nil)
+    create(
+      :ibsoft_external_message_delivery,
+      endpoint: endpoint,
+      external_order: order,
+      template_type: 'order',
+      order_reference_id: order.reference_id,
+      recipient: order.recipient,
+      status: 'accepted',
+      meta_message_id: 'wamid.resend'
+    )
+
+    expect(create_update.created).to be(true)
   end
 
   it 'blocks new updates when an earlier result is uncertain' do

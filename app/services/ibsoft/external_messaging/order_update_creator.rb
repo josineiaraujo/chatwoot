@@ -54,13 +54,13 @@ class Ibsoft::ExternalMessaging::OrderUpdateCreator
   end
 
   def find_order!
-    scope = Ibsoft::ExternalMessaging::Order.includes(:opening_delivery).where(
-      account: endpoint.account,
-      inbox: endpoint.inbox,
+    order = Ibsoft::ExternalMessaging::Order.includes(:opening_delivery, :deliveries).find_by!(
+      endpoint: endpoint,
       reference_id: command[:reference_id]
     )
-    scope = scope.where(ibsoft_external_message_deliveries: { recipient: recipient }) if recipient.present?
-    scope.first!
+    raise ActiveRecord::RecordNotFound if recipient.present? && order.recipient != recipient
+
+    order
   rescue ActiveRecord::RecordNotFound
     raise_error('order_update_not_found', http_status: :not_found)
   end

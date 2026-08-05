@@ -75,6 +75,7 @@ describe('InstanceEditorDialog', () => {
             name: 'Financeiro',
             inbox_id: 3,
             active: true,
+            allow_order_resends: true,
             rate_limit_per_second: 10,
             retention_days: 30,
           },
@@ -92,6 +93,7 @@ describe('InstanceEditorDialog', () => {
       instance_type: 'sgp_generic',
       inbox_id: 3,
       active: true,
+      allow_order_resends: false,
       rate_limit_per_second: 10,
       retention_days: 45,
     });
@@ -106,6 +108,7 @@ describe('InstanceEditorDialog', () => {
           payload: {
             name: 'ERP atualizado',
             active: true,
+            allow_order_resends: false,
             rate_limit_per_second: 10,
             retention_days: 45,
           },

@@ -4,6 +4,7 @@
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null
+#  allow_order_resends     :boolean          default(TRUE), not null
 #  instance_type           :string           default("sgp_generic"), not null
 #  name                    :string           not null
 #  order_pix_key           :text
@@ -54,6 +55,10 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
            class_name: 'Ibsoft::ExternalMessaging::Delivery',
            inverse_of: :endpoint,
            dependent: :restrict_with_error
+  has_many :orders,
+           class_name: 'Ibsoft::ExternalMessaging::Order',
+           inverse_of: :endpoint,
+           dependent: :restrict_with_error
   has_many :order_updates,
            class_name: 'Ibsoft::ExternalMessaging::OrderUpdate',
            inverse_of: :endpoint,
@@ -101,25 +106,9 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   end
 
   def payload(deliveries_count: nil)
-    {
-      id: id,
-      account_id: account_id,
-      inbox_id: inbox_id,
-      inbox_name: inbox.name,
-      name: name,
-      instance_type: instance_type,
-      integration_family: instance_type_definition.family,
-      public_path: instance_type_definition.public_path,
-      order_update_path: instance_type_definition.order_update_path,
-      token_hint: token_hint,
-      authentication: Ibsoft::ExternalMessaging::InstanceCredentials.new(endpoint: self).public_payload,
-      active: active,
-      rate_limit_per_second: rate_limit_per_second,
-      deliveries_count: deliveries_count || deliveries.count,
-      retention_days: retention_days,
-      order_defaults: order_defaults_payload,
-      order_defaults_configured: order_defaults_configured?
-    }.merge(timestamp_payload)
+    identity_payload
+      .merge(configuration_payload(deliveries_count: deliveries_count))
+      .merge(timestamp_payload)
   end
 
   def order_defaults_configured?
@@ -145,6 +134,34 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   end
 
   private
+
+  def identity_payload
+    {
+      id: id,
+      account_id: account_id,
+      inbox_id: inbox_id,
+      inbox_name: inbox.name,
+      name: name,
+      instance_type: instance_type,
+      integration_family: instance_type_definition.family,
+      public_path: instance_type_definition.public_path,
+      order_update_path: instance_type_definition.order_update_path,
+      token_hint: token_hint,
+      authentication: Ibsoft::ExternalMessaging::InstanceCredentials.new(endpoint: self).public_payload
+    }
+  end
+
+  def configuration_payload(deliveries_count:)
+    {
+      active: active,
+      rate_limit_per_second: rate_limit_per_second,
+      deliveries_count: deliveries_count || deliveries.count,
+      retention_days: retention_days,
+      allow_order_resends: allow_order_resends,
+      order_defaults: order_defaults_payload,
+      order_defaults_configured: order_defaults_configured?
+    }
+  end
 
   def timestamp_payload
     {
