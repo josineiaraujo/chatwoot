@@ -33,6 +33,7 @@ const HISTORY_PAGE_SIZES = [10, 25, 30, 50, 100];
 const COPY_CODE_MAX_LENGTH = 15;
 const defaultProviderCapabilities = () => ({
   search_modes: ['direct', 'contracts', 'concentrators'],
+  location_filters: { city: 'lookup' },
   contract_filters: { internet_status: true },
   concentrator_filters: {
     manual_concentrator_ids: true,
@@ -93,6 +94,9 @@ const isAddingGroups = ref(false);
 const isLoadingGroupEditor = ref(false);
 const isSavingGroupEditor = ref(false);
 const isDeletingBroadcasts = ref(false);
+const hasLoadedInitialStates = ref(false);
+
+let initialStatesRequest = null;
 
 const currentView = ref('history');
 const builderStep = ref('setup');
@@ -151,6 +155,7 @@ const directFilters = ref({
   name: '',
   stateId: '',
   cityId: '',
+  cityName: '',
   active: '',
   street: '',
   zipCode: '',
@@ -160,6 +165,7 @@ const contractFilters = ref({
   clientActive: '',
   stateId: '',
   cityId: '',
+  cityName: '',
   contractStatus: '',
   internetStatus: '',
   planQuery: '',
@@ -301,6 +307,12 @@ const modeOptions = computed(() => {
 
 const contractFilterCapabilities = computed(
   () => providerCapabilities.value.contract_filters || {}
+);
+const locationFilterCapabilities = computed(
+  () => providerCapabilities.value.location_filters || {}
+);
+const usesCityLookup = computed(
+  () => locationFilterCapabilities.value.city !== 'text'
 );
 const concentratorFilterCapabilities = computed(
   () => providerCapabilities.value.concentrator_filters || {}
@@ -674,7 +686,7 @@ const boot = async () => {
       fetchBroadcasts(),
     ]);
     if (activeConnection.value) {
-      await Promise.all([fetchCapabilities(), fetchStates()]);
+      await fetchCapabilities();
     }
   } finally {
     isBooting.value = false;
@@ -696,6 +708,10 @@ async function fetchCapabilities() {
     providerCapabilities.value = {
       ...defaultProviderCapabilities(),
       ...(data.capabilities || {}),
+      location_filters: {
+        ...defaultProviderCapabilities().location_filters,
+        ...(data.capabilities?.location_filters || {}),
+      },
       contract_filters: {
         ...defaultProviderCapabilities().contract_filters,
         ...(data.capabilities?.contract_filters || {}),
@@ -774,14 +790,37 @@ async function fetchStates() {
       limit: 100,
     });
     lookupOptions.value.states = data.states || [];
+    return true;
   } catch {
     useAlert(t('IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.LOAD_ERROR'));
+    return false;
   } finally {
     isLoadingStates.value = false;
   }
 }
 
+async function ensureInitialStatesLoaded() {
+  if (!activeConnection.value || hasLoadedInitialStates.value) return;
+  if (!initialStatesRequest) {
+    initialStatesRequest = fetchStates()
+      .then(loaded => {
+        hasLoadedInitialStates.value = loaded;
+      })
+      .finally(() => {
+        initialStatesRequest = null;
+      });
+  }
+
+  await initialStatesRequest;
+}
+
 const fetchCities = async () => {
+  if (!usesCityLookup.value) {
+    lookupOptions.value.cities = [];
+    directFilters.value.cityId = '';
+    return;
+  }
+
   if (!directFilters.value.stateId) {
     lookupOptions.value.cities = [];
     directFilters.value.cityId = '';
@@ -804,6 +843,12 @@ const fetchCities = async () => {
 };
 
 const fetchContractCities = async () => {
+  if (!usesCityLookup.value) {
+    lookupOptions.value.contractCities = [];
+    contractFilters.value.cityId = '';
+    return;
+  }
+
   if (!contractFilters.value.stateId) {
     lookupOptions.value.contractCities = [];
     contractFilters.value.cityId = '';
@@ -1199,7 +1244,7 @@ function buildFilters() {
       plan_ids: contractFilters.value.selectedPlanIds,
       client_active: emptyToUndefined(contractFilters.value.clientActive),
       state_id: contractFilters.value.stateId,
-      city_id: contractFilters.value.cityId,
+      ...buildCityFilter(contractFilters.value),
     };
     if (contractFilterCapabilities.value.internet_status) {
       filters.internet_statuses = compactArray([
@@ -1247,12 +1292,18 @@ function buildFilters() {
   return {
     name: directFilters.value.name,
     state_id: directFilters.value.stateId,
-    city_id: directFilters.value.cityId,
+    ...buildCityFilter(directFilters.value),
     active: emptyToUndefined(directFilters.value.active),
     street: directFilters.value.street,
     zip_code: directFilters.value.zipCode,
     neighborhood: directFilters.value.neighborhood,
   };
+}
+
+function buildCityFilter(filters) {
+  return usesCityLookup.value
+    ? { city_id: filters.cityId }
+    : { city_name: filters.cityName };
 }
 
 function compactArray(items) {
@@ -1732,6 +1783,7 @@ const openRecipientSelection = purpose => {
   recipientSelectionPurpose.value = purpose;
   groupName.value = '';
   clearResultSelection();
+  ensureInitialStatesLoaded();
   ensureLookupCatalogForMode(searchMode.value);
   recipientSelectionDialogRef.value?.open();
 };
@@ -2107,10 +2159,13 @@ watch(
   () => directFilters.value.stateId,
   () => {
     directFilters.value.cityId = '';
+    directFilters.value.cityName = '';
     cityQuery.value = '';
     lookupOptions.value.cities = [];
     window.clearTimeout(cityLookupTimer);
-    cityLookupTimer = window.setTimeout(fetchCities, LOOKUP_DEBOUNCE_MS);
+    if (usesCityLookup.value) {
+      cityLookupTimer = window.setTimeout(fetchCities, LOOKUP_DEBOUNCE_MS);
+    }
   }
 );
 
@@ -2118,13 +2173,16 @@ watch(
   () => contractFilters.value.stateId,
   () => {
     contractFilters.value.cityId = '';
+    contractFilters.value.cityName = '';
     contractCityQuery.value = '';
     lookupOptions.value.contractCities = [];
     window.clearTimeout(contractCityLookupTimer);
-    contractCityLookupTimer = window.setTimeout(
-      fetchContractCities,
-      LOOKUP_DEBOUNCE_MS
-    );
+    if (usesCityLookup.value) {
+      contractCityLookupTimer = window.setTimeout(
+        fetchContractCities,
+        LOOKUP_DEBOUNCE_MS
+      );
+    }
   }
 );
 
@@ -2134,11 +2192,15 @@ watch(stateQuery, () => {
 });
 
 watch(cityQuery, () => {
+  if (!usesCityLookup.value) return;
+
   window.clearTimeout(cityLookupTimer);
   cityLookupTimer = window.setTimeout(fetchCities, LOOKUP_DEBOUNCE_MS);
 });
 
 watch(contractCityQuery, () => {
+  if (!usesCityLookup.value) return;
+
   window.clearTimeout(contractCityLookupTimer);
   contractCityLookupTimer = window.setTimeout(
     fetchContractCities,
@@ -2829,7 +2891,18 @@ onMounted(boot);
                           class="grid min-w-0 w-full gap-1 text-sm text-n-slate-11"
                         >
                           {{ t('IBSOFT_THEME.MESSAGE_BROADCAST.FILTERS.CITY') }}
+                          <input
+                            v-if="!usesCityLookup"
+                            v-model="directFilters.cityName"
+                            :class="inputClass"
+                            :placeholder="
+                              t(
+                                'IBSOFT_THEME.MESSAGE_BROADCAST.FILTERS.ANY_CITY'
+                              )
+                            "
+                          />
                           <LookupSingleSelect
+                            v-else
                             v-model="directFilters.cityId"
                             v-model:query="cityQuery"
                             :options="cityOptions"
@@ -2961,7 +3034,18 @@ onMounted(boot);
                           class="grid min-w-0 w-full gap-1 text-sm text-n-slate-11"
                         >
                           {{ t('IBSOFT_THEME.MESSAGE_BROADCAST.FILTERS.CITY') }}
+                          <input
+                            v-if="!usesCityLookup"
+                            v-model="contractFilters.cityName"
+                            :class="inputClass"
+                            :placeholder="
+                              t(
+                                'IBSOFT_THEME.MESSAGE_BROADCAST.FILTERS.ANY_CITY'
+                              )
+                            "
+                          />
                           <LookupSingleSelect
+                            v-else
                             v-model="contractFilters.cityId"
                             v-model:query="contractCityQuery"
                             :options="contractCityOptions"

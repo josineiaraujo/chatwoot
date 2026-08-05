@@ -190,10 +190,14 @@ Fluxos complementares cobertos pela tela:
 - busca direta de clientes;
 - busca por contratos e planos;
 - busca por concentradores;
-- seletores pesquisaveis de selecao unica para estado e cidade, com cidade
-  dependente do estado selecionado;
+- seletor pesquisavel de estado e filtro de cidade definido pela capacidade do
+  ERP: lookup dependente do estado no IXC e entrada textual no SGP;
 - carregamento automatico dos catalogos IXC de planos de acesso e
   concentradores quando o usuario entra nesses modos de busca;
+- carregamento sob demanda do catalogo de estados somente ao abrir a selecao de
+  destinatarios. A pagina de historico nao percorre clientes do ERP; isso evita
+  custo e alertas desnecessarios no SGP quando nenhum disparo esta sendo
+  preparado;
 - seletores compactos pesquisaveis para planos de acesso e concentradores,
   mantendo a lista em dropdown rolavel e evitando ocupar a tela inteira;
 - seletores de lookup limitados a largura da coluna responsiva, com truncamento
@@ -505,8 +509,13 @@ Busca direta:
 - envia o nome ao SGP quando informado;
 - percorre clientes em paginas de 100 e aplica localmente os demais filtros de
   cadastro;
-- estado e cidade usam um catalogo normalizado derivado do snapshot de clientes
-  e limitado a UFs brasileiras validas;
+- estados usam a lista estatica das 27 UFs brasileiras e nao consultam o
+  cadastro de clientes;
+- cidade e informada como texto e comparada localmente por correspondencia
+  exata, sem diferenciar maiusculas, minusculas ou acentos;
+- nenhum catalogo de cidades e construido a partir dos clientes. Assim, abrir
+  os filtros de destinatarios nao percorre o cadastro do SGP para carregar
+  localidades;
 - `omitir_contratos` so e enviado quando os contratos podem ser descartados. O
   parametro e omitido quando contratos sao necessarios, pois algumas versoes do
   SGP interpretam `false` como verdadeiro.
@@ -604,7 +613,9 @@ Rotas iniciais:
 As rotas usam a conexao ERP ativa da conta. IXC e SGP implementam o mesmo
 contrato de busca. `GET /capabilities` informa os modos e filtros suportados
 pelo provider ativo, permitindo que a UI oculte opcoes que aquele ERP nao pode
-executar.
+executar. A capacidade `location_filters.city` vale `lookup` no IXC e `text`
+no SGP; neste ultimo caso, a interface nao chama `GET /lookups/cities` nem
+percorre clientes para montar opcoes de cidade.
 
 `GET /broadcasts` aceita `page` e `per_page`, limita cada pagina a no maximo
 100 registros e retorna `meta` com pagina atual, tamanho da pagina, total de

@@ -18,18 +18,13 @@ class Ibsoft::Erp::Adapters::Sgp::Lookups
   end
 
   def states(query: nil, limit: DEFAULT_LIMIT)
-    locations = location_catalog.pluck(:state).uniq
-    filtered = locations.filter_map { |state| normalized_state(state) }
+    filtered = BRAZILIAN_STATES.keys.filter_map { |state| normalized_state(state) }
     filtered = filter_by_query(filtered, query, :name, :abbreviation)
     filtered.first(normalized_limit(limit))
   end
 
-  def cities(state_id:, query: nil, limit: DEFAULT_LIMIT)
-    state = state_id.to_s.upcase
-    records = location_catalog.select { |location| state.blank? || location[:state] == state }
-                              .map { |location| normalized_city(location) }
-                              .uniq { |city| city[:id] }
-    filter_by_query(records, query, :name).first(normalized_limit(limit))
+  def cities(**)
+    []
   end
 
   def plans(query: nil, active: nil, limit: DEFAULT_LIMIT)
@@ -57,40 +52,12 @@ class Ibsoft::Erp::Adapters::Sgp::Lookups
 
   attr_reader :client
 
-  def location_catalog
-    cached('locations') do
-      Ibsoft::Erp::Adapters::Sgp::CustomerCatalog.new(client)
-                                                 .call(include_contracts: false)
-                                                 .records
-                                                 .filter_map { |record| location_from(record) }
-                                                 .uniq
-    end
-  end
-
-  def location_from(record)
-    address = record.to_h.with_indifferent_access[:endereco].to_h.with_indifferent_access
-    state = address[:uf].to_s.strip.upcase
-    city = address[:cidade].to_s.strip
-    return if BRAZILIAN_STATES.exclude?(state) || city.blank?
-
-    { state: state, city: city }
-  end
-
   def normalized_state(state)
     abbreviation = state.to_s.upcase
     name = BRAZILIAN_STATES[abbreviation]
     return if name.blank?
 
     { id: abbreviation, name: name, abbreviation: abbreviation }
-  end
-
-  def normalized_city(location)
-    {
-      id: "#{location[:state]}|#{location[:city]}",
-      name: location[:city],
-      state_id: location[:state],
-      ibge_code: ''
-    }
   end
 
   def normalized_plan(raw_record)

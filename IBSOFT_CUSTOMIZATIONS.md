@@ -1459,6 +1459,41 @@ Remocao futura:
   `app/javascript/dashboard/ibsoft/upstreamBackports/specs/audioLoadWithRetry.spec.js`
   e testar manualmente um audio recebido em tempo real sem recarregar a pagina.
 
+### 8.1. Backport temporario de locale na saude do WhatsApp
+
+Origem oficial do defeito: `chatwoot/chatwoot#15100`, incorporado pelo commit
+`d644c207f021cac7e692bac8a1c32492af350846`.
+
+> [!IMPORTANT]
+> AVISO PARA A PROXIMA SINCRONIZACAO: em 4 de agosto de 2026, o
+> `upstream/develop` ainda entregava locales como `pt_BR` diretamente ao
+> `Intl.DateTimeFormat` na tela de saude da conta WhatsApp. Antes de preservar
+> este patch, confira se o componente oficial passou a usar `useLocale` ou se
+> normaliza o locale para BCP 47. Remova o backport quando houver correcao
+> equivalente no upstream.
+
+Objetivo:
+
+- Evitar `RangeError: Invalid language tag: pt_BR` ao abrir a saude de uma
+  conta WhatsApp com o dashboard em portugues do Brasil.
+- Reutilizar o composable nativo `shared/composables/useLocale`, que converte
+  locales com underscore para tags BCP 47 validas, sem criar helper privado.
+
+Pontos nativos tocados pelo backport:
+
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/AccountHealth.vue`:
+  usa `resolvedLocale` no `Intl.DateTimeFormat`.
+- `app/javascript/dashboard/routes/dashboard/settings/inbox/components/specs/AccountHealth.spec.js`:
+  reproduz e protege o caso `pt_BR`.
+
+Remocao futura:
+
+- Comparar `AccountHealth.vue` com `upstream/develop` depois de cada
+  sincronizacao.
+- Se o upstream adotar `useLocale`, manter a implementacao oficial e remover
+  somente a duplicacao local deste backport e deste aviso.
+- Executar o spec de `AccountHealth` depois da sincronizacao.
+
 ### 9. Perfil: visibilidade de senha e sessoes em pt-BR
 
 Objetivo:

@@ -294,6 +294,7 @@ describe('MessageBroadcastIndex', () => {
         provider: 'ixc',
         capabilities: {
           search_modes: ['direct', 'contracts', 'concentrators'],
+          location_filters: { city: 'lookup' },
           contract_filters: { internet_status: true },
           concentrator_filters: {
             manual_concentrator_ids: true,
@@ -443,6 +444,48 @@ describe('MessageBroadcastIndex', () => {
       wrapper.find('[data-testid="message-broadcast-workspace"]').exists()
     ).toBe(true);
     expect(content.classes()).toContain('max-w-none');
+  });
+
+  it('does not load the ERP state catalog while only viewing history', async () => {
+    erpAPI.getConnections.mockResolvedValue({
+      data: {
+        connections: [
+          {
+            id: 2,
+            name: 'SGP produção',
+            provider: 'sgp',
+            active: true,
+          },
+        ],
+      },
+    });
+
+    mountComponent();
+    await flushPromises();
+
+    expect(messageBroadcastAPI.getCapabilities).toHaveBeenCalledTimes(1);
+    expect(messageBroadcastAPI.getStates).not.toHaveBeenCalled();
+    expect(alertMock).not.toHaveBeenCalledWith(
+      'IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.LOAD_ERROR'
+    );
+  });
+
+  it('loads ERP states once when recipient selection is opened', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(messageBroadcastAPI.getStates).not.toHaveBeenCalled();
+
+    wrapper.vm.openRecipientSelection('recipients');
+    await flushPromises();
+    wrapper.vm.openRecipientSelection('recipients');
+    await flushPromises();
+
+    expect(messageBroadcastAPI.getStates).toHaveBeenCalledTimes(1);
+    expect(messageBroadcastAPI.getStates).toHaveBeenCalledWith({
+      query: '',
+      limit: 100,
+    });
   });
 
   it('starts by choosing the sending scope and exposes only Cloud API channels', async () => {
@@ -630,6 +673,7 @@ describe('MessageBroadcastIndex', () => {
         provider: 'sgp',
         capabilities: {
           search_modes: ['direct', 'contracts', 'concentrators'],
+          location_filters: { city: 'text' },
           contract_filters: { internet_status: false },
           concentrator_filters: {
             manual_concentrator_ids: false,
@@ -654,6 +698,7 @@ describe('MessageBroadcastIndex', () => {
       'concentrators',
     ]);
     expect(wrapper.vm.contractFilterCapabilities.internet_status).toBe(false);
+    expect(wrapper.vm.usesCityLookup).toBe(false);
     expect(wrapper.vm.concentratorFilterCapabilities).toEqual(
       expect.objectContaining({
         manual_concentrator_ids: false,
@@ -667,6 +712,24 @@ describe('MessageBroadcastIndex', () => {
       placeholder: 'IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.NAS_PLACEHOLDER',
       search: 'IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.NAS_SEARCH',
     });
+
+    messageBroadcastAPI.getCities.mockClear();
+    wrapper.vm.directFilters.stateId = 'BA';
+    await wrapper.vm.$nextTick();
+    wrapper.vm.directFilters.cityName = 'Salvador';
+    await wrapper.vm.fetchCities();
+    expect(messageBroadcastAPI.getCities).not.toHaveBeenCalled();
+
+    messageBroadcastAPI.previewRecipients.mockClear();
+    await wrapper.vm.searchCustomers();
+    expect(messageBroadcastAPI.previewRecipients).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: expect.objectContaining({
+          state_id: 'BA',
+          city_name: 'Salvador',
+        }),
+      })
+    );
   });
 
   it('renders a paginated history table and loads the selected page', async () => {

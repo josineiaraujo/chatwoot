@@ -31,7 +31,7 @@ RSpec.describe Ibsoft::Erp::Adapters::Sgp::CustomerSearch do
       filters: {
         name: 'cliente teste',
         state_id: 'BA',
-        city_id: 'BA|Salvador',
+        city_name: 'salvador',
         active: true
       }
     )
@@ -78,6 +78,17 @@ RSpec.describe Ibsoft::Erp::Adapters::Sgp::CustomerSearch do
     expect(result.customers.size).to eq(101)
     expect(first_request).to have_been_requested.once
     expect(second_request).to have_been_requested.once
+  end
+
+  it 'filters customers by the city name without requiring a city identifier' do
+    stub_customer_page(records: [customer_record], total: 1)
+
+    result = described_class.new(connection).call_all(
+      mode: 'direct',
+      filters: { state_id: 'BA', city_name: 'Feira de Santana' }
+    )
+
+    expect(result.customers).to be_empty
   end
 
   it 'filters SGP customers by contract status and plan using the shared semantics' do
