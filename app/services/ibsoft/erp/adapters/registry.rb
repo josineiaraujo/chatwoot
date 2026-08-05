@@ -6,6 +6,7 @@ class Ibsoft::Erp::Adapters::Registry
       search: Ibsoft::Erp::Adapters::Ixc::CustomerSearch,
       capabilities: {
         search_modes: %w[direct contracts concentrators],
+        location_filters: { city: 'lookup' },
         contract_filters: { internet_status: true },
         concentrator_filters: {
           manual_concentrator_ids: true,
@@ -24,6 +25,7 @@ class Ibsoft::Erp::Adapters::Registry
       search: Ibsoft::Erp::Adapters::Sgp::CustomerSearch,
       capabilities: {
         search_modes: %w[direct contracts concentrators],
+        location_filters: { city: 'text' },
         contract_filters: { internet_status: false },
         concentrator_filters: {
           manual_concentrator_ids: false,

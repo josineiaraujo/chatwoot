@@ -19,6 +19,17 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
     )
   end
 
+  it 'describes IXC cities as provider lookups' do
+    get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/capabilities",
+        headers: headers,
+        as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(response.parsed_body.dig('capabilities', 'location_filters')).to include(
+      'city' => 'lookup'
+    )
+  end
+
   it 'lists IXC states using the Brazilian country id' do
     request = stub_request(:get, 'https://ixc.example.com.br/webservice/v1/uf')
               .with(
@@ -239,6 +250,9 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
       expect(response.parsed_body.dig('capabilities', 'contract_filters')).to include(
         'internet_status' => false
       )
+      expect(response.parsed_body.dig('capabilities', 'location_filters')).to include(
+        'city' => 'text'
+      )
       expect(response.parsed_body.dig('capabilities', 'concentrator_filters')).to include(
         'manual_concentrator_ids' => false,
         'transmitter_kind' => 'nas',
@@ -284,48 +298,23 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
       )
     end
 
-    it 'derives Brazilian states from SGP customer addresses' do
+    it 'lists Brazilian states without loading the SGP customer catalog' do
       request = stub_request(:post, 'https://sgp.example.com.br/api/ura/clientes/')
-                .to_return(
-                  status: 200,
-                  body: {
-                    clientes: [
-                      { id: 398, endereco: { uf: 'BA', cidade: 'Salvador' } },
-                      { id: 399, endereco: { uf: 'DF', cidade: 'Brasília' } },
-                      { id: 400, endereco: { uf: 'BA', cidade: 'Feira de Santana' } },
-                      { id: 401, endereco: { uf: 'BAIRES', cidade: 'Buenos Aires' } }
-                    ],
-                    paginacao: { total: 4, offset: 0, parcial: 4, limit: 100 }
-                  }.to_json,
-                  headers: { 'Content-Type' => 'application/json' }
-                )
 
       get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/states",
+          params: { query: 'bah' },
           headers: headers,
           as: :json
 
       expect(response).to have_http_status(:success)
-      expect(request).to have_been_requested.once
+      expect(request).not_to have_been_requested
       expect(response.parsed_body['states']).to contain_exactly(
-        include('id' => 'BA', 'name' => 'Bahia', 'abbreviation' => 'BA'),
-        include('id' => 'DF', 'name' => 'Distrito Federal', 'abbreviation' => 'DF')
+        include('id' => 'BA', 'name' => 'Bahia', 'abbreviation' => 'BA')
       )
     end
 
-    it 'derives SGP cities for the selected Brazilian state' do
+    it 'does not build a city catalog from SGP customers' do
       request = stub_request(:post, 'https://sgp.example.com.br/api/ura/clientes/')
-                .to_return(
-                  status: 200,
-                  body: {
-                    clientes: [
-                      { id: 398, endereco: { uf: 'BA', cidade: 'Salvador' } },
-                      { id: 399, endereco: { uf: 'BA', cidade: 'Feira de Santana' } },
-                      { id: 400, endereco: { uf: 'DF', cidade: 'Brasília' } }
-                    ],
-                    paginacao: { total: 3, offset: 0, parcial: 3, limit: 100 }
-                  }.to_json,
-                  headers: { 'Content-Type' => 'application/json' }
-                )
 
       get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/lookups/cities",
           params: { state_id: 'BA', query: 'feira' },
@@ -333,14 +322,8 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
           as: :json
 
       expect(response).to have_http_status(:success)
-      expect(request).to have_been_requested.once
-      expect(response.parsed_body['cities']).to contain_exactly(
-        include(
-          'id' => 'BA|Feira de Santana',
-          'name' => 'Feira de Santana',
-          'state_id' => 'BA'
-        )
-      )
+      expect(request).not_to have_been_requested
+      expect(response.parsed_body['cities']).to eq([])
     end
 
     it 'lists SGP POPs through the provider-neutral lookup endpoint' do

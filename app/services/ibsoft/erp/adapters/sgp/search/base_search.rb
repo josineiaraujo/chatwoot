@@ -53,8 +53,14 @@ class Ibsoft::Erp::Adapters::Sgp::Search::BaseSearch
     customers.select do |customer|
       active_matches?(customer, active_filter) &&
         exact_matches?(customer.state_id, filters[:state_id]) &&
-        exact_matches?(customer.city_id, filters[:city_id])
+        city_matches?(customer, filters)
     end
+  end
+
+  def city_matches?(customer, filters)
+    return exact_matches?(customer.city_name, filters[:city_name]) if filters[:city_name].present?
+
+    exact_matches?(customer.city_id, filters[:city_id])
   end
 
   def active_matches?(customer, value)
