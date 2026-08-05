@@ -1,4 +1,4 @@
-# API de envio de templates Meta
+# API de cobranca
 
 ## Objetivo
 
@@ -25,6 +25,10 @@ assincronamente.
 - o envio vai direto para a Meta;
 - o modulo nao cria, abre, fecha, atribui ou modifica conversas;
 - templates do tipo `order` exigem `order.reference_id`;
+- uma instancia permite, por padrao, reenviar cobrancas para a mesma ordem;
+- a mesma referencia sempre identifica uma unica ordem e um unico destinatario
+  dentro da instancia, mas cada reenvio possui entrega e historico proprios;
+- ordens pagas, concluidas ou canceladas nao aceitam novos envios;
 - nao existe retry automatico depois de uma tentativa com resultado ambiguo;
 - o SGP usa `msg`, `to` e `token`; o IXC preserva exatamente o envelope nativo
   `user`, `pw`, `dest` e `text`;
@@ -440,21 +444,23 @@ Resposta `202 Accepted`:
 `message_id` e `null` nessa resposta porque a chamada web nao espera a Meta. O
 worker envia o template depois e grava o ID retornado pela Meta em
 `meta_message_id`. O resultado pode ser acompanhado no historico administrativo
-da tela **API de envio de templates Meta**.
+da tela **API de cobranca**.
 
 Para templates comuns, cada chamada cria uma entrega independente. Para
-templates `order`, a identidade interna e derivada de `template_name` e
-`order.reference_id`. Repetir a mesma ordem devolve `409 Conflict`:
+templates `order`, `order.reference_id` identifica uma unica ordem canonica na
+instancia. Quando o reenvio esta habilitado, repetir a referencia para o mesmo
+destinatario cria outra entrega e outro job, vinculados a essa ordem. O novo
+envio pode usar o mesmo template ou outro template de cobranca.
 
-```json
-{
-  "ok": false,
-  "error": "Ja existe uma ordem registrada com este ID de fatura.",
-  "reference_id": "9388"
-}
-```
+O ERP nao envia identificador adicional: referencias iguais significam
+obrigatoriamente a mesma ordem. Por isso, uma repeticao de uma chamada que ja
+recebeu `202 Accepted` e tratada como um novo envio intencional. O ERP so deve
+repetir a requisicao quando realmente desejar reenviar a cobranca.
 
-Essa identidade e interna. O ERP nao envia chave adicional.
+A instancia rejeita o reenvio com `409 Conflict` quando a opcao administrativa
+esta desabilitada, quando a referencia pertence a outro destinatario ou quando
+a ordem ja esta paga, concluida ou cancelada. A mesma referencia pode existir
+em outra instancia sem conflito.
 
 ## Persistencia
 
@@ -466,6 +472,7 @@ Migration:
 - `db/migrate/20260729100000_add_order_pix_defaults_to_ibsoft_external_messaging.rb`.
 - `db/migrate/20260729130000_add_external_messaging_retention_and_manual_order_updates.rb`.
 - `db/migrate/20260729170000_add_order_update_messages_to_ibsoft_external_messaging.rb`.
+- `db/migrate/20260805190000_enable_ibsoft_external_order_resends.rb`.
 
 Tabelas:
 
@@ -475,10 +482,10 @@ Tabelas:
 - `ibsoft_external_message_order_updates`.
 
 A instancia armazena conta, canal, criador, tipo, nome, SHA-256 do segredo de
-autenticacao, dica nao sensivel, estado, limite de envio, os tres defaults PIX
-opcionais e somente as mensagens de atualizacao personalizadas pelo
-administrador. O usuario IXC e derivado do ID da instancia e nao ocupa uma
-coluna. A coluna JSONB
+autenticacao, dica nao sensivel, estado, limite de envio, politica de reenvio
+de ordens, os tres defaults PIX opcionais e somente as mensagens de atualizacao
+personalizadas pelo administrador. O usuario IXC e derivado do ID da instancia
+e nao ocupa uma coluna. A coluna JSONB
 aceita exclusivamente as dez chaves conhecidas e cada texto e limitado a 1024
 bytes. Textos nao personalizados continuam vindo dos arquivos de traducao. A
 chave PIX usa Active Record Encryption e nunca faz parte do payload
@@ -501,10 +508,12 @@ somente em memoria imediatamente antes da chamada para a Meta. Depois da
 tentativa final (`accepted`, `failed` ou `uncertain`), componentes e snapshot
 da chave sao apagados.
 
-`ibsoft_external_message_orders` guarda somente a identidade da ordem, o envio
-inicial e os estados atuais de ordem/pagamento. A unicidade usa
-`account_id + inbox_id + reference_id`, permitindo o mesmo ID em contas ou
-canais diferentes.
+`ibsoft_external_message_orders` guarda somente a identidade canonica da ordem,
+o envio inicial e os estados atuais de ordem/pagamento. A unicidade usa
+`endpoint_id + reference_id`, permitindo o mesmo ID em outras instancias.
+Cada entrega de cobranca aponta para essa ordem por `order_id`; assim, o
+historico registra todos os templates enviados sem duplicar o estado da ordem.
+O destinatario canonico e o da entrega inicial e nao pode mudar nos reenvios.
 
 `ibsoft_external_message_order_updates` e ao mesmo tempo a fila duravel e a
 auditoria minima de cada mensagem de atualizacao. Armazena apenas estados
@@ -532,9 +541,10 @@ corte, conta os registros elegiveis e os processa em lotes de 100 por
 `BulkOrderUpdateJob`. Ordens criadas depois da confirmacao nao entram
 acidentalmente na operacao.
 
-Uma ordem nao pode ser atualizada manualmente enquanto o envio inicial ainda
-nao foi aceito pela Meta ou quando existe uma atualizacao com resultado
-`uncertain`. O update manual usa o mesmo `OrderUpdateCreator`,
+Uma ordem nao pode ser atualizada manualmente enquanto nenhum de seus envios
+foi aceito pela Meta ou quando existe uma atualizacao com resultado
+`uncertain`. Assim, um reenvio aceito pode habilitar a atualizacao mesmo se a
+primeira tentativa falhou. O update manual usa o mesmo `OrderUpdateCreator`,
 `SendOrderUpdateJob`, lock por ordem, rate limiter e contrato da Meta usados
 pelas atualizacoes originadas no ERP. Assim, operacoes manuais e externas
 preservam a mesma ordem e nao competem por caminhos paralelos.
@@ -557,13 +567,16 @@ limpeza opera em lotes de 500 e segue esta ordem:
 3. remove atualizacoes antigas que permaneceram sem a ordem expirar;
 4. remove entregas antigas que nao estejam mais referenciadas.
 
-A retencao e absoluta e independe do estado operacional. Entregas, ordens e
+A retencao e absoluta e independe do estado operacional. Entregas e
 atualizacoes mais antigas que o prazo da instancia sao eliminadas mesmo quando
-estao `queued`, `processing` ou `uncertain`. Jobs antigos encerram sem erro
-quando o registro ja foi removido. Em contrapartida, depois do prazo nao existe
-mais tentativa de envio nem possibilidade de conciliacao tardia para aquele
-registro. O payload bruto continua inexistente; a politica remove o historico
-operacional minimo conforme o prazo definido pelo administrador.
+estao `queued`, `processing` ou `uncertain`. Uma ordem usa sua ultima atividade
+como referencia; cada reenvio atualiza esse relogio para preservar a identidade
+canonica enquanto ainda ha cobrancas recentes. A entrega inicial permanece
+protegida enquanto a ordem existir. Jobs antigos encerram sem erro quando o
+registro ja foi removido. Depois do prazo nao existe mais tentativa de envio
+nem possibilidade de conciliacao tardia para aquele registro. O payload bruto
+continua inexistente; a politica remove o historico operacional minimo conforme
+o prazo definido pelo administrador.
 
 ## Processamento assincrono
 
@@ -578,7 +591,8 @@ operacional minimo conforme o prazo definido pelo administrador.
 6. `TemplatePayloadBuilder` monta componentes conhecidos da Meta.
 7. `OrderPixSecret` separa a chave do JSON que sera persistido.
 8. `RequestIdentityKey` gera a identidade tecnica interna.
-9. `DeliveryCreator` cria o registro `queued`.
+9. `DeliveryCreator` cria o registro `queued`; para cobrancas repetidas, trava
+   e reutiliza a ordem canonica da instancia.
 10. `SendDeliveryJob` entra na fila `medium`.
 11. `DeliverySender` adquire o registro por update condicional.
 12. `RateLimiter` aplica o limite por canal no Redis compartilhado.

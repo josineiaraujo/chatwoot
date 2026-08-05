@@ -22,6 +22,8 @@
       "REQUESTS": "Solicitações",
       "ENABLED": "Instância ativa",
       "ENABLED_DESCRIPTION": "Credenciais de instâncias inativas não recebem novas solicitações.",
+      "ALLOW_ORDER_RESENDS": "Permitir reenvio da mesma ordem",
+      "ALLOW_ORDER_RESENDS_DESCRIPTION": "Novas cobranças com a mesma referência são vinculadas à ordem existente, mantendo um histórico separado para cada envio.",
       "SAVE": "Salvar instância",
       "SAVED": "Instância salva.",
       "VIEW": "Visualizar",

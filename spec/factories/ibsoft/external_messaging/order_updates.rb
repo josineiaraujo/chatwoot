@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :ibsoft_external_message_order_update,
           class: 'Ibsoft::ExternalMessaging::OrderUpdate' do
     association :order, factory: :ibsoft_external_message_order
-    endpoint { order.opening_delivery.endpoint }
+    endpoint { order.endpoint }
     account { order.account }
     inbox { order.inbox }
     order_status { 'processing' }

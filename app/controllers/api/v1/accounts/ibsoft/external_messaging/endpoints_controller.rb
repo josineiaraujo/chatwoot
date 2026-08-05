@@ -70,7 +70,8 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
       :instance_type,
       :active,
       :rate_limit_per_second,
-      :retention_days
+      :retention_days,
+      :allow_order_resends
     ).to_h.merge(
       account: Current.account,
       inbox: whatsapp_cloud_inboxes.find { |inbox| inbox.id == params[:inbox_id].to_i }
@@ -78,7 +79,13 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
   end
 
   def update_attributes
-    params.permit(:name, :active, :rate_limit_per_second, :retention_days)
+    params.permit(
+      :name,
+      :active,
+      :rate_limit_per_second,
+      :retention_days,
+      :allow_order_resends
+    )
   end
 
   def assign_order_defaults

@@ -45,10 +45,29 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
       'public_path' => '/chathub-sender/sgp/generico/',
       'order_update_path' => '/chathub-sender/sgp/pedido/',
       'rate_limit_per_second' => 15,
+      'allow_order_resends' => true,
       'deliveries_count' => 2
     )
     expect(endpoint).not_to have_key('token')
     expect(endpoint).not_to have_key('token_digest')
+  end
+
+  it 'allows administrators to disable order resends for an instance' do
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel
+    )
+
+    patch "#{base_url}/#{endpoint.id}",
+          params: { allow_order_resends: false },
+          headers: admin_headers,
+          as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(endpoint.reload.allow_order_resends).to be(false)
+    expect(response.parsed_body['allow_order_resends']).to be(false)
   end
 
   it 'does not allow changing the instance type after creation' do

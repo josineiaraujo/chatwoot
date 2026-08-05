@@ -31,9 +31,7 @@ class Ibsoft::ExternalMessaging::OrdersQuery
 
   def base_scope
     Ibsoft::ExternalMessaging::Order
-      .where(account: account)
-      .joins(:opening_delivery)
-      .where(ibsoft_external_message_deliveries: { endpoint_id: endpoint.id })
+      .where(account: account, endpoint: endpoint)
   end
 
   def filter_recipient(scope)
@@ -43,7 +41,9 @@ class Ibsoft::ExternalMessaging::OrdersQuery
     raise_error('orders_recipient_invalid') if recipient.length < 3
 
     pattern = "%#{ActiveRecord::Base.sanitize_sql_like(recipient)}%"
-    scope.where('ibsoft_external_message_deliveries.recipient LIKE ?', pattern)
+    scope
+      .joins(:opening_delivery)
+      .where('ibsoft_external_message_deliveries.recipient LIKE ?', pattern)
   end
 
   def filter_reference(scope)

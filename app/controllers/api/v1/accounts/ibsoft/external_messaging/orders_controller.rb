@@ -10,7 +10,7 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::OrdersController <
     page = [params.fetch(:page, 1).to_i, 1].max
     per_page = params.fetch(:per_page, PER_PAGE).to_i.clamp(1, MAX_PER_PAGE)
     orders = scope
-             .includes(:updates, opening_delivery: [:endpoint, :inbox])
+             .includes(:deliveries, :updates, opening_delivery: [:endpoint, :inbox])
              .offset((page - 1) * per_page)
              .limit(per_page)
 

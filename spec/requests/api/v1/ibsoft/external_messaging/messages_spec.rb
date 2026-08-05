@@ -116,7 +116,7 @@ RSpec.describe 'Ibsoft external messaging public endpoint', type: :request do
       template_type: 'order',
       order_reference_id: '9388'
     )
-    expect(delivery.idempotency_key).to start_with('order-')
+    expect(delivery.idempotency_key).to start_with('request-')
     expect(delivery.template_components).to include(
       a_hash_including('type' => 'header'),
       a_hash_including('type' => 'body'),
@@ -124,21 +124,41 @@ RSpec.describe 'Ibsoft external messaging public endpoint', type: :request do
     )
   end
 
-  it 'rejects a repeated order using the reference from the required contract' do
+  it 'accepts a repeated order as another delivery of the same canonical order' do
     params = { msg: order_message, to: '5575982479788', token: raw_token }
     get url, params: params
-    delivery_count = Ibsoft::ExternalMessaging::Delivery.count
-    queued_job_count = ActiveJob::Base.queue_adapter.enqueued_jobs.size
+    first_delivery = Ibsoft::ExternalMessaging::Delivery.last
+    delivery_change = change(Ibsoft::ExternalMessaging::Delivery, :count).by(1)
+    job_enqueue = have_enqueued_job(Ibsoft::ExternalMessaging::SendDeliveryJob)
+    order_change = not_change(Ibsoft::ExternalMessaging::Order, :count)
 
-    get url, params: params
+    expect do
+      get url, params: params
+    end.to delivery_change.and(job_enqueue).and(order_change)
 
-    expect(Ibsoft::ExternalMessaging::Delivery.count).to eq(delivery_count)
-    expect(ActiveJob::Base.queue_adapter.enqueued_jobs.size).to eq(queued_job_count)
-    expect(response).to have_http_status(:conflict)
+    second_delivery = Ibsoft::ExternalMessaging::Delivery.last
+    expect(response).to have_http_status(:accepted)
     expect(response.parsed_body).to include(
-      'ok' => false,
+      'ok' => true,
       'reference_id' => '9388'
     )
+    expect(second_delivery).not_to eq(first_delivery)
+    expect(second_delivery.external_order).to eq(first_delivery.external_order)
+  end
+
+  it 'rejects a repeated order when the instance disables resends' do
+    params = { msg: order_message, to: '5575982479788', token: raw_token }
+    get url, params: params
+    endpoint.update!(allow_order_resends: false)
+    queued_job_count = ActiveJob::Base.queue_adapter.enqueued_jobs.size
+
+    expect do
+      get url, params: params
+    end.not_to change(Ibsoft::ExternalMessaging::Delivery, :count)
+
+    expect(response).to have_http_status(:conflict)
+    expect(ActiveJob::Base.queue_adapter.enqueued_jobs.size).to eq(queued_job_count)
+    expect(response.parsed_body.dig('error', 'code')).to eq('order_resend_disabled')
   end
 
   it 'treats repeated standard messages as separate requests' do

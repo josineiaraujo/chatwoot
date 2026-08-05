@@ -39,7 +39,8 @@ RSpec.describe Ibsoft::ExternalMessaging::RetentionCleanup do
         :ibsoft_external_message_order,
         opening_delivery: delivery,
         reference_id: reference_id,
-        created_at: old_time
+        created_at: old_time,
+        updated_at: old_time
       )
       update = create(
         :ibsoft_external_message_order_update,
@@ -63,6 +64,40 @@ RSpec.describe Ibsoft::ExternalMessaging::RetentionCleanup do
     expect(Ibsoft::ExternalMessaging::Order.where(id: orders.map(&:id))).to be_empty
     expect(Ibsoft::ExternalMessaging::OrderUpdate.where(id: updates.map(&:id))).to be_empty
     expect(Ibsoft::ExternalMessaging::Delivery.where(id: deliveries.map(&:id))).to be_empty
+  end
+
+  it 'preserves a canonical order and its opening delivery after a recent resend' do
+    opening_delivery = old_delivery(status: 'accepted')
+    opening_delivery.update!(
+      template_type: 'order',
+      order_reference_id: 'resent-order',
+      meta_message_id: 'wamid.old'
+    )
+    order = create(
+      :ibsoft_external_message_order,
+      opening_delivery: opening_delivery,
+      reference_id: 'resent-order',
+      created_at: old_time,
+      updated_at: old_time
+    )
+    resend = create(
+      :ibsoft_external_message_delivery,
+      endpoint: endpoint,
+      external_order: order,
+      template_type: 'order',
+      order_reference_id: order.reference_id,
+      recipient: order.recipient,
+      status: 'accepted',
+      meta_message_id: 'wamid.recent'
+    )
+    order.update!(updated_at: resend.created_at)
+
+    result = described_class.new(endpoint: endpoint, now: now).call
+
+    expect(result).to have_attributes(orders: 0, deliveries: 0)
+    expect(Ibsoft::ExternalMessaging::Order.exists?(order.id)).to be(true)
+    expect(Ibsoft::ExternalMessaging::Delivery.exists?(opening_delivery.id)).to be(true)
+    expect(Ibsoft::ExternalMessaging::Delivery.exists?(resend.id)).to be(true)
   end
 
   it 'removes an expired update while preserving its non-expired order' do

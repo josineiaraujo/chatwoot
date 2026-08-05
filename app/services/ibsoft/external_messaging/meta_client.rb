@@ -122,7 +122,7 @@ class Ibsoft::ExternalMessaging::MetaClient
     {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: order_update.order.opening_delivery.recipient,
+      to: order_update.order.recipient,
       type: 'interactive',
       interactive: {
         type: 'order_status',

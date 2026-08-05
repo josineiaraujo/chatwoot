@@ -30,12 +30,14 @@
 #  endpoint_id           :bigint           not null
 #  inbox_id              :bigint           not null
 #  meta_message_id       :string
+#  order_id              :bigint
 #  order_reference_id    :string
 #
 # Indexes
 #
 #  idx_ibsoft_ext_deliveries_endpoint_created              (endpoint_id,created_at)
 #  idx_ibsoft_ext_deliveries_endpoint_recipient            (endpoint_id,recipient,created_at)
+#  idx_ibsoft_ext_deliveries_order                         (order_id)
 #  idx_ibsoft_external_deliveries_account_created          (account_id,created_at)
 #  idx_ibsoft_external_deliveries_dispatch                 (status,enqueued_at)
 #  idx_ibsoft_external_deliveries_endpoint                 (endpoint_id)
@@ -49,6 +51,7 @@
 #  fk_rails_...  (account_id => accounts.id)
 #  fk_rails_...  (endpoint_id => ibsoft_external_message_endpoints.id)
 #  fk_rails_...  (inbox_id => inboxes.id)
+#  fk_rails_...  (order_id => ibsoft_external_message_orders.id) ON DELETE => nullify
 #
 class Ibsoft::ExternalMessaging::Delivery < ApplicationRecord
   self.table_name = 'ibsoft_external_message_deliveries'
@@ -63,7 +66,12 @@ class Ibsoft::ExternalMessaging::Delivery < ApplicationRecord
              inverse_of: :deliveries
   belongs_to :account
   belongs_to :inbox
-  has_one :external_order,
+  belongs_to :external_order,
+             class_name: 'Ibsoft::ExternalMessaging::Order',
+             foreign_key: :order_id,
+             inverse_of: :deliveries,
+             optional: true
+  has_one :opened_external_order,
           class_name: 'Ibsoft::ExternalMessaging::Order',
           foreign_key: :opening_delivery_id,
           inverse_of: :opening_delivery,
@@ -82,6 +90,7 @@ class Ibsoft::ExternalMessaging::Delivery < ApplicationRecord
   validates :template_type, inclusion: { in: TEMPLATE_TYPES }
   validates :order_reference_id, presence: true, if: :order_template?
   validate :tenant_matches_endpoint
+  validate :external_order_matches_delivery
   validate :order_pix_key_encryption_available
 
   scope :latest_first, -> { order(created_at: :desc, id: :desc) }
@@ -150,6 +159,16 @@ class Ibsoft::ExternalMessaging::Delivery < ApplicationRecord
     return if endpoint.account_id == account_id && endpoint.inbox_id == inbox_id
 
     errors.add(:endpoint, :invalid)
+  end
+
+  def external_order_matches_delivery
+    return if external_order.blank?
+    return if external_order.endpoint_id == endpoint_id &&
+              external_order.account_id == account_id &&
+              external_order.inbox_id == inbox_id &&
+              external_order.reference_id == order_reference_id
+
+    errors.add(:external_order, :invalid)
   end
 
   def order_pix_key_encryption_available

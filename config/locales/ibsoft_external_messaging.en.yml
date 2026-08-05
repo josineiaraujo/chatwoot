@@ -25,7 +25,6 @@ en:
           canceled: "Invoice canceled"
     responses:
       accepted: "Request accepted for processing."
-      duplicate_order: "An order with this invoice ID is already registered."
       manual_order_updates_accepted: "Manual updates accepted for processing."
     errors:
       invalid_channel: "The configured channel is not a valid WhatsApp Business Cloud channel."
@@ -35,6 +34,9 @@ en:
       idempotency_conflict: "The idempotency key was already used with different content."
       idempotency_key_required: "The request could not be identified internally."
       idempotency_key_invalid: "The idempotency key must not exceed 255 bytes."
+      order_resend_disabled: "This instance does not allow resending an order with the same reference."
+      order_recipient_mismatch: "This reference already belongs to another recipient in this instance."
+      order_resend_finalized: "This order is already completed or paid and cannot receive new deliveries."
       invalid_request: "The delivery request is invalid."
       payload_required: "Provide the message variables."
       method_not_allowed: "Method not allowed. Use GET."

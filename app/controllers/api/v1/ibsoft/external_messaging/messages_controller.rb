@@ -3,9 +3,7 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
 
   def create
     result = create_delivery
-    return render_duplicate_order(result.delivery) unless result.created
-
-    accept_delivery(result.delivery)
+    accept_delivery(result.delivery, enqueue: result.created)
   rescue Ibsoft::ExternalMessaging::InvalidRequest => e
     response.set_header('Allow', 'GET, POST') if e.code == 'ixc_method_not_allowed'
     render_error(e.code, e.http_status, message: e.message)
@@ -26,8 +24,8 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
     ).call
   end
 
-  def accept_delivery(delivery)
-    enqueue(delivery)
+  def accept_delivery(delivery, enqueue:)
+    enqueue(delivery) if enqueue
     render json: accepted_payload(delivery), status: :accepted
   end
 
@@ -49,9 +47,7 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
     instance_type_definition.request_contract_class.new(
       endpoint: @endpoint,
       payload: payload,
-      idempotency_key: Ibsoft::ExternalMessaging::RequestIdentityKey.new(
-        fields: payload[:fields]
-      ).call
+      idempotency_key: Ibsoft::ExternalMessaging::RequestIdentityKey.new.call
     )
   end
 
@@ -95,14 +91,6 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
     }
     payload[:reference_id] = delivery.order_reference_id if delivery.order_reference_id.present?
     payload
-  end
-
-  def render_duplicate_order(delivery)
-    render json: {
-      ok: false,
-      error: I18n.t('ibsoft_external_messaging.responses.duplicate_order'),
-      reference_id: delivery.order_reference_id
-    }, status: :conflict
   end
 
   def render_error(code, status, details: nil, message: nil)

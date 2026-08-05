@@ -11,23 +11,15 @@ class Ibsoft::ExternalMessaging::DeliveryCreator
   def call
     existing = endpoint.deliveries.find_by(idempotency_key: attributes[:idempotency_key])
     return existing_result(existing) if existing
-    return existing_order_result if existing_order
 
-    delivery = Ibsoft::ExternalMessaging::Delivery.transaction do
-      created_delivery = endpoint.deliveries.create!(
-        attributes.merge(
-          account: endpoint.account,
-          inbox: endpoint.inbox,
-          status: 'queued',
-          received_at: Time.current
-        )
-      )
-      create_order!(created_delivery) if created_delivery.order_template?
-      created_delivery
-    end
-    Result.new(delivery: delivery, created: true)
-  rescue ActiveRecord::RecordNotUnique
-    duplicate_after_race
+    return create_standard_delivery unless order_template?
+
+    order = existing_order
+    return create_order_resend(order) if order
+
+    create_opening_order_delivery
+  rescue ActiveRecord::RecordNotUnique => e
+    duplicate_after_race(e)
   end
 
   private
@@ -40,36 +32,75 @@ class Ibsoft::ExternalMessaging::DeliveryCreator
     Result.new(delivery: delivery, created: false)
   end
 
-  def existing_order
-    return unless attributes[:template_type] == 'order'
+  def order_template?
+    attributes[:template_type] == 'order'
+  end
 
-    @existing_order ||= Ibsoft::ExternalMessaging::Order.find_by(
-      account: endpoint.account,
-      inbox: endpoint.inbox,
+  def existing_order
+    Ibsoft::ExternalMessaging::Order.find_by(
+      endpoint: endpoint,
       reference_id: attributes[:order_reference_id]
     )
   end
 
-  def existing_order_result
-    Result.new(delivery: existing_order.opening_delivery, created: false)
+  def create_standard_delivery
+    delivery = endpoint.deliveries.create!(delivery_attributes)
+    Result.new(delivery: delivery, created: true)
   end
 
-  def create_order!(delivery)
-    Ibsoft::ExternalMessaging::Order.create!(
+  def create_opening_order_delivery
+    delivery = Ibsoft::ExternalMessaging::Delivery.transaction do
+      created_delivery = endpoint.deliveries.create!(delivery_attributes)
+      order = Ibsoft::ExternalMessaging::Order.create!(
+        endpoint: endpoint,
+        account: endpoint.account,
+        inbox: endpoint.inbox,
+        opening_delivery: created_delivery,
+        reference_id: created_delivery.order_reference_id
+      )
+      created_delivery.update!(external_order: order)
+      created_delivery
+    end
+    Result.new(delivery: delivery, created: true)
+  end
+
+  def create_order_resend(order)
+    order.with_lock do
+      validate_order_resend!(order)
+      delivery = endpoint.deliveries.create!(
+        delivery_attributes.merge(external_order: order)
+      )
+      order.update!(updated_at: Time.current)
+      Result.new(delivery: delivery, created: true)
+    end
+  end
+
+  def validate_order_resend!(order)
+    raise_invalid_request('order_resend_disabled') unless endpoint.allow_order_resends?
+    raise_invalid_request('order_recipient_mismatch') unless order.recipient == attributes[:recipient]
+    raise_invalid_request('order_resend_finalized') if order.finalized_for_resend?
+  end
+
+  def delivery_attributes
+    attributes.merge(
       account: endpoint.account,
       inbox: endpoint.inbox,
-      opening_delivery: delivery,
-      reference_id: delivery.order_reference_id
+      status: 'queued',
+      received_at: Time.current
     )
   end
 
-  def duplicate_after_race
+  def duplicate_after_race(error)
     existing_delivery = endpoint.deliveries.find_by(idempotency_key: attributes[:idempotency_key])
     return existing_result(existing_delivery) if existing_delivery
 
-    @existing_order = nil
-    return existing_order_result if existing_order
+    order = existing_order
+    return create_order_resend(order) if order
 
-    raise
+    raise error
+  end
+
+  def raise_invalid_request(code)
+    raise Ibsoft::ExternalMessaging::InvalidRequest.new(code, http_status: :conflict)
   end
 end
