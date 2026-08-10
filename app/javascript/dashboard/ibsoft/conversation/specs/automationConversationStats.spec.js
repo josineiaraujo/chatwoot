@@ -88,6 +88,37 @@ describe('#createAutomationConversationCountRefresher', () => {
     expect(onCount).toHaveBeenCalledWith(4);
   });
 
+  it('refreshes immediately and ignores an older in-flight response', async () => {
+    let runScheduledRefresh;
+    let resolveOlderRequest;
+    const fetchCount = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveOlderRequest = resolve;
+          })
+      )
+      .mockResolvedValueOnce(2);
+    const onCount = vi.fn();
+    const refresh = createAutomationConversationCountRefresher({
+      fetchCount,
+      onCount,
+      debounceFn: callback => {
+        runScheduledRefresh = callback;
+        return vi.fn();
+      },
+    });
+
+    const olderRequest = runScheduledRefresh({ teamId: 1 });
+    await expect(refresh.immediately({ teamId: 1 })).resolves.toBe(2);
+    resolveOlderRequest(9);
+    await olderRequest;
+
+    expect(onCount).toHaveBeenCalledTimes(1);
+    expect(onCount).toHaveBeenCalledWith(2);
+  });
+
   it('coalesces an event burst and uses the latest filters', async () => {
     vi.useFakeTimers();
     const fetchCount = vi.fn().mockResolvedValue(3);

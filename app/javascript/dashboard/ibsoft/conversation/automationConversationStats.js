@@ -49,10 +49,13 @@ export const createAutomationConversationCountRefresher = ({
     }
   };
 
-  return debounceFn(
+  const debouncedRefresh = debounceFn(
     refresh,
     AUTOMATION_STATS_DEBOUNCE_MS,
     false,
     AUTOMATION_STATS_MAX_WAIT_MS
   );
+
+  debouncedRefresh.immediately = refresh;
+  return debouncedRefresh;
 };

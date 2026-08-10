@@ -47,6 +47,58 @@ describe('#actions', () => {
     });
   });
 
+  describe('#getImmediately', () => {
+    it('fetches and commits without waiting for the debouncer', async () => {
+      axios.get.mockResolvedValue({ data: { meta: { all_count: 4 } } });
+
+      await actions.getImmediately(
+        { commit },
+        { assigneeType: 'all', status: 'open' }
+      );
+
+      expect(commit).toHaveBeenCalledWith(types.default.SET_CONV_TAB_META, {
+        all_count: 4,
+      });
+    });
+
+    it('does not let an older request overwrite a newer count', async () => {
+      let resolveOlderRequest;
+      let resolveNewerRequest;
+      axios.get
+        .mockImplementationOnce(
+          () =>
+            new Promise(resolve => {
+              resolveOlderRequest = resolve;
+            })
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise(resolve => {
+              resolveNewerRequest = resolve;
+            })
+        );
+
+      const olderRequest = actions.getImmediately(
+        { commit },
+        { status: 'open' }
+      );
+      const newerRequest = actions.getImmediately(
+        { commit },
+        { status: 'open' }
+      );
+
+      resolveNewerRequest({ data: { meta: { all_count: 2 } } });
+      await newerRequest;
+      resolveOlderRequest({ data: { meta: { all_count: 9 } } });
+      await olderRequest;
+
+      expect(commit).toHaveBeenCalledTimes(1);
+      expect(commit).toHaveBeenCalledWith(types.default.SET_CONV_TAB_META, {
+        all_count: 2,
+      });
+    });
+  });
+
   describe('#set', () => {
     it('sends correct mutations', async () => {
       actions.set(

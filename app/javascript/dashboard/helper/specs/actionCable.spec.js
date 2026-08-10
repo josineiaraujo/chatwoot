@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import ActionCableConnector from '../actionCable';
 import { notifyConversationAssignment } from 'dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { emitter } from 'shared/helpers/mitt';
 
 vi.mock('shared/helpers/mitt', () => ({
   emitter: {
@@ -335,6 +336,23 @@ describe('ActionCableConnector - Copilot Tests', () => {
 
       expect(notifyConversationAssignment).toHaveBeenCalledWith(payload);
       expect(mockDispatch).toHaveBeenCalledWith('updateConversation', payload);
+    });
+  });
+
+  describe('Ibsoft bulk action event handlers', () => {
+    it('requests an immediate stats refresh after the bulk job completes', () => {
+      expect(
+        actionCable.events['ibsoft.conversation.bulk_action_completed']
+      ).toBe(actionCable.onIbsoftConversationBulkActionCompleted);
+
+      actionCable.onReceived({
+        event: 'ibsoft.conversation.bulk_action_completed',
+        data: { account_id: 1 },
+      });
+
+      expect(emitter.emit).toHaveBeenCalledWith('fetch_conversation_stats', {
+        immediate: true,
+      });
     });
   });
 });
