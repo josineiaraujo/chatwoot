@@ -6,6 +6,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { useAlert } from 'dashboard/composables';
+import CredentialsDialog from '../components/CredentialsDialog.vue';
 import InstanceCard from '../components/InstanceCard.vue';
 import InstanceDetail from '../components/InstanceDetail.vue';
 import InstanceEditorDialog from '../components/InstanceEditorDialog.vue';
@@ -31,9 +32,11 @@ const isFetchingDeliveries = ref(false);
 const historyLoaded = ref(false);
 const isSaving = ref(false);
 const isSavingOrderDefaults = ref(false);
+const isRotatingCredentials = ref(false);
 const revealedCredentials = ref(null);
 const revealedInstanceType = ref('');
 const tokenDialogRef = ref(null);
+const credentialsDialogRef = ref(null);
 const editorDialogRef = ref(null);
 const orderDefaultsDialogRef = ref(null);
 
@@ -212,6 +215,7 @@ const openCreate = () => editorDialogRef.value?.open();
 const openEdit = endpoint => editorDialogRef.value?.open(endpoint);
 const openOrderDefaults = endpoint =>
   orderDefaultsDialogRef.value?.open(endpoint);
+const openCredentials = endpoint => credentialsDialogRef.value?.open(endpoint);
 
 const openInstance = endpoint => {
   selectedEndpointId.value = endpoint.id;
@@ -290,12 +294,20 @@ const toggleEndpoint = async endpoint => {
 };
 
 const rotateToken = async endpoint => {
+  isRotatingCredentials.value = true;
   try {
     const { data } = await externalMessagingAPI.rotateToken(endpoint.id);
-    await fetchEndpoints();
+    credentialsDialogRef.value?.close();
     await showCredentials(data);
+    try {
+      await fetchEndpoints();
+    } catch {
+      useAlert(t('IBSOFT_EXTERNAL_MESSAGING.ERRORS.LOAD'));
+    }
   } catch {
     useAlert(t('IBSOFT_EXTERNAL_MESSAGING.ERRORS.ROTATE'));
+  } finally {
+    isRotatingCredentials.value = false;
   }
 };
 
@@ -359,7 +371,7 @@ onMounted(fetchData);
         :integration-parameters="integrationParameters"
         @back="closeInstance"
         @edit="openEdit"
-        @rotate="rotateToken"
+        @credentials="openCredentials"
         @toggle="toggleEndpoint"
         @load-history="fetchDeliveries"
         @configure-orders="openOrderDefaults"
@@ -395,7 +407,7 @@ onMounted(fetchData);
             :type-definition="typeDefinitionFor(endpoint)"
             @view="openInstance"
             @edit="openEdit"
-            @rotate="rotateToken"
+            @credentials="openCredentials"
             @toggle="toggleEndpoint"
           />
         </div>
@@ -439,9 +451,16 @@ onMounted(fetchData);
       @save="saveOrderDefaults"
     />
 
+    <CredentialsDialog
+      ref="credentialsDialogRef"
+      :is-rotating="isRotatingCredentials"
+      @rotate="rotateToken"
+    />
+
     <Dialog
       ref="tokenDialogRef"
       width="2xl"
+      overflow-y-auto
       :title="credentialDialogTitle"
       :description="credentialDialogDescription"
       :show-cancel-button="false"
@@ -449,7 +468,7 @@ onMounted(fetchData);
       @confirm="tokenDialogRef?.close()"
       @close="clearCredentials"
     >
-      <div class="grid gap-4">
+      <div class="ibsoft-external-messaging-dialog-content grid gap-4">
         <div v-if="isRevealedIxc" class="grid gap-3 sm:grid-cols-2">
           <div class="grid min-w-0 gap-1">
             <span class="text-label-small text-n-slate-11">
@@ -555,3 +574,9 @@ onMounted(fetchData);
     </Dialog>
   </section>
 </template>
+
+<style scoped>
+:global(dialog:has(.ibsoft-external-messaging-dialog-content)) {
+  max-height: calc(100dvh - 6rem);
+}
+</style>

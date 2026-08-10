@@ -24,7 +24,9 @@ const mountComponent = () =>
         $t: key => key,
       },
       stubs: {
-        Button: true,
+        Button: {
+          template: '<button v-bind="$attrs"><slot /></button>',
+        },
         InstanceTypeMark: true,
       },
     },
@@ -39,5 +41,18 @@ describe('InstanceCard', () => {
     expect(wrapper.text()).toContain(
       'IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.CHANNEL'
     );
+  });
+
+  it('opens credential management without requesting token rotation', async () => {
+    const wrapper = mountComponent();
+
+    await wrapper
+      .find('[aria-label="IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.CREDENTIALS"]')
+      .trigger('click');
+
+    expect(wrapper.emitted('credentials')).toEqual([
+      [wrapper.props('endpoint')],
+    ]);
+    expect(wrapper.emitted('rotate')).toBeUndefined();
   });
 });

@@ -216,7 +216,7 @@ defineExpose({ open, close });
     @close="reset"
   >
     <div
-      class="mb-5 flex gap-1 rounded-lg bg-n-alpha-1 p-1"
+      class="ibsoft-external-messaging-dialog-content mb-5 flex gap-1 rounded-lg bg-n-alpha-1 p-1"
       role="tablist"
       :aria-label="t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.TABS.LABEL')"
     >

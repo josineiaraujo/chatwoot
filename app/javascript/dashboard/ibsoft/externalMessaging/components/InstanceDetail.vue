@@ -59,7 +59,7 @@ const props = defineProps({
 const emit = defineEmits([
   'back',
   'edit',
-  'rotate',
+  'credentials',
   'toggle',
   'loadHistory',
   'configureOrders',
@@ -262,13 +262,13 @@ watch(
             @click="emit('edit', endpoint)"
           />
           <Button
-            v-tooltip.top="t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.ROTATE')"
+            v-tooltip.top="t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.CREDENTIALS')"
             icon="i-lucide-key-round"
             size="sm"
             color="slate"
             variant="ghost"
-            :aria-label="t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.ROTATE')"
-            @click="emit('rotate', endpoint)"
+            :aria-label="t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.CREDENTIALS')"
+            @click="emit('credentials', endpoint)"
           />
           <Button
             v-tooltip.top="

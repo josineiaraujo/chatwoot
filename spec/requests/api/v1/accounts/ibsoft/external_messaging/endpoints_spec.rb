@@ -32,6 +32,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
     token = response.parsed_body['token']
     expect(token).to start_with('ibext_')
     created_endpoint = Ibsoft::ExternalMessaging::Endpoint.find(response.parsed_body['id'])
+    token_digest = created_endpoint.token_digest
     create_list(:ibsoft_external_message_delivery, 2, endpoint: created_endpoint)
 
     get base_url, headers: admin_headers, as: :json
@@ -50,6 +51,8 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
     )
     expect(endpoint).not_to have_key('token')
     expect(endpoint).not_to have_key('token_digest')
+    expect(created_endpoint.reload.token_digest).to eq(token_digest)
+    expect(Ibsoft::ExternalMessaging::Endpoint.authenticate(token)).to eq(created_endpoint)
   end
 
   it 'allows administrators to disable order resends for an instance' do

@@ -37,9 +37,21 @@ const mountComponent = () =>
         IbsoftSelect: true,
         ToggleSwitch: true,
         Dialog: {
-          setup(_props, { slots, expose }) {
+          name: 'Dialog',
+          props: {
+            overflowYAuto: {
+              type: Boolean,
+              default: false,
+            },
+          },
+          setup(props, { slots, expose }) {
             expose({ open: dialogOpenMock, close: vi.fn() });
-            return () => h('div', slots.default?.());
+            return () =>
+              h(
+                'div',
+                { 'data-overflow-y-auto': String(props.overflowYAuto) },
+                slots.default?.()
+              );
           },
         },
       },
@@ -47,6 +59,12 @@ const mountComponent = () =>
   });
 
 describe('OrderDefaultsDialog', () => {
+  it('keeps order settings scrollable on short viewports', () => {
+    const wrapper = mountComponent();
+
+    expect(wrapper.find('[data-overflow-y-auto="true"]').exists()).toBe(true);
+  });
+
   it('preserves a configured key unless a replacement is entered', async () => {
     const wrapper = mountComponent();
     await wrapper.vm.open({

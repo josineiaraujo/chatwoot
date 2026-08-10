@@ -55,7 +55,9 @@ const mountComponent = (props = {}) =>
     },
     global: {
       stubs: {
-        Button: true,
+        Button: {
+          template: '<button v-bind="$attrs"><slot /></button>',
+        },
         Spinner: true,
         IbsoftSelect: true,
         OrdersPanel: true,
@@ -169,5 +171,18 @@ describe('InstanceDetail', () => {
     expect(guide.props('authentication')).toEqual(
       expect.objectContaining({ username: 'ixc_8' })
     );
+  });
+
+  it('opens credential management without requesting token rotation', async () => {
+    const wrapper = mountComponent();
+
+    await wrapper
+      .find('[aria-label="IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.CREDENTIALS"]')
+      .trigger('click');
+
+    expect(wrapper.emitted('credentials')).toEqual([
+      [wrapper.props('endpoint')],
+    ]);
+    expect(wrapper.emitted('rotate')).toBeUndefined();
   });
 });
