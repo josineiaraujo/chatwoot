@@ -49,6 +49,21 @@ RSpec.describe ConversationPolicy, type: :policy do
       it 'allows access' do
         expect(subject).to permit(agent_context, conversation)
       end
+
+      it 'allows an AgentBot-owned conversation from an accessible inbox to a profile that manages the queue' do
+        role = create(:ibsoft_access_control_role, account: account, permissions: ['conversation_unassigned_manage'])
+        create(:ibsoft_access_control_role_assignment, account: account, role: role, user: agent)
+        conversation.update!(assignee_agent_bot: create(:agent_bot, account: account))
+
+        expect(subject).to permit(agent_context, conversation)
+      end
+
+      it 'allows a genuinely unassigned conversation to a profile that manages the queue' do
+        role = create(:ibsoft_access_control_role, account: account, permissions: ['conversation_unassigned_manage'])
+        create(:ibsoft_access_control_role_assignment, account: account, role: role, user: agent)
+
+        expect(subject).to permit(agent_context, conversation)
+      end
     end
 
     context 'when agent has team access' do
@@ -66,6 +81,14 @@ RSpec.describe ConversationPolicy, type: :policy do
       let(:conversation) { create(:conversation, account: account) }
 
       it 'denies access' do
+        expect(subject).not_to permit(agent_context, conversation)
+      end
+
+      it 'denies access to an AgentBot conversation for an Ibsoft queue profile' do
+        role = create(:ibsoft_access_control_role, account: account, permissions: ['conversation_unassigned_manage'])
+        create(:ibsoft_access_control_role_assignment, account: account, role: role, user: agent)
+        conversation.update!(assignee_agent_bot: create(:agent_bot, account: account))
+
         expect(subject).not_to permit(agent_context, conversation)
       end
     end

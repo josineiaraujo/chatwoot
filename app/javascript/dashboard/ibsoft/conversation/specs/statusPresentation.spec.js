@@ -4,9 +4,37 @@ import wootConstants from 'dashboard/constants/globals';
 import {
   ALL_ASSIGNEE_TAB,
   AUTOMATION_ASSIGNEE_TAB,
+  getAssigneeTypeForConversationTab,
   getDefaultAssigneeTabForConversationType,
+  getStatusForConversationTab,
   getStatusForOperationalConversationStats,
 } from '../statusPresentation';
+
+describe('automation conversation filters', () => {
+  it('loads all pending conversations for the automation tab', () => {
+    expect(getAssigneeTypeForConversationTab(AUTOMATION_ASSIGNEE_TAB)).toBe(
+      wootConstants.ASSIGNEE_TYPE.ALL
+    );
+    expect(
+      getStatusForConversationTab(
+        AUTOMATION_ASSIGNEE_TAB,
+        wootConstants.STATUS_TYPE.OPEN
+      )
+    ).toBe(wootConstants.STATUS_TYPE.PENDING);
+  });
+
+  it('preserves regular queue filters outside the automation tab', () => {
+    expect(
+      getAssigneeTypeForConversationTab(wootConstants.ASSIGNEE_TYPE.UNASSIGNED)
+    ).toBe(wootConstants.ASSIGNEE_TYPE.UNASSIGNED);
+    expect(
+      getStatusForConversationTab(
+        wootConstants.ASSIGNEE_TYPE.UNASSIGNED,
+        wootConstants.STATUS_TYPE.OPEN
+      )
+    ).toBe(wootConstants.STATUS_TYPE.OPEN);
+  });
+});
 
 describe('#getDefaultAssigneeTabForConversationType', () => {
   it('opens mentions with all conversations selected', () => {

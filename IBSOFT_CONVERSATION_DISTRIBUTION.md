@@ -19,6 +19,31 @@ O modulo nao deve interferir em:
 - conversas que ja receberam primeira resposta humana depois da entrada na fila;
 - conversas resolvidas, silenciadas ou ainda conduzidas pela automacao.
 
+## Semantica de propriedade e fila humana
+
+A fila humana deve conter somente conversas sem qualquer responsavel:
+`assignee_id IS NULL` e `assignee_agent_bot_id IS NULL`. Uma conversa com
+`assignee_agent_bot_id` pertence ao `AgentBot`, mesmo que nao possua agente
+humano, e portanto nao pode ser contada, listada, distribuida ou assumida como
+conversa nao atribuida.
+
+O escopo nativo `Conversation.unassigned` e a fonte de verdade para a fila
+humana. O escopo `Conversation.assigned` inclui tanto agentes humanos quanto
+`AgentBot`. Finders, contadores, filtros, permissoes, nao lidos e services de
+atribuicao devem usar esses escopos em vez de inferir propriedade somente por
+`assignee_id`.
+
+Quando a entrega de um webhook ao bot falha de forma definitiva, o Chatwoot usa
+`conversation.bot_handoff!`: a conversa e aberta, a propriedade do bot e limpa
+e ela passa a ser uma candidata real da fila humana. Se a configuracao
+`keep_pending_on_bot_failure` estiver ativa, a conversa continua pendente e sob
+responsabilidade do bot, sem aparecer na fila.
+
+Essa separacao evita divergencia entre o contador e a lista da fila. A
+divergencia anterior fazia o frontend pedir paginas adicionais continuamente
+quando o backend contava conversas do bot como nao atribuidas, mas o frontend
+nao as renderizava.
+
 ## Estrutura inicial
 
 Backend isolado:
@@ -270,6 +295,12 @@ Uma conversa so e candidata quando:
   historico de mensagem com `sender_type=AgentBot`;
 - nao existe evento `automation_handoff_completed` criado depois da ultima
   atividade da conversa.
+
+Essa busca e uma excecao intencional ao escopo `Conversation.unassigned`: ela
+analisa conversas ainda pertencentes ao bot justamente para executar a politica
+de automacao parada. Somente depois do `AutomationHandoffExecutor` limpar
+`assignee_agent_bot_id` a conversa entra na fila humana e pode seguir para a
+distribuicao normal.
 
 O service `AutomationHandoffExecutor` usa `FOR UPDATE SKIP LOCKED` para evitar
 processamento concorrente. Quando
@@ -918,6 +949,38 @@ Para ativacao gradual em producao:
 
 ## Pontos de acoplamento no Chatwoot original
 
+### Backport temporario de propriedade do AgentBot
+
+Esta branch inclui antecipadamente a correcao oficial do Chatwoot
+`f12529105bff8b16793c836bde5bfe1ba7e2f470` (`fix: align AgentBot ownership
+with conversation counts (#15343)`). Ela corrige um comportamento nativo e nao
+constitui regra de negocio privada Ibsoft.
+
+O backport toca os escopos de `Conversation`, finder e filtros de conversa,
+atribuicao automatica, automacoes, contadores de nao lidos, permissoes e os
+fluxos Enterprise de chamadas. `lib/webhooks/trigger.rb` usa `bot_handoff!` na
+falha definitiva do webhook. Os services privados de distribuicao foram
+ajustados apenas para consumir a mesma semantica: distribuicao humana usa
+`unassigned`; a politica de automacao parada continua buscando conversas
+pendentes pertencentes ao bot.
+
+O controle de acesso privado mantem essas conversas visiveis na automacao para
+perfis que gerenciam a fila e possuem acesso ao canal. Essa permissao de
+visualizacao nao transforma a conversa do `AgentBot` em fila humana. A
+integracao frontend fica isolada em
+`app/javascript/dashboard/ibsoft/accessControl/conversationVisibility.js` e so
+e ativada pela permissao marcadora `ibsoft_access_role`. A
+atribuicao automatica usa o bloqueio concorrente do commit oficial `0ad2780972`
+para nao sobrescrever uma atribuicao concluida por outra execucao.
+
+Ao sincronizar com uma versao upstream que ja contenha esse commit, reconciliar
+ou remover o backport antes de resolver outros conflitos. Nao manter duas
+implementacoes paralelas. Tambem revisar os acompanhamentos upstream conhecidos
+para atualizacao de propriedade ao excluir um `AgentBot` (CW-7870) e para
+atualizacao do contador no cabecalho de filtros salvos (CW-7899).
+
+Esse ajuste nao cria tabela, migration, variavel de ambiente, callback ou job.
+
 Neste incremento inicial, os pontos de acoplamento sao:
 
 - `config/routes.rb`: registro das rotas API do namespace
@@ -998,6 +1061,11 @@ de job e atribuicao real.
    alertas por conta ultrapasse o limite de carregamento atual.
 
 ## Validacao recomendada
+
+- `bundle exec rspec spec/finders/conversation_finder_spec.rb spec/models/conversation_spec.rb spec/lib/webhooks/trigger_spec.rb`
+- `bundle exec rspec spec/services/auto_assignment spec/services/automation_rules/conditions_filter_service_spec.rb spec/services/conversations/unread_counts`
+- `bundle exec rspec spec/enterprise/controllers/api/v1/accounts/whatsapp_calls_controller_spec.rb spec/enterprise/policies/conversation_policy_spec.rb spec/enterprise/services/enterprise/conversations/permission_filter_service_spec.rb spec/enterprise/services/voice spec/enterprise/services/whatsapp/call_service_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/store/modules/conversations/specs/helpers.spec.js app/javascript/dashboard/store/modules/conversations/helpers/specs/filterHelpers.spec.js app/javascript/dashboard/ibsoft/accessControl/specs/conversationVisibility.spec.js`
 
 - `RAILS_ENV=test bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
 - `RAILS_ENV=test bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`

@@ -19,7 +19,7 @@ module Ibsoft::AccessControl::ConversationPolicy
   def unassigned_manage?
     return false unless conversation_permissions.include?('conversation_unassigned_manage')
 
-    unassigned_conversation? || assigned_to_user?
+    ibsoft_queue_visible_conversation? || assigned_to_user?
   end
 
   def participating_manage?
@@ -28,7 +28,7 @@ module Ibsoft::AccessControl::ConversationPolicy
     assigned_to_user? || participant?
   end
 
-  def unassigned_conversation?
+  def ibsoft_queue_visible_conversation?
     record.assignee_id.nil?
   end
 end

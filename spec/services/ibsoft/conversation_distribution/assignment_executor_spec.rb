@@ -87,6 +87,17 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentExecutor do
     expect(event.metadata.dig('candidate', 'source')).to eq('manual_team_transfer')
   end
 
+  it 'does not claim a conversation if an AgentBot takes ownership before the row lock' do
+    agent_bot = create(:agent_bot, account: account)
+    conversation.update!(assignee_agent_bot: agent_bot)
+    executor = described_class.new(account: account)
+
+    assignment = executor.send(:locked_assignment_for, conversation, agent)
+
+    expect(assignment).to be_nil
+    expect(conversation.reload.assigned_entity).to eq(agent_bot)
+  end
+
   it 'assigns a replied conversation returned to the queue and consumes the temporary marker' do
     conversation.update!(first_reply_created_at: 20.minutes.ago)
     Ibsoft::ConversationDistribution::SourceMarker.new(

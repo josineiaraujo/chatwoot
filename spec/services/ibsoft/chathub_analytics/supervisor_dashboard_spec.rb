@@ -100,4 +100,23 @@ RSpec.describe Ibsoft::ChathubAnalytics::SupervisorDashboard do
     expect(result.dig(:slow_response_ranking, 0, :average_first_response_seconds)).to eq(720)
     expect(result.dig(:slow_response_ranking, 9, :average_first_response_seconds)).to eq(180)
   end
+
+  it 'does not count AgentBot-owned conversations as unassigned human work' do
+    create(:conversation, account: account, inbox: inbox, team: team, status: :open, assignee: nil)
+    create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      status: :open,
+      assignee_agent_bot: create(:agent_bot, account: account)
+    )
+
+    result = described_class.new(account: account).perform
+    team_result = result[:by_team].find { |item| item[:team_id] == team.id }
+
+    expect(result.dig(:summary, :open_conversations)).to eq(2)
+    expect(result.dig(:summary, :unassigned_conversations)).to eq(1)
+    expect(team_result[:unassigned_count]).to eq(1)
+  end
 end

@@ -26,6 +26,32 @@ RSpec.describe AutoAssignment::AgentAssignmentService do
       described_class.new(conversation: conversation, allowed_agent_ids: inbox_members.map(&:user_id).map(&:to_s)).perform
       expect(conversation.reload.assignee).not_to be_nil
     end
+
+    it 'keeps an existing AgentBot owner' do
+      agent_bot = create(:agent_bot, account: account)
+      conversation.update!(assignee_agent_bot: agent_bot)
+
+      described_class.new(conversation: conversation, allowed_agent_ids: inbox_members.map(&:user_id).map(&:to_s)).perform
+
+      expect(conversation.reload.assigned_entity).to eq(agent_bot)
+    end
+
+    it 'does not overwrite an assignment made by a concurrent service instance' do
+      first_conversation = Conversation.find(conversation.id)
+      stale_conversation = Conversation.find(conversation.id)
+      first_assignee = inbox_members[3].user
+
+      first_service = described_class.new(conversation: first_conversation, allowed_agent_ids: [first_assignee.id.to_s])
+      stale_service = described_class.new(conversation: stale_conversation, allowed_agent_ids: [inbox_members[4].user_id.to_s])
+
+      allow(first_service).to receive(:find_assignee).and_return(first_assignee)
+      expect(stale_service).not_to receive(:find_assignee)
+
+      first_service.perform
+      stale_service.perform
+
+      expect(conversation.reload.assignee).to eq(first_assignee)
+    end
   end
 
   describe '#find_assignee' do

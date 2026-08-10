@@ -10,6 +10,7 @@ describe ConversationFinder do
   let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
   let!(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: 'testing_source_id') }
   let!(:restricted_inbox) { create(:inbox, account: account) }
+  let!(:unassigned_conversation) { create(:conversation, account: account, inbox: inbox) }
 
   before do
     create(:inbox_member, user: user_1, inbox: inbox)
@@ -18,8 +19,6 @@ describe ConversationFinder do
     create(:conversation, account: account, inbox: inbox, assignee: user_1)
     create(:conversation, account: account, inbox: inbox, assignee: user_1, status: 'resolved')
     create(:conversation, account: account, inbox: inbox, assignee: user_2, contact_inbox: contact_inbox)
-    # unassigned conversation
-    create(:conversation, account: account, inbox: inbox)
     Current.account = account
   end
 
@@ -80,10 +79,46 @@ describe ConversationFinder do
 
     context 'with assignee_type unassigned' do
       let(:params) { { assignee_type: 'unassigned' } }
+      let!(:agent_bot_conversation) do
+        create(:conversation, account: account, inbox: inbox, assignee_agent_bot: create(:agent_bot, account: account))
+      end
 
       it 'filter conversations by assignee type unassigned' do
         result = conversation_finder.perform
         expect(result[:conversations].length).to be 1
+        expect(result[:conversations]).to include(unassigned_conversation)
+        expect(result[:conversations]).not_to include(agent_bot_conversation)
+      end
+    end
+
+    context 'with the operational automation filters' do
+      let(:params) { { status: 'pending', assignee_type: 'all' } }
+      let!(:agent_bot_conversation) do
+        create(:conversation, account: account, inbox: inbox, status: :pending,
+                              assignee_agent_bot: create(:agent_bot, account: account))
+      end
+
+      it 'returns the pending conversation owned by the AgentBot' do
+        result = conversation_finder.perform
+
+        expect(result[:conversations]).to contain_exactly(agent_bot_conversation)
+        expect(result[:count][:all_count]).to eq(1)
+      end
+    end
+
+    context 'when an AgentBot hands a conversation to the human queue' do
+      let(:params) { { status: 'open', assignee_type: 'unassigned' } }
+      let!(:agent_bot_conversation) do
+        create(:conversation, account: account, inbox: inbox, status: :pending,
+                              assignee_agent_bot: create(:agent_bot, account: account))
+      end
+
+      it 'returns the handed-off conversation in the human queue' do
+        agent_bot_conversation.bot_handoff!
+        result = conversation_finder.perform
+
+        expect(result[:conversations]).to contain_exactly(unassigned_conversation, agent_bot_conversation)
+        expect(result[:count][:unassigned_count]).to eq(2)
       end
     end
 
@@ -159,19 +194,23 @@ describe ConversationFinder do
 
     context 'with assignee_type assigned' do
       let(:params) { { assignee_type: 'assigned' } }
+      let!(:agent_bot_conversation) do
+        create(:conversation, account: account, inbox: inbox, assignee_agent_bot: create(:agent_bot, account: account))
+      end
 
       it 'filter conversations by assignee type assigned' do
         result = conversation_finder.perform
-        expect(result[:conversations].length).to be 3
+        expect(result[:conversations].length).to be 4
+        expect(result[:conversations]).to include(agent_bot_conversation)
       end
 
       it 'returns the correct meta' do
         result = conversation_finder.perform
         expect(result[:count]).to eq({
                                        mine_count: 2,
-                                       assigned_count: 3,
+                                       assigned_count: 4,
                                        unassigned_count: 1,
-                                       all_count: 4
+                                       all_count: 5
                                      })
       end
     end

@@ -87,7 +87,8 @@ class Ibsoft::ConversationDistribution::AgentAssignmentClaimer
     Conversation.transaction do
       locked_conversation = account.conversations
                                    .open
-                                   .where(id: conversation.id, assignee_id: nil, first_reply_created_at: nil)
+                                   .where(id: conversation.id, first_reply_created_at: nil)
+                                   .unassigned
                                    .lock('FOR UPDATE SKIP LOCKED')
                                    .first
       next if locked_conversation.blank?

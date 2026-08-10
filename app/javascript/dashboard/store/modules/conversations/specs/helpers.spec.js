@@ -26,6 +26,15 @@ describe('Conversation Helpers', () => {
       },
     };
 
+    const conversationWithAgentBotAssignee = {
+      meta: {
+        assignee: {
+          id: 3,
+        },
+        assignee_type: 'AgentBot',
+      },
+    };
+
     // Test for administrator role
     it('always returns true for administrator role regardless of permissions', () => {
       const role = 'administrator';
@@ -159,6 +168,28 @@ describe('Conversation Helpers', () => {
             currentUserId
           )
         ).toBe(false);
+      });
+
+      it('keeps AgentBot conversations hidden for native custom roles', () => {
+        expect(
+          applyRoleFilter(
+            conversationWithAgentBotAssignee,
+            role,
+            permissions,
+            currentUserId
+          )
+        ).toBe(false);
+      });
+
+      it('shows AgentBot conversations to Ibsoft queue profiles', () => {
+        expect(
+          applyRoleFilter(
+            conversationWithAgentBotAssignee,
+            role,
+            [...permissions, 'ibsoft_access_role'],
+            currentUserId
+          )
+        ).toBe(true);
       });
     });
 

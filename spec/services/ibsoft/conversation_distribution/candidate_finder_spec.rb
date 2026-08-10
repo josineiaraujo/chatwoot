@@ -19,6 +19,22 @@ RSpec.describe Ibsoft::ConversationDistribution::CandidateFinder do
     expect(result).to contain_exactly(eligible)
   end
 
+  it 'does not expose an AgentBot-owned conversation to the human distribution queue' do
+    agent_bot = create(:agent_bot, account: account)
+    bot_owned = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      team: team,
+      assignee_agent_bot: agent_bot,
+      waiting_since: 10.minutes.ago
+    )
+
+    result = described_class.new(account: account).perform
+
+    expect(result).not_to include(bot_owned)
+  end
+
   it 'caps the preview limit' do
     3.times do
       create(:conversation, account: account, inbox: inbox, team: team)
