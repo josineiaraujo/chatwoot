@@ -83,7 +83,25 @@ RSpec.describe Ibsoft::MessageBroadcast::RecipientSender do
     )
   end
 
+  it 'opens and assigns a kept-open conversation to the agent who sent the broadcast', :aggregate_failures do
+    agent_bot = create(:agent_bot, account: account)
+    create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
+    broadcast.update!(
+      conversation_mode: 'keep_open',
+      assignee: other_agent
+    )
+
+    described_class.new(broadcast: broadcast, recipient: recipient).call
+
+    conversation = recipient.reload.conversation
+    expect(conversation).to be_open
+    expect(conversation.assignee).to eq(sending_agent)
+    expect(conversation.assignee_agent_bot).to be_nil
+  end
+
   it 'reuses an open conversation without changing its assignee', :aggregate_failures do
+    broadcast.update!(conversation_mode: 'keep_open')
+    create(:inbox_member, inbox: inbox, user: sending_agent)
     contact = create(:contact, account: account, name: 'Cliente Teste', phone_number: '+5575982479788')
     contact_inbox = create(:contact_inbox, contact: contact, inbox: inbox, source_id: '5575982479788')
     existing_conversation = create(
@@ -104,6 +122,51 @@ RSpec.describe Ibsoft::MessageBroadcast::RecipientSender do
     expect(recipient.conversation).to eq(existing_conversation)
     expect(existing_conversation.reload).to be_open
     expect(existing_conversation.assignee).to eq(other_agent)
+    expect(existing_conversation.conversation_participants.pluck(:user_id)).to include(sending_agent.id)
+  end
+
+  it 'assigns a reused unassigned conversation to the agent who sent the broadcast', :aggregate_failures do
+    broadcast.update!(conversation_mode: 'keep_open')
+    contact = create(:contact, account: account, name: 'Cliente Teste', phone_number: '+5575982479788')
+    contact_inbox = create(:contact_inbox, contact: contact, inbox: inbox, source_id: '5575982479788')
+    existing_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      contact: contact,
+      contact_inbox: contact_inbox,
+      status: :open
+    )
+
+    described_class.new(broadcast: broadcast, recipient: recipient).call
+
+    expect(recipient.reload.conversation).to eq(existing_conversation)
+    expect(existing_conversation.reload).to have_attributes(
+      status: 'open',
+      assignee_id: sending_agent.id,
+      assignee_agent_bot_id: nil
+    )
+  end
+
+  it 'adds the sender as a participant when close-after-send reuses another agent conversation', :aggregate_failures do
+    create(:inbox_member, inbox: inbox, user: sending_agent)
+    contact = create(:contact, account: account, name: 'Cliente Teste', phone_number: '+5575982479788')
+    contact_inbox = create(:contact_inbox, contact: contact, inbox: inbox, source_id: '5575982479788')
+    existing_conversation = create(
+      :conversation,
+      account: account,
+      inbox: inbox,
+      contact: contact,
+      contact_inbox: contact_inbox,
+      assignee: other_agent,
+      status: :open
+    )
+
+    described_class.new(broadcast: broadcast, recipient: recipient).call
+
+    expect(recipient.reload.conversation).to eq(existing_conversation)
+    expect(existing_conversation.reload).to have_attributes(status: 'open', assignee_id: other_agent.id)
+    expect(existing_conversation.conversation_participants.pluck(:user_id)).to include(sending_agent.id)
   end
 
   it 'uses the fallback only after a confirmed primary rejection', :aggregate_failures do

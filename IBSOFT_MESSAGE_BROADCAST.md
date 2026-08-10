@@ -702,7 +702,12 @@ endpoint `/messages` da Meta. Nenhum `Contact`, `ContactInbox`, `Conversation`
 ou `Message` e criado. No modo de conversa,
 `ConversationRecipientDelivery` reutiliza uma conversa aberta do mesmo contato
 e canal ou cria as entidades necessarias. A mensagem usa o agente que iniciou o
-disparo como autor.
+disparo como autor. No modo `keep_open`, uma conversa nova fica aberta e
+atribuida a esse mesmo agente, inclusive quando o canal possui um robo ativo. Se
+uma conversa aberta reutilizada estiver sem agente humano, ela tambem e
+atribuida ao autor do disparo. Quando a conversa reutilizada ja pertence a
+outro agente, o responsavel e preservado e o autor do disparo e adicionado como
+participante da conversa.
 
 ### Concorrencia e claims de envio
 
@@ -735,7 +740,11 @@ Antes de criar uma nova conversa, o `RecipientSender` procura uma conversa
 aberta do mesmo contato no mesmo canal. Se ela existir, o disparo e enviado
 nessa conversa e a configuracao `close_after_send` e ignorada para esse
 destinatario. Essa regra evita encerrar um atendimento que ja estava em curso
-entre agente e cliente e preserva o agente que ja estava atribuido.
+entre agente e cliente e preserva o agente que ja estava atribuido. O autor do
+disparo entra como participante quando o responsavel for outro agente. A
+inclusao usa a associacao nativa `conversation_participants`, e idempotente e
+respeita a validacao de acesso ao canal. Portanto, `keep_open` nunca substitui
+o responsavel de uma conversa aberta que ja possui um agente humano.
 
 Ao enfileirar um disparo, o controller grava `sent_by` com o agente atual. O
 `RecipientSender` usa esse usuario como autor da mensagem, inclusive quando

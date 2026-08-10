@@ -39,7 +39,7 @@ class Ibsoft::MessageBroadcast::ConversationRecipientDelivery
     existing_conversation = existing_open_conversation(contact_inbox)
     if existing_conversation
       @reused_open_conversation = true
-      return existing_conversation
+      return prepare_reused_conversation(existing_conversation)
     end
 
     create_conversation(contact_inbox)
@@ -53,16 +53,46 @@ class Ibsoft::MessageBroadcast::ConversationRecipientDelivery
   end
 
   def create_conversation(contact_inbox)
-    Conversation.create!(
-      account: broadcast.account,
-      inbox: inbox,
-      contact: contact_inbox.contact,
-      contact_inbox: contact_inbox,
-      assignee: broadcast.assignee,
-      team: broadcast.team,
-      status: :open,
-      additional_attributes: { 'ibsoft_message_broadcast_id' => broadcast.id }
-    )
+    Conversation.transaction do
+      created_conversation = Conversation.create!(
+        account: broadcast.account,
+        inbox: inbox,
+        contact: contact_inbox.contact,
+        contact_inbox: contact_inbox,
+        assignee: new_conversation_assignee,
+        team: broadcast.team,
+        status: :open,
+        additional_attributes: { 'ibsoft_message_broadcast_id' => broadcast.id }
+      )
+      created_conversation.open! if keep_open? && !created_conversation.open?
+      created_conversation
+    end
+  end
+
+  def prepare_reused_conversation(existing_conversation)
+    existing_conversation.update!(assignee: sending_agent) if keep_open? && existing_conversation.assignee_id.blank?
+    add_sending_agent_as_participant(existing_conversation)
+    existing_conversation
+  end
+
+  def add_sending_agent_as_participant(existing_conversation)
+    return if existing_conversation.assignee_id.blank? || existing_conversation.assignee_id == sending_agent.id
+
+    existing_conversation.conversation_participants.find_or_create_by!(user: sending_agent)
+  rescue ActiveRecord::RecordNotUnique
+    nil
+  end
+
+  def new_conversation_assignee
+    keep_open? ? sending_agent : broadcast.assignee
+  end
+
+  def keep_open?
+    broadcast.conversation_mode == 'keep_open'
+  end
+
+  def sending_agent
+    @sending_agent ||= broadcast.sent_by || broadcast.created_by
   end
 
   def find_or_create_contact_inbox(phone_candidate)
@@ -83,7 +113,7 @@ class Ibsoft::MessageBroadcast::ConversationRecipientDelivery
 
   def create_message
     Messages::MessageBuilder.new(
-      broadcast.sent_by || broadcast.created_by,
+      sending_agent,
       conversation,
       message_params
     ).perform
