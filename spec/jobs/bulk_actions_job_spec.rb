@@ -46,6 +46,16 @@ RSpec.describe BulkActionsJob do
       expect(conversation_3.reload.status).to eq('snoozed')
     end
 
+    it 'notifies the dashboard after all status updates are complete' do
+      expect do
+        described_class.perform_now(account: account, params: params, user: agent)
+      end.to have_enqueued_job(ActionCableBroadcastJob).with(
+        [agent.pubsub_token],
+        Ibsoft::Conversation::BulkActionStatsNotifier::EVENT_NAME,
+        { account_id: account.id }
+      )
+    end
+
     it 'bulk updates the assignee_id' do
       params = {
         type: 'Conversation',

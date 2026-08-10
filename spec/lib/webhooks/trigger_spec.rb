@@ -71,7 +71,10 @@ describe Webhooks::Trigger do
 
     context 'when webhook type is agent bot' do
       let(:webhook_type) { :agent_bot_webhook }
-      let!(:pending_conversation) { create(:conversation, inbox: inbox, status: :pending, account: account) }
+      let!(:pending_conversation) do
+        create(:conversation, inbox: inbox, status: :pending, account: account,
+                              assignee_agent_bot: create(:agent_bot, account: account))
+      end
       let!(:pending_message) { create(:message, account: account, inbox: inbox, conversation: pending_conversation) }
 
       it 'raises 500 errors for retry and does not reopen conversation immediately' do
@@ -113,7 +116,8 @@ describe Webhooks::Trigger do
           end
         end.not_to(change { pending_message.reload.status })
 
-        expect(pending_conversation.reload.status).to eq('open')
+        expect(pending_conversation.reload).to have_attributes(status: 'open', assignee_agent_bot: nil, assignee: nil)
+        expect(pending_conversation.waiting_since).to be_present
 
         activity_message = pending_conversation.reload.messages.order(:created_at).last
         expect(activity_message.message_type).to eq('activity')
@@ -143,6 +147,7 @@ describe Webhooks::Trigger do
 
         expect(Conversations::ActivityMessageJob).not_to have_been_enqueued
         expect(pending_conversation.reload.status).to eq('pending')
+        expect(pending_conversation.assignee_agent_bot).to be_present
       end
 
       it 'reopens conversation when keep_pending_on_bot_failure setting is disabled' do
@@ -157,7 +162,8 @@ describe Webhooks::Trigger do
           end
         end.not_to(change { pending_message.reload.status })
 
-        expect(pending_conversation.reload.status).to eq('open')
+        expect(pending_conversation.reload).to have_attributes(status: 'open', assignee_agent_bot: nil)
+        expect(pending_conversation.waiting_since).to be_present
 
         activity_message = pending_conversation.reload.messages.order(:created_at).last
         expect(activity_message.message_type).to eq('activity')

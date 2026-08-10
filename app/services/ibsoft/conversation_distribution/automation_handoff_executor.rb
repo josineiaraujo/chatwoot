@@ -84,7 +84,7 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
   def lock_candidate(conversation, policy)
     account.conversations
            .pending
-           .unassigned
+           .where(assignee_id: nil)
            .where(
              id: conversation.id,
              inbox_id: policy.inbox_id,

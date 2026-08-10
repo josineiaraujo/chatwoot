@@ -127,12 +127,16 @@ defineExpose({ open, close });
     ref="dialogRef"
     width="2xl"
     position="top"
+    overflow-y-auto
     :title="dialogTitle"
     :show-cancel-button="false"
     :show-confirm-button="false"
     @close="reset"
   >
-    <div v-if="step === 'type'" class="grid gap-4">
+    <div
+      v-if="step === 'type'"
+      class="ibsoft-external-messaging-dialog-content grid gap-4"
+    >
       <p class="mb-0 text-body-small text-n-slate-11">
         {{ t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.TYPE_STEP_DESCRIPTION') }}
       </p>
@@ -176,7 +180,7 @@ defineExpose({ open, close });
       </button>
     </div>
 
-    <div v-else class="grid gap-4">
+    <div v-else class="ibsoft-external-messaging-dialog-content grid gap-4">
       <div
         class="flex items-start gap-3 rounded-lg border border-n-weak bg-n-alpha-1 p-3"
       >

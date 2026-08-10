@@ -118,13 +118,14 @@ defineExpose({ open, close });
     ref="dialogRef"
     width="xl"
     position="top"
+    overflow-y-auto
     :title="t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.BULK.TITLE')"
     :description="dialogDescription"
     :show-cancel-button="false"
     :show-confirm-button="false"
     @close="reset"
   >
-    <div class="grid gap-4">
+    <div class="ibsoft-external-messaging-dialog-content grid gap-4">
       <label class="grid gap-1">
         <span class="text-label-small text-n-slate-11">
           {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.FILTERS.ORDER_STATUS') }}

@@ -5,10 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
 import wootConstants from 'dashboard/constants/globals';
-import {
-  emitConversationStatsRefresh,
-  shouldRefreshAutomationConversationStats,
-} from 'dashboard/ibsoft/conversation/statusStatsRefresh';
 
 export function useBulkActions() {
   const store = useStore();
@@ -171,13 +167,6 @@ export function useBulkActions() {
     let conversationIds = selectedConversations.value;
     let skippedCount = 0;
     const isClosingService = status === wootConstants.STATUS_TYPE.RESOLVED;
-    const shouldRefreshConversationStats = selectedConversations.value.some(
-      id =>
-        shouldRefreshAutomationConversationStats({
-          previousStatus: store.getters.getConversationById(id)?.status,
-          nextStatus: status,
-        })
-    );
 
     // If resolving, check for required attributes
     if (isClosingService) {
@@ -235,9 +224,6 @@ export function useBulkActions() {
               : 'BULK_ACTION.UPDATE.UPDATE_SUCCESFUL'
           )
         );
-      }
-      if (shouldRefreshConversationStats) {
-        emitConversationStatsRefresh();
       }
     } catch (err) {
       useAlert(

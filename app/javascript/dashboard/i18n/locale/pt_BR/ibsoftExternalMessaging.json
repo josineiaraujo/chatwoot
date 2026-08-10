@@ -28,6 +28,7 @@
       "SAVED": "Instância salva.",
       "VIEW": "Visualizar",
       "EDIT": "Editar",
+      "CREDENTIALS": "Credenciais",
       "ROTATE": "Gerar novas credenciais",
       "DEACTIVATE": "Desativar",
       "ACTIVATE": "Ativar",
@@ -190,6 +191,8 @@
       "CLOSE": "Concluir"
     },
     "CREDENTIALS": {
+      "MANAGE_TITLE": "Credenciais da instância",
+      "MANAGE_DESCRIPTION": "Consulte a identificação da credencial ativa. O segredo completo não é armazenado e não pode ser exibido novamente.",
       "TOKEN_TITLE": "Token da instância",
       "TOKEN_DESCRIPTION": "Este token é exibido somente agora. Armazene-o no cofre de segredos do sistema integrado. Gerar novas credenciais invalida o token anterior imediatamente.",
       "IXC_TITLE": "Credenciais da instância IXC",
@@ -198,6 +201,10 @@
       "PASSWORD": "Senha",
       "PASSWORD_HINT": "Identificação da senha",
       "TOKEN": "Token de acesso",
+      "TOKEN_HINT": "Identificação do token ativo",
+      "GENERATE_NEW": "Gerar novas credenciais",
+      "KEEP_CURRENT": "Manter credencial atual",
+      "ROTATION_WARNING": "Gerar novas credenciais invalida imediatamente o segredo usado pela integração atual.",
       "COPY_USERNAME": "Copiar usuário",
       "COPY_PASSWORD": "Copiar senha",
       "COPY_TOKEN": "Copiar token",

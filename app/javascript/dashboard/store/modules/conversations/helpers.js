@@ -1,4 +1,5 @@
 import { CONVERSATION_PRIORITY_ORDER } from 'shared/constants/messages';
+import { canViewAgentBotConversationAsQueueProfile } from 'dashboard/ibsoft/accessControl/conversationVisibility';
 
 export const findPendingMessageIndex = (chat, message) => {
   const { echo_id: tempMessageId } = message;
@@ -96,7 +97,11 @@ export const applyRoleFilter = (
 
   // Check unassigned management permission
   if (permissions.includes('conversation_unassigned_manage')) {
-    return isUnassigned || isAssignedToUser;
+    return (
+      isUnassigned ||
+      isAssignedToUser ||
+      canViewAgentBotConversationAsQueueProfile(conversation, permissions)
+    );
   }
 
   // Check participating conversation management permission

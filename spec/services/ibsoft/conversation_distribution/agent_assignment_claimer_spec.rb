@@ -42,6 +42,17 @@ RSpec.describe Ibsoft::ConversationDistribution::AgentAssignmentClaimer do
     expect(event.metadata.dig('activity_message', 'status')).to eq('enqueued')
   end
 
+  it 'does not claim a conversation if an AgentBot takes ownership before the row lock' do
+    agent_bot = create(:agent_bot, account: account)
+    conversation.update!(assignee_agent_bot: agent_bot)
+    claimer = described_class.new(account: account, user: agent, conversation_ids: [conversation.id])
+
+    assignment = claimer.send(:claim_and_assign, conversation)
+
+    expect(assignment).to be_nil
+    expect(conversation.reload.assigned_entity).to eq(agent_bot)
+  end
+
   it 'does not claim when real assignment is disabled' do
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
 

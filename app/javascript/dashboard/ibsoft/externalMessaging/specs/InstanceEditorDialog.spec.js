@@ -35,12 +35,24 @@ const mountComponent = () =>
             '<button type="button" @click="$emit(\'click\')">{{ label }}</button>',
         },
         Dialog: {
-          setup(_props, { slots, expose }) {
+          name: 'Dialog',
+          props: {
+            overflowYAuto: {
+              type: Boolean,
+              default: false,
+            },
+          },
+          setup(props, { slots, expose }) {
             expose({
               open: dialogOpenMock,
               close: dialogCloseMock,
             });
-            return () => h('div', [slots.default?.(), slots.footer?.()].flat());
+            return () =>
+              h(
+                'div',
+                { 'data-overflow-y-auto': String(props.overflowYAuto) },
+                [slots.default?.(), slots.footer?.()].flat()
+              );
           },
         },
         ToggleSwitch: true,
@@ -55,6 +67,12 @@ const mountComponent = () =>
   });
 
 describe('InstanceEditorDialog', () => {
+  it('keeps the editor scrollable on short viewports', () => {
+    const wrapper = mountComponent();
+
+    expect(wrapper.find('[data-overflow-y-auto="true"]').exists()).toBe(true);
+  });
+
   it('starts creation with type selection and emits the selected type', async () => {
     const wrapper = mountComponent();
 

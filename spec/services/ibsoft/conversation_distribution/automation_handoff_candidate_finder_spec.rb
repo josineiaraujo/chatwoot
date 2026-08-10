@@ -23,6 +23,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinde
       account: account,
       inbox: inbox,
       status: :pending,
+      assignee_agent_bot: agent_bot,
       last_activity_at: 15.minutes.ago,
       waiting_since: 15.minutes.ago
     )
@@ -36,6 +37,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinde
       stale_after_minutes: 10,
       automation_signal: 'active_inbox_bot'
     )
+    expect(conversation.reload.assignee_agent_bot).to eq(agent_bot)
   end
 
   it 'ignores conversations that are still inside the idle window' do

@@ -66,6 +66,8 @@ class ActionCableConnector extends BaseActionCableConnector {
       'voice_call.outbound_connected': this.onVoiceCallOutboundConnected,
       'voice_call.outbound_accepted': this.onVoiceCallOutboundAccepted,
       'voice_call.ended': this.onVoiceCallEnded,
+      'ibsoft.conversation.bulk_action_completed':
+        this.onIbsoftConversationBulkActionCompleted,
       'ibsoft.internal_chat.message_created':
         this.onIbsoftInternalChatMessageCreated,
       'ibsoft.internal_chat.room_updated': this.onIbsoftInternalChatRoomUpdated,
@@ -343,6 +345,11 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   onCopilotMessageCreated = data => {
     this.app.$store.dispatch('copilotMessages/upsert', data);
+  };
+
+  // eslint-disable-next-line class-methods-use-this
+  onIbsoftConversationBulkActionCompleted = () => {
+    emitter.emit('fetch_conversation_stats', { immediate: true });
   };
 
   onIbsoftInternalChatMessageCreated = data => {

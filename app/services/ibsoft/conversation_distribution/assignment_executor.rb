@@ -176,7 +176,8 @@ class Ibsoft::ConversationDistribution::AssignmentExecutor
   def locked_assignment_for(conversation, assignee)
     claim_scope = account.conversations
                          .open
-                         .where(id: conversation.id, assignee_id: nil)
+                         .where(id: conversation.id)
+                         .unassigned
     claim_scope = Ibsoft::ConversationDistribution::QueueReturnMarker.apply_first_reply_scope(claim_scope)
     locked_conversation = claim_scope.lock('FOR UPDATE SKIP LOCKED').first
     return if locked_conversation.blank?

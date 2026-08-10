@@ -9,6 +9,8 @@ const alertMock = vi.fn();
 const editorOpenMock = vi.fn();
 const editorCloseMock = vi.fn();
 const tokenOpenMock = vi.fn();
+const credentialsOpenMock = vi.fn();
+const credentialsCloseMock = vi.fn();
 const orderDefaultsOpenMock = vi.fn();
 const orderDefaultsCloseMock = vi.fn();
 
@@ -120,13 +122,35 @@ const mountComponent = () =>
             return () => h('div');
           },
         },
+        CredentialsDialog: {
+          setup(_props, { expose }) {
+            expose({
+              open: credentialsOpenMock,
+              close: credentialsCloseMock,
+            });
+            return () => h('div');
+          },
+        },
         Dialog: {
-          setup(_props, { slots, expose }) {
+          props: {
+            overflowYAuto: {
+              type: Boolean,
+              default: false,
+            },
+          },
+          setup(props, { slots, expose }) {
             expose({
               open: tokenOpenMock,
               close: vi.fn(),
             });
-            return () => h('div', slots.default?.());
+            return () =>
+              h(
+                'div',
+                {
+                  'data-token-dialog-overflow': String(props.overflowYAuto),
+                },
+                slots.default?.()
+              );
           },
         },
       },
@@ -142,6 +166,9 @@ describe('ExternalMessagingIndex', () => {
       data: { id: 8, token: 'ibext_new-token' },
     });
     externalMessagingAPI.updateEndpoint.mockResolvedValue({ data: endpoint });
+    externalMessagingAPI.rotateToken.mockResolvedValue({
+      data: { ...endpoint, token: 'ibext_rotated-token' },
+    });
   });
 
   it('loads only the instance catalog on entry', async () => {
@@ -224,6 +251,58 @@ describe('ExternalMessagingIndex', () => {
       '[order.payment.boleto.digitable_line]='
     );
     expect(wrapper.vm.curlExample).not.toContain('Authorization');
+  });
+
+  it('opens active credential metadata without rotating it', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    wrapper.vm.openCredentials(endpoint);
+
+    expect(credentialsOpenMock).toHaveBeenCalledWith(endpoint);
+    expect(externalMessagingAPI.rotateToken).not.toHaveBeenCalled();
+    expect(tokenOpenMock).not.toHaveBeenCalled();
+  });
+
+  it('rotates and reveals credentials only after the explicit command', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(wrapper.find('[data-token-dialog-overflow="true"]').exists()).toBe(
+      true
+    );
+
+    await wrapper.vm.rotateToken(endpoint);
+
+    expect(externalMessagingAPI.rotateToken).toHaveBeenCalledWith(endpoint.id);
+    expect(credentialsCloseMock).toHaveBeenCalledOnce();
+    expect(tokenOpenMock).toHaveBeenCalledOnce();
+    expect(wrapper.vm.revealedCredentials).toEqual({
+      type: 'token',
+      token: 'ibext_rotated-token',
+    });
+  });
+
+  it('keeps the new credential visible when the catalog refresh fails', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    externalMessagingAPI.getEndpoints.mockRejectedValueOnce(
+      new Error('refresh failed')
+    );
+
+    await wrapper.vm.rotateToken(endpoint);
+
+    expect(tokenOpenMock).toHaveBeenCalledOnce();
+    expect(wrapper.vm.revealedCredentials).toEqual({
+      type: 'token',
+      token: 'ibext_rotated-token',
+    });
+    expect(alertMock).toHaveBeenCalledWith(
+      'IBSOFT_EXTERNAL_MESSAGING.ERRORS.LOAD'
+    );
+    expect(alertMock).not.toHaveBeenCalledWith(
+      'IBSOFT_EXTERNAL_MESSAGING.ERRORS.ROTATE'
+    );
   });
 
   it('creates an IXC instance and documents its exact envelope', async () => {

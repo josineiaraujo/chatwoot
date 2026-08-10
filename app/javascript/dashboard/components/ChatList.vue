@@ -645,8 +645,12 @@ const refreshAutomationCount = createAutomationConversationCountRefresher({
   },
 });
 
-function refreshAutomationConversationCount() {
-  return refreshAutomationCount({
+function refreshAutomationConversationCount({ immediate = false } = {}) {
+  const refresh = immediate
+    ? refreshAutomationCount.immediately
+    : refreshAutomationCount;
+
+  return refresh({
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
@@ -917,10 +921,13 @@ function toggleSelectAll(check) {
   selectAllConversations(check, conversationList);
 }
 
-useEmitter('fetch_conversation_stats', () => {
+useEmitter('fetch_conversation_stats', ({ immediate = false } = {}) => {
   if (hasAppliedFiltersOrActiveFolders.value) return;
-  store.dispatch('conversationStats/get', conversationStatsFilters.value);
-  refreshAutomationConversationCount();
+  store.dispatch(
+    immediate ? 'conversationStats/getImmediately' : 'conversationStats/get',
+    conversationStatsFilters.value
+  );
+  refreshAutomationConversationCount({ immediate });
 });
 
 onMounted(() => {

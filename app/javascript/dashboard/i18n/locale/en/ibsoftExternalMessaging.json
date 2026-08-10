@@ -28,6 +28,7 @@
       "SAVED": "Instance saved.",
       "VIEW": "View",
       "EDIT": "Edit",
+      "CREDENTIALS": "Credentials",
       "ROTATE": "Generate new credentials",
       "DEACTIVATE": "Deactivate",
       "ACTIVATE": "Activate",
@@ -190,6 +191,8 @@
       "CLOSE": "Done"
     },
     "CREDENTIALS": {
+      "MANAGE_TITLE": "Instance credentials",
+      "MANAGE_DESCRIPTION": "Review the active credential identifier. The complete secret is not stored and cannot be displayed again.",
       "TOKEN_TITLE": "Instance token",
       "TOKEN_DESCRIPTION": "This token is shown only now. Store it in the integrated system secret vault. Generating new credentials immediately invalidates the previous token.",
       "IXC_TITLE": "IXC instance credentials",
@@ -198,6 +201,10 @@
       "PASSWORD": "Password",
       "PASSWORD_HINT": "Password identifier",
       "TOKEN": "Access token",
+      "TOKEN_HINT": "Active token identifier",
+      "GENERATE_NEW": "Generate new credentials",
+      "KEEP_CURRENT": "Keep current credentials",
+      "ROTATION_WARNING": "Generating new credentials immediately invalidates the secret used by the current integration.",
       "COPY_USERNAME": "Copy username",
       "COPY_PASSWORD": "Copy password",
       "COPY_TOKEN": "Copy token",

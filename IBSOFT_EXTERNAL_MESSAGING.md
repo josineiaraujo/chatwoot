@@ -22,6 +22,8 @@ assincronamente.
 - cada contrato possui autenticacao propria, mas a credencial sempre identifica
   instancia, conta e canal;
 - segredos em texto puro sao exibidos somente na criacao ou rotacao;
+- abrir a gestao de credenciais e uma operacao somente de leitura e nunca
+  rotaciona o segredo ativo; a rotacao exige uma acao administrativa explicita;
 - o envio vai direto para a Meta;
 - o modulo nao cria, abre, fecha, atribui ou modifica conversas;
 - templates do tipo `order` exigem `order.reference_id`;
@@ -691,6 +693,8 @@ Frontend:
 - `components/InstanceTypeMark.vue`: alternancia de logo por tema, com fallback
   para icone dos tipos sem marca propria;
 - `components/InstanceEditorDialog.vue`: criacao em duas etapas e edicao;
+- `components/CredentialsDialog.vue`: consulta segura da identificacao parcial
+  da credencial ativa e comando explicito para rotacao;
 - `components/InstanceDetail.vue`: visao geral, ordens, instrucoes e historico;
 - `components/OrdersPanel.vue`: filtros, tabela paginada, selecao e
   atualizacao manual de ordens;
@@ -719,6 +723,12 @@ itens por pagina como padrao e permitem selecionar 10, 25, 50 ou 100 itens.
 Tipo e canal sao imutaveis depois da criacao. Essa restricao evita converter
 silenciosamente uma integracao ativa para outro contrato. Nome, limite e estado
 continuam editaveis.
+
+Os modais do modulo limitam a altura ao viewport e possuem rolagem vertical
+propria, preservando conteudo e acoes em telas menores. O icone de credenciais
+abre apenas os metadados seguros da credencial ativa. O segredo completo nao e
+recuperavel; somente o comando explicito **Gerar novas credenciais** invalida o
+segredo anterior e exibe o novo valor uma unica vez.
 
 ## Pontos de acoplamento
 

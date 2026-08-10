@@ -13,13 +13,20 @@ export const getters = {
 };
 
 // Create a debounced version of the actual API call function
+let latestMetaRequestId = 0;
+
 const fetchMetaData = async (commit, params) => {
+  latestMetaRequestId += 1;
+  const requestId = latestMetaRequestId;
+
   try {
     const response = await ConversationApi.meta(params);
     const {
       data: { meta },
     } = response;
-    commit(types.SET_CONV_TAB_META, meta);
+    if (requestId === latestMetaRequestId) {
+      commit(types.SET_CONV_TAB_META, meta);
+    }
   } catch (error) {
     // ignore
   }
@@ -52,6 +59,7 @@ export const actions = {
   get: ({ commit, state: $state }, params) => {
     metaDebouncers[getMetaDebounceKey($state.allCount)](commit, params);
   },
+  getImmediately: ({ commit }, params) => fetchMetaData(commit, params),
   set({ commit }, meta) {
     commit(types.SET_CONV_TAB_META, meta);
   },

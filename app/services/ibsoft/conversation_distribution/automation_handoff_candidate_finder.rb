@@ -50,7 +50,7 @@ class Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder
     account.conversations
            .includes(:inbox, :team, :assignee_agent_bot)
            .pending
-           .unassigned
+           .where(assignee_id: nil)
            .where(inbox_id: policy.inbox_id, first_reply_created_at: nil)
            .where('last_activity_at <= ?', policy.stale_after_minutes.minutes.ago)
            .order(last_activity_at: :asc, id: :asc)

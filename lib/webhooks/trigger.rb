@@ -79,7 +79,7 @@ class Webhooks::Trigger
     return unless conversation&.pending?
     return if conversation&.account&.keep_pending_on_bot_failure
 
-    conversation.open!
+    conversation.bot_handoff!
     create_agent_bot_error_activity(conversation)
   end
 

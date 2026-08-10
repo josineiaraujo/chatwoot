@@ -37,6 +37,14 @@ padrao do Chatwoot.
   `Automacoes` usando a API oficial de meta de conversas.
 - `statusStatsRefresh.js`: centraliza o criterio para recarregar contadores
   quando uma conversa entra ou sai do status `pending`.
+- `app/services/ibsoft/conversation/bulk_actions_job_extension.rb`: estende o
+  `BulkActionsJob` por `prepend`, sem editar o job nativo, e dispara a
+  notificacao somente depois de a operacao em massa terminar com sucesso.
+- `app/services/ibsoft/conversation/bulk_action_stats_notifier.rb`: identifica
+  operacoes que alteram contagens e publica um unico evento realtime para o
+  autor, membros dos canais afetados e administradores da conta.
+- `config/initializers/ibsoft_bulk_action_stats_refresh.rb`: registra a
+  extensao privada durante o carregamento da aplicacao e dos workers.
 - `protocol.js`: calcula o protocolo operacional a partir de `created_at`,
   `account_id` e `display_id` da conversa, e valida o formato usado pelo filtro.
 - `app/services/ibsoft/conversation/protocol.rb`: concentra o parser backend do
@@ -84,9 +92,16 @@ padrao do Chatwoot.
 - Acoes de encerramento no header, menu contextual, command bar, modal de
   atributos obrigatorios e acoes em massa usam traducoes Ibsoft para apresentar
   `Encerrar atendimento`, preservando o status interno `resolved`.
-- Mudancas locais de status feitas pelo header, menu contextual ou acoes em
-  massa disparam refresh dos contadores quando envolvem `pending`, mantendo a
-  badge `Automacoes` sincronizada com a lista.
+- Mudancas locais de status feitas pelo header ou menu contextual disparam o
+  refresh normal dos contadores quando envolvem `pending`.
+- Acoes em massa nao atualizam contadores na resposta imediata da API, pois o
+  processamento ainda esta pendente no Sidekiq. Depois da conclusao do
+  `BulkActionsJob`, o evento privado
+  `ibsoft.conversation.bulk_action_completed` solicita uma atualizacao
+  imediata e unica de `Minhas`, `Fila`, `Todas` e `Automacoes`.
+- As consultas imediatas usam identificadores de requisicao para impedir que
+  uma resposta antiga, iniciada antes da conclusao do job, sobrescreva a
+  contagem final.
 - Eventos em tempo real continuam atualizando `Minhas` e `Nao atribuidas`
   mesmo quando `Automacoes` esta selecionada. Nesse caso, os contadores
   operacionais usam o ultimo status normal selecionado, sem substituir o
@@ -110,6 +125,12 @@ padrao do Chatwoot.
   template. Este e o unico ponto novo no core para a protecao de resposta; o
   `ReplyBoxBanner.vue` original, as stores e as APIs nativas permanecem
   intocados.
+- `app/javascript/dashboard/helper/actionCable.js` registra o evento privado
+  de conclusao da acao em massa.
+- `app/javascript/dashboard/store/modules/conversationStats.js` oferece o
+  refresh imediato protegido contra respostas fora de ordem.
+- `app/javascript/dashboard/components/ChatList.vue` conecta esse refresh aos
+  contadores normais e ao contador privado de `Automacoes`.
 
 ## Regra de assumir antes de responder
 
@@ -147,6 +168,8 @@ padrao do Chatwoot.
 - `node --check app/javascript/dashboard/ibsoft/conversation/automationConversationStats.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/statusStatsRefresh.js`
 - `node --check app/javascript/dashboard/ibsoft/conversation/protocol.js`
+- `bundle exec rspec spec/services/ibsoft/conversation/bulk_action_stats_notifier_spec.rb spec/jobs/bulk_actions_job_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/store/modules/specs/conversationStats/actions.spec.js app/javascript/dashboard/ibsoft/conversation/specs/automationConversationStats.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
 - `pnpm test app/javascript/dashboard/ibsoft/conversation/specs/replyAssignmentGuard.spec.js app/javascript/dashboard/ibsoft/conversation/specs/ReplyAssignmentGuardBanner.spec.js app/javascript/dashboard/ibsoft/conversation/specs/ReplyBoxAssignmentGuard.spec.js`
 - `bundle exec rspec spec/services/search_service_spec.rb spec/finders/conversation_finder_spec.rb spec/controllers/api/v1/accounts/search_controller_spec.rb`
 - ESLint deve ser executado quando `node_modules` estiver instalado.

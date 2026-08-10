@@ -23,13 +23,18 @@ class Ibsoft::ConversationDistribution::CandidateEvaluator
   def build_reasons
     [].tap do |items|
       items << 'not_open' unless conversation.open?
-      items << 'human_assignee_present' if conversation.assignee_id.present?
+      items << assignee_reason
       items << 'missing_team' if conversation.team_id.blank?
       items << 'first_human_reply_present' if first_human_reply_blocks_assignment?
       items << 'missing_waiting_since' if conversation.waiting_since.blank?
       items << 'policy_disabled' unless policy_enabled?
       items << source_reason
     end.compact
+  end
+
+  def assignee_reason
+    return 'human_assignee_present' if conversation.assignee_id.present?
+    return 'agent_bot_assignee_present' if conversation.assignee_agent_bot_id.present?
   end
 
   def policy_enabled?

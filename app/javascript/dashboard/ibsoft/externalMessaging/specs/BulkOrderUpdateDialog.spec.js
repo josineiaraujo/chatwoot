@@ -19,9 +19,21 @@ const mountComponent = () =>
         Button: true,
         IbsoftSelect: true,
         Dialog: {
-          setup(_props, { slots, expose }) {
+          name: 'Dialog',
+          props: {
+            overflowYAuto: {
+              type: Boolean,
+              default: false,
+            },
+          },
+          setup(props, { slots, expose }) {
             expose({ open: dialogOpenMock, close: vi.fn() });
-            return () => h('div', [slots.default?.(), slots.footer?.()].flat());
+            return () =>
+              h(
+                'div',
+                { 'data-overflow-y-auto': String(props.overflowYAuto) },
+                [slots.default?.(), slots.footer?.()].flat()
+              );
           },
         },
       },
@@ -29,6 +41,12 @@ const mountComponent = () =>
   });
 
 describe('BulkOrderUpdateDialog', () => {
+  it('keeps bulk actions scrollable on short viewports', () => {
+    const wrapper = mountComponent();
+
+    expect(wrapper.find('[data-overflow-y-auto="true"]').exists()).toBe(true);
+  });
+
   it('requires at least one status change', async () => {
     const wrapper = mountComponent();
     await wrapper.vm.open({ count: 3, allFiltered: false });
