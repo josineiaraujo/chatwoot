@@ -909,6 +909,54 @@ Estado atual:
   usuario atual, respeitando audio desligado, aba ativa/inativa e conversa ja
   aberta na tela.
 
+Backport temporario de propriedade do AgentBot:
+
+- Referencia oficial: commit
+  `f12529105bff8b16793c836bde5bfe1ba7e2f470` (`fix: align AgentBot ownership
+  with conversation counts (#15343)`).
+- Motivo: impedir que conversas ainda pertencentes ao `AgentBot` sejam contadas
+  como fila humana enquanto a lista `Fila` corretamente nao as exibe. A
+  divergencia causava requisicoes continuas de paginacao nessa tela.
+- Contrato: `Conversation.unassigned` exige `assignee_id` e
+  `assignee_agent_bot_id` nulos; `Conversation.assigned` inclui qualquer um dos
+  dois responsaveis; falha definitiva do webhook executa `bot_handoff!`.
+- Arquivos nativos afetados: `app/models/conversation.rb`,
+  `app/finders/conversation_finder.rb`, `app/helpers/filters/filter_helper.rb`,
+  `app/models/concerns/assignment_handler.rb`,
+  `app/models/concerns/auto_assignment_handler.rb`,
+  `app/services/auto_assignment/`,
+  `app/services/automation_rules/conditions_filter_service.rb`,
+  `app/services/conversations/unread_counts/`, `lib/webhooks/trigger.rb` e
+  `app/javascript/dashboard/store/modules/conversations/helpers.js` e
+  `app/javascript/dashboard/store/modules/conversations/helpers/filterHelpers.js`.
+- Arquivos Enterprise afetados:
+  `enterprise/app/controllers/api/v1/accounts/whatsapp_calls_controller.rb`,
+  `enterprise/app/policies/enterprise/conversation_policy.rb`,
+  `enterprise/app/services/enterprise/conversations/permission_filter_service.rb`,
+  `enterprise/app/services/voice/` e
+  `enterprise/app/services/whatsapp/call_service.rb`.
+- Integracao privada revisada:
+  `app/services/ibsoft/access_control/` e os finders/executores em
+  `app/services/ibsoft/conversation_distribution/`. A automacao parada conserva
+  deliberadamente a busca de conversas bot-owned; os demais fluxos humanos usam
+  o escopo `unassigned`. Perfis que gerenciam a fila podem visualizar conversas
+  do `AgentBot` nos canais a que possuem acesso, sem que elas sejam classificadas
+  ou contabilizadas como fila humana. O frontend delega essa excecao privada a
+  `app/javascript/dashboard/ibsoft/accessControl/conversationVisibility.js`;
+  perfis customizados nativos e Enterprise preservam o comportamento original.
+- Concorrencia: `AutoAssignment::AgentAssignmentService` incorpora tambem o
+  bloqueio do commit oficial `0ad2780972`, pre-requisito do fluxo final do
+  backport. A decisao usa uma instancia bloqueada e a escrita permanece na
+  instancia original para preservar callbacks `after_commit` e impedir que uma
+  tentativa concorrente sobrescreva uma atribuicao concluida.
+- Banco e operacao: nenhuma migration, tabela, env, job ou callback novo.
+- Remocao futura: ao integrar uma versao upstream que contenha `f125291...`,
+  remover/reconciliar este backport e executar novamente a matriz de propriedade,
+  fila, atribuicao, nao lidos e chamadas Enterprise.
+- Acompanhamentos upstream conhecidos, ainda fora deste backport: CW-7870
+  (atualizacao de propriedade ao excluir `AgentBot`) e CW-7899 (contador do
+  cabecalho em filtros salvos).
+
 Validacao recomendada:
 
 - `bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
@@ -1073,6 +1121,9 @@ Objetivo:
   alterar o locale original do Chatwoot.
 - Manter a contagem da aba `Automacoes` sincronizada quando uma conversa entra
   ou sai de `pending` por acoes locais de status.
+- Atualizar `Automacoes`, `Minhas`, `Fila` e `Todas` somente depois que uma
+  acao em massa terminar no Sidekiq, evitando consultar contagens antes de o
+  banco refletir todos os itens processados.
 - Manter `Minhas` e `Nao atribuidas` sincronizadas por eventos realtime mesmo
   enquanto `Automacoes` estiver selecionada, sem usar `pending` como recorte
   desses contadores operacionais.
@@ -1098,6 +1149,9 @@ Arquivos privados principais:
 - `app/services/ibsoft/conversation/protocol_search.rb`
 - `app/services/ibsoft/conversation/force_open_on_agent_created_conversation.rb`
 - `app/services/ibsoft/conversation/resolved_attention_notification_cleanup.rb`
+- `app/services/ibsoft/conversation/bulk_action_stats_notifier.rb`
+- `app/services/ibsoft/conversation/bulk_actions_job_extension.rb`
+- `config/initializers/ibsoft_bulk_action_stats_refresh.rb`
 - `config/locales/zz_ibsoft_conversation.en.yml`
 - `config/locales/zz_ibsoft_conversation.pt_BR.yml`
 
@@ -1155,8 +1209,12 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue`:
   troca textos de atributos obrigatorios no encerramento.
 - `app/javascript/dashboard/composables/chatlist/useBulkActions.js`: mensagens
-  de sucesso/erro do encerramento em massa e refresh de contadores quando uma
-  acao em massa envolve `pending`.
+  de sucesso/erro do encerramento em massa. O refresh prematuro foi removido;
+  a conclusao real e comunicada pelo job privado.
+- `app/javascript/dashboard/helper/actionCable.js`: registra
+  `ibsoft.conversation.bulk_action_completed` e solicita refresh imediato.
+- `app/javascript/dashboard/store/modules/conversationStats.js`: protege o
+  refresh imediato contra respostas antigas fora de ordem.
 - `app/javascript/dashboard/composables/commands/useBulkActionsHotKeys.js` e
   spec correspondente: atalhos de encerramento.
 - `app/javascript/dashboard/helper/commandbar/actions.js`: texto do comando de
@@ -1174,6 +1232,8 @@ Specs relacionadas:
 
 - `spec/models/conversation_spec.rb`
 - `spec/services/ibsoft/conversation/resolved_attention_notification_cleanup_spec.rb`
+- `spec/services/ibsoft/conversation/bulk_action_stats_notifier_spec.rb`
+- `spec/jobs/bulk_actions_job_spec.rb`
 - `app/javascript/dashboard/components-next/NewConversation/helpers/specs/composeConversationHelper.spec.js`
 - `app/javascript/dashboard/store/modules/specs/contactConversations/actions.spec.js`
 - `spec/controllers/api/v1/accounts/search_controller_spec.rb`
@@ -1181,6 +1241,8 @@ Specs relacionadas:
 - `spec/services/search_service_spec.rb`
 - `app/javascript/dashboard/ibsoft/conversation/specs/statusPresentation.spec.js`
 - `app/javascript/dashboard/ibsoft/conversation/specs/automationConversationStats.spec.js`
+- `app/javascript/dashboard/store/modules/specs/conversationStats/actions.spec.js`
+- `app/javascript/dashboard/helper/specs/actionCable.spec.js`
 
 Risco principal:
 
@@ -1589,10 +1651,30 @@ quando o upstream alterar a mesma area.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`
 - `app/views/api/v1/models/_user.json.jbuilder`
 - `app/finders/conversation_finder.rb`
+- `app/helpers/filters/filter_helper.rb`
+- `app/models/conversation.rb`
+- `app/models/concerns/assignment_handler.rb`
+- `app/models/concerns/auto_assignment_handler.rb`
+- `app/services/auto_assignment/agent_assignment_service.rb`
+- `app/services/auto_assignment/assignment_service.rb`
+- `app/services/automation_rules/conditions_filter_service.rb`
+- `app/services/conversations/unread_counts/builder.rb`
+- `app/services/conversations/unread_counts/refresher.rb`
 - `app/services/action_service.rb`
 - `app/services/search_service.rb`
 - `app/services/conversations/filter_service.rb`
 - `db/schema.rb`
+- `lib/webhooks/trigger.rb`
+
+### Enterprise: propriedade de conversas e chamadas
+
+- `enterprise/app/controllers/api/v1/accounts/whatsapp_calls_controller.rb`
+- `enterprise/app/policies/enterprise/conversation_policy.rb`
+- `enterprise/app/services/enterprise/conversations/permission_filter_service.rb`
+- `enterprise/app/services/voice/conference/manager.rb`
+- `enterprise/app/services/voice/outbound_call_builder.rb`
+- `enterprise/app/services/voice/provider/twilio/conference_service.rb`
+- `enterprise/app/services/whatsapp/call_service.rb`
 
 ### Frontend: bootstrap, rotas, store e realtime
 
@@ -1601,6 +1683,7 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/helper/actionCable.js`
 - `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`
 - `app/javascript/dashboard/store/index.js`
+- `app/javascript/dashboard/store/modules/conversationStats.js`
 - `app/javascript/dashboard/i18n/locale/en/index.js`
 - `app/javascript/dashboard/i18n/locale/pt_BR/index.js`
 
