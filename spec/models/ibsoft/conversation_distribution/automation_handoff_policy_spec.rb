@@ -5,7 +5,7 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffPolicy do
   let(:inbox) { create(:inbox, account: account) }
   let(:team) { create(:team, account: account) }
 
-  it 'requires a target team when enabled' do
+  it 'requires a target team when forwarding is enabled' do
     policy = described_class.new(account: account, inbox: inbox, enabled: true, target_team: nil)
 
     expect(policy).not_to be_valid
@@ -16,6 +16,85 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffPolicy do
     policy = described_class.new(account: account, inbox: inbox, enabled: false, target_team: nil)
 
     expect(policy).to be_valid
+  end
+
+  it 'allows enabled close policies without a target team' do
+    policy = described_class.new(
+      account: account,
+      inbox: inbox,
+      enabled: true,
+      timeout_action: described_class::ACTION_CLOSE_CONVERSATION,
+      target_team: nil
+    )
+
+    expect(policy).to be_valid
+  end
+
+  it 'clears the target team when the close action is selected' do
+    policy = described_class.create!(
+      account: account,
+      inbox: inbox,
+      enabled: true,
+      timeout_action: described_class::ACTION_CLOSE_CONVERSATION,
+      target_team: team
+    )
+
+    expect(policy.target_team).to be_nil
+  end
+
+  it 'rejects unknown timeout actions' do
+    policy = described_class.new(account: account, inbox: inbox, timeout_action: 'unknown')
+
+    expect(policy).not_to be_valid
+    expect(policy.errors[:timeout_action]).to be_present
+  end
+
+  it 'uses a one-minute warning interval by default' do
+    policy = described_class.create!(
+      account: account,
+      inbox: inbox,
+      enabled: true,
+      timeout_action: described_class::ACTION_CLOSE_CONVERSATION
+    )
+
+    expect(policy.close_warning_delay_minutes).to eq(1)
+  end
+
+  it 'limits the warning interval to one day' do
+    policy = described_class.new(
+      account: account,
+      inbox: inbox,
+      enabled: true,
+      timeout_action: described_class::ACTION_CLOSE_CONVERSATION,
+      close_warning_enabled: true,
+      close_warning_delay_minutes: described_class::MAX_CLOSE_WARNING_DELAY_MINUTES + 1
+    )
+
+    expect(policy).not_to be_valid
+    expect(policy.errors[:close_warning_delay_minutes]).to be_present
+  end
+
+  it 'includes closure settings in the API payload' do
+    policy = described_class.create!(
+      account: account,
+      inbox: inbox,
+      enabled: true,
+      timeout_action: described_class::ACTION_CLOSE_CONVERSATION,
+      close_warning_enabled: true,
+      close_warning_message: 'Ainda esta ai?',
+      close_warning_delay_minutes: 3,
+      close_final_message_enabled: true,
+      close_final_message: 'Atendimento encerrado.'
+    )
+
+    expect(policy.payload).to include(
+      timeout_action: 'close_conversation',
+      close_warning_enabled: true,
+      close_warning_message: 'Ainda esta ai?',
+      close_warning_delay_minutes: 3,
+      close_final_message_enabled: true,
+      close_final_message: 'Atendimento encerrado.'
+    )
   end
 
   it 'normalizes invalid idle time to the default value' do

@@ -1,10 +1,13 @@
 # rubocop:disable Metrics/ClassLength
 class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
   EVENT_COMPLETED = 'automation_handoff_completed'.freeze
+  EVENT_CLOSE_COMPLETED = 'automation_close_completed'.freeze
+  EVENT_CLOSE_WARNING_SENT = 'automation_close_warning_sent'.freeze
   EVENT_SKIPPED = 'automation_handoff_skipped'.freeze
   REASON_STALLED = 'automation_stalled'.freeze
   REASON_DISABLED = 'real_assignment_disabled'.freeze
   REASON_CHANGED = 'candidate_already_changed'.freeze
+  REASON_WARNING_DELIVERY_FAILED = 'warning_delivery_failed'.freeze
   SOURCE_REASON = 'automation_stalled'.freeze
 
   def initialize(account:, inbox_id: nil, limit: Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder::DEFAULT_LIMIT)
@@ -43,60 +46,183 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
     conversation = account.conversations.find(candidate[:conversation_id])
     policy = automation_policy(candidate)
 
+    return skipped_result(conversation, candidate, policy, REASON_CHANGED) if policy.blank?
     return skipped_result(conversation, candidate, policy, REASON_DISABLED) unless real_assignment_enabled?
 
-    handoff = claim_and_handoff(conversation, policy)
-    return skipped_result(conversation, candidate, policy, REASON_CHANGED) if handoff.blank?
+    return schedule_close_warning(conversation, candidate, policy) if close_warning_required?(policy)
 
-    notifications = post_handoff_actions(handoff[:conversation], policy)
-    log_handoff_completed(handoff, candidate, policy, notifications)
+    transition = claim_and_apply_action(conversation, policy, candidate)
+    return skipped_result(conversation, candidate, policy, REASON_CHANGED) if transition.blank?
 
-    result_payload(candidate, 'handoffed', REASON_STALLED)
+    notifications = post_action_notifications(transition[:conversation], policy)
+    log_completed(transition, candidate, policy, notifications)
+
+    result_payload(candidate, result_status(policy), REASON_STALLED)
+  end
+
+  def close_warning_required?(policy)
+    policy.close_conversation? && policy.close_warning_enabled?
+  end
+
+  def schedule_close_warning(conversation, candidate, policy)
+    transition = claim_and_schedule_close(conversation, policy, candidate)
+    return skipped_result(conversation, candidate, policy, REASON_CHANGED) if transition.blank?
+
+    if transition[:status] == 'warning_failed'
+      return skipped_result(
+        conversation,
+        candidate,
+        policy,
+        REASON_WARNING_DELIVERY_FAILED,
+        customer_message: transition[:customer_message]
+      )
+    end
+
+    enqueue_scheduled_close(transition[:schedule])
+    log_close_warning_sent(transition, candidate, policy)
+
+    result_payload(candidate, 'warning_sent', REASON_STALLED).merge(
+      schedule_id: transition[:schedule].id,
+      close_at: transition[:schedule].close_at.iso8601
+    )
+  end
+
+  def claim_and_schedule_close(conversation, policy, candidate)
+    Conversation.transaction do
+      locked_conversation = lock_candidate(conversation, policy, candidate)
+      next if locked_conversation.blank?
+      next if already_processed_after_last_bot_message?(locked_conversation, candidate)
+      next if close_schedule_exists?(locked_conversation)
+
+      create_close_schedule(locked_conversation, policy, candidate)
+    end
+  rescue ActiveRecord::RecordNotUnique
+    nil
+  end
+
+  def create_close_schedule(conversation, policy, candidate)
+    notification = close_warning_notification(conversation, policy)
+    return warning_failed_transition(conversation, notification) unless notification[:applied]
+
+    schedule = Ibsoft::ConversationDistribution::AutomationCloseSchedule.create!(
+      close_schedule_attributes(conversation, policy, candidate, notification)
+    )
+    { conversation: conversation, schedule: schedule, customer_message: notification }
+  end
+
+  def close_warning_notification(conversation, policy)
+    Ibsoft::ConversationDistribution::AutomationCustomerMessageNotifier.new(
+      conversation: conversation,
+      policy: policy,
+      phase: :close_warning
+    ).perform
+  end
+
+  def warning_failed_transition(conversation, notification)
+    {
+      status: 'warning_failed',
+      conversation: conversation,
+      customer_message: notification
+    }
+  end
+
+  def close_schedule_attributes(conversation, policy, candidate, notification)
+    {
+      account: account,
+      conversation: conversation,
+      automation_handoff_policy: policy,
+      trigger_message_id: candidate[:last_bot_message_id],
+      warning_message_id: notification[:message_id],
+      expected_team_id: conversation.team_id,
+      expected_agent_bot_id: conversation.assignee_agent_bot_id,
+      expected_policy_updated_at: policy.updated_at,
+      close_at: Time.current + policy.close_warning_delay_minutes.minutes
+    }
+  end
+
+  def close_schedule_exists?(conversation)
+    Ibsoft::ConversationDistribution::AutomationCloseSchedule.exists?(conversation: conversation)
+  end
+
+  def enqueue_scheduled_close(schedule)
+    Ibsoft::ConversationDistribution::AutomationCloseJob
+      .set(wait_until: schedule.close_at)
+      .perform_later(schedule.id)
+  rescue StandardError => e
+    Rails.logger.error(
+      '[Ibsoft::ConversationDistribution] automation close enqueue failed ' \
+      "(schedule=#{schedule.id}): #{e.class} - #{e.message}"
+    )
   end
 
   def automation_policy(candidate)
-    Ibsoft::ConversationDistribution::AutomationHandoffPolicy.find_by!(
+    Ibsoft::ConversationDistribution::AutomationHandoffPolicy.find_by(
       account: account,
       id: candidate[:policy_id]
     )
   end
 
-  def claim_and_handoff(conversation, policy)
+  def claim_and_apply_action(conversation, policy, candidate)
     Conversation.transaction do
-      locked_conversation = lock_candidate(conversation, policy)
+      locked_conversation = lock_candidate(conversation, policy, candidate)
       next if locked_conversation.blank?
-      next if already_handoffed_after_last_activity?(locked_conversation)
+      next if already_processed_after_last_bot_message?(locked_conversation, candidate)
 
       previous_team = locked_conversation.team
-      locked_conversation.update!(
-        status: :open,
-        team: policy.target_team,
-        assignee: nil,
-        assignee_agent_bot: nil,
-        waiting_since: locked_conversation.waiting_since || locked_conversation.last_activity_at || Time.current,
-        additional_attributes: marked_attributes(locked_conversation, policy, previous_team)
-      )
+      locked_conversation.update!(action_attributes(locked_conversation, policy, previous_team, candidate))
 
       { conversation: locked_conversation, previous_team: previous_team }
     end
   end
 
-  def lock_candidate(conversation, policy)
-    account.conversations
-           .pending
-           .where(assignee_id: nil)
-           .where(
-             id: conversation.id,
-             inbox_id: policy.inbox_id,
-             first_reply_created_at: nil
-           )
-           .where('last_activity_at <= ?', policy.stale_after_minutes.minutes.ago)
-           .lock('FOR UPDATE SKIP LOCKED')
-           .first
+  def lock_candidate(conversation, policy, candidate)
+    return unless policy.enabled?
+    return if policy.forward_to_team? && policy.target_team.blank?
+
+    locked_conversation = account.conversations
+                                 .pending
+                                 .where(assignee_id: nil)
+                                 .where(
+                                   id: conversation.id,
+                                   inbox_id: policy.inbox_id,
+                                   first_reply_created_at: nil
+                                 )
+                                 .lock('FOR UPDATE SKIP LOCKED')
+                                 .first
+    return if locked_conversation.blank?
+
+    signal = Ibsoft::ConversationDistribution::AutomationWaitingSignal.new(
+      conversation: locked_conversation,
+      stale_after_minutes: policy.stale_after_minutes,
+      expected_message_id: candidate[:last_bot_message_id]
+    )
+    locked_conversation if signal.eligible?
   end
 
-  def marked_attributes(conversation, policy, previous_team)
+  def action_attributes(conversation, policy, previous_team, candidate)
+    return close_attributes(conversation, policy, candidate) if policy.close_conversation?
+
+    {
+      status: :open,
+      team: policy.target_team,
+      assignee: nil,
+      assignee_agent_bot: nil,
+      waiting_since: conversation.waiting_since || parsed_last_bot_message_at(candidate) || Time.current,
+      additional_attributes: handoff_marked_attributes(conversation, policy, previous_team, candidate)
+    }
+  end
+
+  def close_attributes(conversation, policy, candidate)
+    {
+      status: :resolved,
+      assignee_agent_bot: nil,
+      additional_attributes: close_marked_attributes(conversation, policy, candidate)
+    }
+  end
+
+  def handoff_marked_attributes(conversation, policy, previous_team, candidate)
     attributes = (conversation.additional_attributes || {}).deep_dup
+    clear_close_markers(attributes)
     attributes[Ibsoft::ConversationDistribution::SourceResolver::ATTRIBUTE_KEY] = 'system_team_transfer'
     attributes[Ibsoft::ConversationDistribution::SourceMarker::MARKED_AT_KEY] = Time.current.iso8601
     attributes[Ibsoft::ConversationDistribution::SourceMarker::REASON_KEY] = SOURCE_REASON
@@ -104,10 +230,35 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
     attributes['ibsoft_automation_handoff_previous_team_id'] = previous_team&.id
     attributes['ibsoft_automation_handoff_target_team_id'] = policy.target_team_id
     attributes['ibsoft_automation_handoff_at'] = Time.current.iso8601
+    attributes['ibsoft_automation_last_bot_message_id'] = candidate[:last_bot_message_id]
     attributes
   end
 
-  def post_handoff_actions(conversation, policy)
+  def close_marked_attributes(conversation, policy, candidate)
+    attributes = (conversation.additional_attributes || {}).deep_dup
+    clear_handoff_markers(attributes)
+    attributes.delete(Ibsoft::ConversationDistribution::SourceResolver::ATTRIBUTE_KEY)
+    attributes.delete(Ibsoft::ConversationDistribution::SourceMarker::MARKED_AT_KEY)
+    attributes.delete(Ibsoft::ConversationDistribution::SourceMarker::REASON_KEY)
+    attributes['ibsoft_automation_close_policy_id'] = policy.id
+    attributes['ibsoft_automation_close_at'] = Time.current.iso8601
+    attributes['ibsoft_automation_last_bot_message_id'] = candidate[:last_bot_message_id]
+    attributes
+  end
+
+  def clear_handoff_markers(attributes)
+    attributes.delete('ibsoft_automation_handoff_policy_id')
+    attributes.delete('ibsoft_automation_handoff_previous_team_id')
+    attributes.delete('ibsoft_automation_handoff_target_team_id')
+    attributes.delete('ibsoft_automation_handoff_at')
+  end
+
+  def clear_close_markers(attributes)
+    attributes.delete('ibsoft_automation_close_policy_id')
+    attributes.delete('ibsoft_automation_close_at')
+  end
+
+  def post_action_notifications(conversation, policy)
     {
       activity_message: activity_message_result(conversation, policy),
       customer_message: customer_message_result(conversation, policy)
@@ -117,47 +268,31 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
   def activity_message_result(conversation, policy)
     Ibsoft::ConversationDistribution::ActivityMessageNotifier.new(
       conversation: conversation,
-      action: :automation_handoff_completed,
-      target_team: policy.target_team
+      action: activity_action(policy),
+      target_team: policy.target_team,
+      stale_after_minutes: policy.stale_after_minutes
     ).perform
   end
 
   def customer_message_result(conversation, policy)
-    return action_result(false, 'disabled') unless policy.customer_message_enabled?
-    return action_result(false, 'blank_message') if policy.customer_message.blank?
-
-    message = Messages::MessageBuilder.new(nil, conversation, customer_message_params(policy)).perform
-    action_result(true, 'message_sent', message_id: message.id)
-  rescue StandardError => e
-    Rails.logger.error("[Ibsoft::ConversationDistribution] automation handoff customer message failed: #{e.class} - #{e.message}")
-    action_result(false, 'error', error: e.class.name)
+    phase = policy.close_conversation? ? :close_final : :forward
+    Ibsoft::ConversationDistribution::AutomationCustomerMessageNotifier.new(
+      conversation: conversation,
+      policy: policy,
+      phase: phase
+    ).perform
   end
 
-  def customer_message_params(policy)
-    {
-      content: policy.customer_message,
-      private: false,
-      message_type: :template,
-      content_attributes: {
-        ibsoft_conversation_distribution: {
-          action: 'automation_handoff',
-          reason: REASON_STALLED,
-          target_team_id: policy.target_team_id
-        }
-      }
-    }
-  end
-
-  def log_handoff_completed(handoff, candidate, policy, notifications)
+  def log_completed(transition, candidate, policy, notifications)
     event_logger.log(
-      conversation: handoff[:conversation],
-      event_type: EVENT_COMPLETED,
+      conversation: transition[:conversation],
+      event_type: completed_event_type(policy),
       reason: REASON_STALLED,
       payload: {
         metadata: {
           candidate: candidate,
           policy: policy.payload,
-          previous_team: resource_payload(handoff[:previous_team]),
+          previous_team: resource_payload(transition[:previous_team]),
           target_team: resource_payload(policy.target_team),
           real_assignment_enabled: real_assignment_enabled?,
           activity_message: notifications[:activity_message],
@@ -167,7 +302,26 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
     )
   end
 
-  def skipped_result(conversation, candidate, policy, reason)
+  def log_close_warning_sent(transition, candidate, policy)
+    event_logger.log(
+      conversation: transition[:conversation],
+      event_type: EVENT_CLOSE_WARNING_SENT,
+      reason: REASON_STALLED,
+      payload: {
+        metadata: {
+          candidate: candidate,
+          policy: policy.payload,
+          schedule: transition[:schedule].attributes.slice(
+            'id', 'trigger_message_id', 'warning_message_id', 'expected_team_id',
+            'expected_agent_bot_id', 'expected_policy_updated_at', 'close_at'
+          ),
+          customer_message: transition[:customer_message]
+        }
+      }
+    )
+  end
+
+  def skipped_result(conversation, candidate, policy, reason, metadata = {})
     event_logger.log(
       conversation: conversation,
       event_type: EVENT_SKIPPED,
@@ -175,9 +329,9 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
       payload: {
         metadata: {
           candidate: candidate,
-          policy: policy.payload,
+          policy: policy&.payload,
           real_assignment_enabled: real_assignment_enabled?
-        },
+        }.merge(metadata),
         options: { dedupe: true }
       }
     )
@@ -197,6 +351,9 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
       :target_team_name,
       :policy_id,
       :stale_after_minutes,
+      :timeout_action,
+      :last_bot_message_id,
+      :last_bot_message_at,
       :last_activity_at,
       :waited_seconds,
       :automation_signal
@@ -207,16 +364,49 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
     {
       scanned: results.length,
       handoffed: results.count { |result| result[:status] == 'handoffed' },
+      closed: results.count { |result| result[:status] == 'closed' },
+      warnings_sent: results.count { |result| result[:status] == 'warning_sent' },
       skipped: results.count { |result| result[:status] == 'skipped' },
       ignored: results.count { |result| result[:status] == 'ignored' },
       by_reason: results.pluck(:reason).tally
     }
   end
 
-  def already_handoffed_after_last_activity?(conversation)
+  def already_processed_after_last_bot_message?(conversation, candidate)
+    last_bot_message_at = parsed_last_bot_message_at(candidate)
+    return false if last_bot_message_at.blank?
+
     Ibsoft::ConversationDistribution::EventLog
-      .where(account: account, conversation: conversation, event_type: EVENT_COMPLETED)
-      .exists?(created_at: conversation.last_activity_at..)
+      .where(
+        account: account,
+        conversation: conversation,
+        event_type: [EVENT_COMPLETED, EVENT_CLOSE_COMPLETED, EVENT_CLOSE_WARNING_SENT]
+      )
+      .exists?(created_at: last_bot_message_at..)
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  def parsed_last_bot_message_at(candidate)
+    value = candidate[:last_bot_message_at]
+    return value if value.respond_to?(:in_time_zone)
+    return if value.blank?
+
+    Time.zone.parse(value.to_s)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def completed_event_type(policy)
+    policy.close_conversation? ? EVENT_CLOSE_COMPLETED : EVENT_COMPLETED
+  end
+
+  def activity_action(policy)
+    policy.close_conversation? ? :automation_close_completed : :automation_handoff_completed
+  end
+
+  def result_status(policy)
+    policy.close_conversation? ? 'closed' : 'handoffed'
   end
 
   def resource_payload(resource)
@@ -226,10 +416,6 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
       id: resource.id,
       name: resource.name
     }
-  end
-
-  def action_result(applied, status, metadata = {})
-    { applied: applied, status: status }.merge(metadata)
   end
 
   def filters_payload

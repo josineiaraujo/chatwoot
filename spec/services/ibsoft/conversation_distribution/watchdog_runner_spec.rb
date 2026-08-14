@@ -22,8 +22,20 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     {
       real_assignment_enabled: true,
       filters: { inbox_id: nil },
-      summary: { scanned: 1, handoffed: 1, skipped: 0, ignored: 0, by_reason: { 'automation_stalled' => 1 } }
+      summary: { scanned: 1, handoffed: 1, closed: 0, skipped: 0, ignored: 0, by_reason: { 'automation_stalled' => 1 } }
     }
+  end
+  let(:automation_close_result) do
+    {
+      filters: { inbox_id: nil, schedule_id: nil },
+      summary: { scanned: 0, closed: 0, cancelled: 0, skipped: 0, ignored: 0, by_reason: {} }
+    }
+  end
+  let(:automation_close_executor) do
+    instance_double(
+      Ibsoft::ConversationDistribution::AutomationCloseExecutor,
+      perform: automation_close_result
+    )
   end
 
   before do
@@ -33,11 +45,13 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:watchdog_lock_ttl).and_return(300)
     allow(Redis::Alfred).to receive(:set).and_return(true)
     allow(Redis::Alfred).to receive(:delete_if_equals).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AutomationCloseExecutor).to receive(:new).and_return(automation_close_executor)
   end
 
   it 'does not scan accounts when the watchdog job flag is disabled' do
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(false)
 
+    expect(Ibsoft::ConversationDistribution::AutomationCloseExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::AssignmentExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::RedistributionExecutor).not_to receive(:new)
@@ -53,6 +67,7 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
     allow(Redis::Alfred).to receive(:set).and_return(false)
 
+    expect(Ibsoft::ConversationDistribution::AutomationCloseExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::AssignmentExecutor).not_to receive(:new)
     expect(Ibsoft::ConversationDistribution::RedistributionExecutor).not_to receive(:new)
@@ -74,6 +89,11 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
     redistribution_executor = instance_double(Ibsoft::ConversationDistribution::RedistributionExecutor, perform: redistribution_result)
 
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AutomationCloseExecutor).to receive(:new).with(
+      account: account,
+      inbox_id: nil,
+      limit: 25
+    ).and_return(automation_close_executor)
     allow(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).to receive(:new).with(
       account: account,
       inbox_id: nil,
@@ -94,6 +114,7 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
 
     result = described_class.new(limit: 25).perform
 
+    expect(Ibsoft::ConversationDistribution::AutomationCloseExecutor).to have_received(:new).once
     expect(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).to have_received(:new).once
     expect(Ibsoft::ConversationDistribution::AssignmentExecutor).to have_received(:new).once
     expect(Ibsoft::ConversationDistribution::RedistributionExecutor).to have_received(:new).once
@@ -123,6 +144,46 @@ RSpec.describe Ibsoft::ConversationDistribution::WatchdogRunner do
 
     expect(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).to have_received(:new).once
     expect(result[:summary]).to include(accounts: 1, handoffed: 1)
+  end
+
+  it 'runs accounts that only have a persisted automation close schedule', :aggregate_failures do
+    policy = create(
+      :ibsoft_automation_handoff_policy,
+      account: account,
+      inbox: inbox,
+      timeout_action: 'close_conversation',
+      target_team: nil,
+      enabled: false,
+      close_warning_enabled: true
+    )
+    conversation = create(:conversation, account: account, inbox: inbox, status: :pending)
+    trigger_message = create(:message, account: account, inbox: inbox, conversation: conversation)
+    warning_message = create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :template)
+    Ibsoft::ConversationDistribution::AutomationCloseSchedule.create!(
+      account: account,
+      conversation: conversation,
+      automation_handoff_policy: policy,
+      trigger_message_id: trigger_message.id,
+      warning_message_id: warning_message.id,
+      expected_policy_updated_at: policy.updated_at,
+      close_at: 1.minute.ago
+    )
+    automation_handoff_executor = instance_double(
+      Ibsoft::ConversationDistribution::AutomationHandoffExecutor,
+      perform: automation_handoff_result
+    )
+    executor = instance_double(Ibsoft::ConversationDistribution::AssignmentExecutor, perform: executor_result)
+    redistribution_executor = instance_double(Ibsoft::ConversationDistribution::RedistributionExecutor, perform: redistribution_result)
+
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AutomationHandoffExecutor).to receive(:new).and_return(automation_handoff_executor)
+    allow(Ibsoft::ConversationDistribution::AssignmentExecutor).to receive(:new).and_return(executor)
+    allow(Ibsoft::ConversationDistribution::RedistributionExecutor).to receive(:new).and_return(redistribution_executor)
+
+    result = described_class.new(limit: 25).perform
+
+    expect(Ibsoft::ConversationDistribution::AutomationCloseExecutor).to have_received(:new).once
+    expect(result[:summary]).to include(accounts: 1)
   end
 
   it 'does not sync account presence when login stabilization is disabled' do

@@ -46,12 +46,28 @@ RSpec.describe Ibsoft::ConversationDistribution::ActivityMessageNotifier do
       described_class.new(
         conversation: conversation,
         action: :automation_handoff_completed,
-        target_team: target_team
+        target_team: target_team,
+        stale_after_minutes: 10
       ).perform
     end
 
     expect(conversation.messages.activity.last.content).to eq(
       "Atendimento encaminhado automaticamente da automação para #{target_team.reload.name} por inatividade."
+    )
+  end
+
+  it 'creates an internal activity message for automatic automation closure' do
+    perform_enqueued_jobs(only: Conversations::ActivityMessageJob) do
+      described_class.new(
+        conversation: conversation,
+        action: :automation_close_completed,
+        stale_after_minutes: 15
+      ).perform
+    end
+
+    expect(conversation.messages.activity.last.content).to eq(
+      'Atendimento encerrado automaticamente após 15 minutos aguardando a resposta do cliente ' \
+      'à última mensagem da automação.'
     )
   end
 

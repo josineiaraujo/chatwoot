@@ -1041,17 +1041,38 @@
         "BUTTON": "Automação",
         "TITLE": "Automação de {inbox}",
         "SAVE": "Salvar política",
-        "ENABLE_TITLE": "Encaminhar automações paradas",
-        "ENABLE_DESCRIPTION": "Quando uma conversa ficar pendente na automação por muito tempo, encaminhe automaticamente para um departamento humano.",
-        "STALE_AFTER": "Tempo máximo parada",
+        "ENABLE_TITLE": "Tratar automações paradas",
+        "ENABLE_DESCRIPTION": "A contagem começa na última mensagem enviada pelo robô enquanto aguarda a resposta do cliente.",
+        "ACTION_TITLE": "Ao atingir o tempo limite",
+        "ACTIONS": {
+          "FORWARD": {
+            "TITLE": "Encaminhar para um departamento",
+            "DESCRIPTION": "Abre o atendimento e o coloca na fila do departamento escolhido."
+          },
+          "CLOSE": {
+            "TITLE": "Encerrar atendimento",
+            "DESCRIPTION": "Encerra a conversa sem encaminhá-la para atendimento humano."
+          }
+        },
+        "STALE_AFTER": "Tempo máximo aguardando resposta",
         "MINUTES": "minutos",
         "TARGET_TEAM": "Departamento de destino",
         "SELECT_TEAM": "Selecione um departamento",
-        "INTERNAL_EVENT_NOTICE": "O evento interno será registrado automaticamente na conversa. A mensagem ao cliente é opcional.",
+        "INTERNAL_EVENT_NOTICE_FORWARD": "O encaminhamento será registrado automaticamente na conversa. A mensagem ao cliente é opcional.",
+        "INTERNAL_EVENT_NOTICE_CLOSE": "O encerramento será registrado automaticamente na conversa.",
         "CUSTOMER_MESSAGE_TITLE": "Mensagem ao cliente",
-        "CUSTOMER_MESSAGE_DESCRIPTION": "Envie uma mensagem pública quando a conversa sair da automação por inatividade.",
+        "CUSTOMER_MESSAGE_DESCRIPTION": "Envie uma mensagem pública ao executar a ação configurada.",
         "CUSTOMER_MESSAGE": "Texto da mensagem",
-        "CUSTOMER_MESSAGE_PLACEHOLDER": "Vou encaminhar seu atendimento para nossa equipe.",
+        "CUSTOMER_MESSAGE_PLACEHOLDER_FORWARD": "Vou encaminhar seu atendimento para nossa equipe.",
+        "CLOSE_WARNING_TITLE": "Avisar antes de encerrar",
+        "CLOSE_WARNING_DESCRIPTION": "Envia um aviso e cancela o encerramento se o cliente responder durante o prazo.",
+        "CLOSE_WARNING_DELAY": "Tempo entre o aviso e o encerramento",
+        "CLOSE_WARNING_MESSAGE": "Mensagem de aviso",
+        "CLOSE_WARNING_MESSAGE_PLACEHOLDER": "Você ainda está aí? Seu atendimento será encerrado em alguns minutos.",
+        "CLOSE_FINAL_MESSAGE_TITLE": "Mensagem ao encerrar",
+        "CLOSE_FINAL_MESSAGE_DESCRIPTION": "Envia uma confirmação pública depois que o atendimento for encerrado.",
+        "CLOSE_FINAL_MESSAGE": "Mensagem de encerramento",
+        "CLOSE_FINAL_MESSAGE_PLACEHOLDER": "Atendimento encerrado por falta de resposta. Quando precisar, envie uma nova mensagem.",
         "SAVE_SUCCESS": "Política de automação salva com sucesso.",
         "SAVE_ERROR": "Não foi possível salvar a política de automação.",
         "LOAD_ERROR": "Não foi possível carregar a política de automação."
@@ -2049,7 +2070,10 @@
           "REDISTRIBUTION_COMPLETED": "Redistribuição concluída",
           "REDISTRIBUTION_SKIPPED": "Redistribuição ignorada",
           "AUTOMATION_HANDOFF_COMPLETED": "Encaminhamento da automação concluído",
-          "AUTOMATION_HANDOFF_SKIPPED": "Encaminhamento da automação ignorado",
+          "AUTOMATION_CLOSE_COMPLETED": "Encerramento da automação concluído",
+          "AUTOMATION_CLOSE_WARNING_SENT": "Aviso de encerramento enviado",
+          "AUTOMATION_CLOSE_CANCELLED": "Encerramento automático cancelado",
+          "AUTOMATION_HANDOFF_SKIPPED": "Tratamento da automação ignorado",
           "AGENT_CLAIM_COMPLETED": "Assunção pelo agente concluída",
           "AGENT_CLAIM_SKIPPED": "Assunção pelo agente ignorada",
           "QUEUE_RETURNED": "Atendimento devolvido à fila"
@@ -2067,6 +2091,9 @@
           "CONVERSATION_NOT_FOUND": "Conversa não encontrada",
           "REQUIRED_ASSIGNMENTS_MISSING": "Atendimentos obrigatórios não foram selecionados",
           "AUTOMATION_STALLED": "Automação parada",
+          "CUSTOMER_REPLIED": "Cliente respondeu ao aviso",
+          "CONVERSATION_CHANGED": "Conversa alterada durante o prazo",
+          "WARNING_DELIVERY_FAILED": "Falha no envio do aviso",
           "AGENT_RETURNED_TO_QUEUE": "Agente devolveu o atendimento à fila"
         }
       },

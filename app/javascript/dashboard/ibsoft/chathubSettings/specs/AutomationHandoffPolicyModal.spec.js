@@ -105,9 +105,15 @@ describe('AutomationHandoffPolicyModal', () => {
       data: {
         enabled: true,
         stale_after_minutes: 10,
+        timeout_action: 'forward_to_team',
         target_team_id: 270,
         customer_message_enabled: true,
         customer_message: 'Vamos encaminhar seu atendimento.',
+        close_warning_enabled: false,
+        close_warning_message: '',
+        close_warning_delay_minutes: 1,
+        close_final_message_enabled: false,
+        close_final_message: '',
       },
     });
     conversationDistributionAPI.updateInboxPolicy.mockResolvedValue({
@@ -121,9 +127,15 @@ describe('AutomationHandoffPolicyModal', () => {
         data: {
           enabled: true,
           stale_after_minutes: 10,
+          timeout_action: 'forward_to_team',
           target_team_id: 270,
           customer_message_enabled: true,
           customer_message: 'Vamos encaminhar seu atendimento.',
+          close_warning_enabled: false,
+          close_warning_message: '',
+          close_warning_delay_minutes: 1,
+          close_final_message_enabled: false,
+          close_final_message: '',
         },
       }
     );
@@ -207,9 +219,124 @@ describe('AutomationHandoffPolicyModal', () => {
     ).toHaveBeenCalledWith(1, {
       enabled: true,
       stale_after_minutes: 10,
+      timeout_action: 'forward_to_team',
       target_team_id: 270,
       customer_message_enabled: true,
       customer_message: 'Vamos encaminhar seu atendimento.',
+      close_warning_enabled: false,
+      close_warning_message: '',
+      close_warning_delay_minutes: 1,
+      close_final_message_enabled: false,
+      close_final_message: '',
+    });
+    expect(closeDialogMock).toHaveBeenCalled();
+  });
+
+  it('saves a close action without a target team', async () => {
+    const wrapper = mountComponent();
+
+    await wrapper.vm.open({ id: 1, name: 'Site' });
+    await flushPromises();
+    const automationTab = wrapper
+      .findAll('button')
+      .find(button =>
+        button
+          .text()
+          .includes(
+            'IBSOFT_THEME.CHATHUB_SETTINGS.CHANNEL_OPERATIONS.TABS.AUTOMATION'
+          )
+      );
+
+    await automationTab.trigger('click');
+    await wrapper
+      .find('[data-testid="automation-action-close_conversation"]')
+      .trigger('click');
+
+    expect(
+      wrapper.find('[data-testid="automation-stale-after"]').exists()
+    ).toBe(true);
+    expect(
+      wrapper.find('[data-testid="automation-target-team"]').exists()
+    ).toBe(false);
+
+    await wrapper.find('.dialog-confirm').trigger('click');
+    await flushPromises();
+
+    expect(
+      conversationDistributionAPI.updateAutomationHandoffPolicy
+    ).toHaveBeenCalledWith(1, {
+      enabled: true,
+      stale_after_minutes: 10,
+      timeout_action: 'close_conversation',
+      target_team_id: null,
+      customer_message_enabled: true,
+      customer_message: 'Vamos encaminhar seu atendimento.',
+      close_warning_enabled: false,
+      close_warning_message: '',
+      close_warning_delay_minutes: 1,
+      close_final_message_enabled: false,
+      close_final_message: '',
+    });
+    expect(closeDialogMock).toHaveBeenCalled();
+  });
+
+  it('saves the warning delay and both closure messages', async () => {
+    const wrapper = mountComponent();
+
+    await wrapper.vm.open({ id: 1, name: 'Site' });
+    await flushPromises();
+    const automationTab = wrapper
+      .findAll('button')
+      .find(button =>
+        button
+          .text()
+          .includes(
+            'IBSOFT_THEME.CHATHUB_SETTINGS.CHANNEL_OPERATIONS.TABS.AUTOMATION'
+          )
+      );
+
+    await automationTab.trigger('click');
+    await wrapper
+      .find('[data-testid="automation-action-close_conversation"]')
+      .trigger('click');
+
+    const warningSection = wrapper.find(
+      '[data-testid="automation-close-warning"]'
+    );
+    await warningSection.find('button').trigger('click');
+    await warningSection
+      .find('[data-testid="automation-close-warning-delay"]')
+      .setValue('5');
+    await warningSection
+      .find('textarea')
+      .setValue('Você ainda está aí? O atendimento será encerrado.');
+
+    const finalMessageSection = wrapper.find(
+      '[data-testid="automation-close-final-message"]'
+    );
+    await finalMessageSection.find('button').trigger('click');
+    await finalMessageSection
+      .find('textarea')
+      .setValue('Atendimento encerrado por falta de resposta.');
+
+    await wrapper.find('.dialog-confirm').trigger('click');
+    await flushPromises();
+
+    expect(
+      conversationDistributionAPI.updateAutomationHandoffPolicy
+    ).toHaveBeenCalledWith(1, {
+      enabled: true,
+      stale_after_minutes: 10,
+      timeout_action: 'close_conversation',
+      target_team_id: null,
+      customer_message_enabled: true,
+      customer_message: 'Vamos encaminhar seu atendimento.',
+      close_warning_enabled: true,
+      close_warning_message:
+        'Você ainda está aí? O atendimento será encerrado.',
+      close_warning_delay_minutes: 5,
+      close_final_message_enabled: true,
+      close_final_message: 'Atendimento encerrado por falta de resposta.',
     });
     expect(closeDialogMock).toHaveBeenCalled();
   });

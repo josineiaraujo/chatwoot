@@ -60,7 +60,13 @@ FactoryBot.define do
     target_team { create(:team, account: account) }
     enabled { true }
     stale_after_minutes { 10 }
+    timeout_action { 'forward_to_team' }
     customer_message_enabled { false }
     customer_message { nil }
+    close_warning_enabled { false }
+    close_warning_message { nil }
+    close_warning_delay_minutes { 1 }
+    close_final_message_enabled { false }
+    close_final_message { nil }
   end
 end

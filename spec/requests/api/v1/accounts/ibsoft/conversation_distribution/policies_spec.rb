@@ -177,6 +177,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
             params: {
               enabled: true,
               stale_after_minutes: 12,
+              timeout_action: 'forward_to_team',
               target_team_id: team.id,
               customer_message_enabled: true,
               customer_message: 'Vou encaminhar seu atendimento para nossa equipe.'
@@ -191,6 +192,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
         'target_team_id' => team.id,
         'target_team_name' => team.name,
         'stale_after_minutes' => 12,
+        'timeout_action' => 'forward_to_team',
         'customer_message_enabled' => true,
         'customer_message' => 'Vou encaminhar seu atendimento para nossa equipe.'
       )
@@ -200,7 +202,70 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
           as: :json
 
       expect(response).to have_http_status(:success)
-      expect(response.parsed_body).to include('enabled' => true, 'target_team_id' => team.id)
+      expect(response.parsed_body).to include(
+        'enabled' => true,
+        'timeout_action' => 'forward_to_team',
+        'target_team_id' => team.id
+      )
+    end
+
+    it 'allows administrators to close stalled automations without a target team' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 20,
+              timeout_action: 'close_conversation',
+              target_team_id: nil,
+              close_warning_enabled: true,
+              close_warning_message: 'Voce ainda esta ai?',
+              close_warning_delay_minutes: 3,
+              close_final_message_enabled: true,
+              close_final_message: 'Atendimento encerrado por inatividade.'
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'enabled' => true,
+        'stale_after_minutes' => 20,
+        'timeout_action' => 'close_conversation',
+        'target_team_id' => nil,
+        'target_team_name' => nil,
+        'close_warning_enabled' => true,
+        'close_warning_message' => 'Voce ainda esta ai?',
+        'close_warning_delay_minutes' => 3,
+        'close_final_message_enabled' => true,
+        'close_final_message' => 'Atendimento encerrado por inatividade.'
+      )
+    end
+
+    it 'rejects an invalid close warning delay' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 20,
+              timeout_action: 'close_conversation',
+              close_warning_enabled: true,
+              close_warning_delay_minutes: 0
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'rejects unknown automation timeout actions' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 10,
+              timeout_action: 'unknown'
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
     end
 
     it 'blocks agents from changing automation handoff policies' do
@@ -212,9 +277,9 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it 'rejects enabling the policy without a target team' do
+    it 'rejects enabling a forward policy without a target team' do
       patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
-            params: { enabled: true, stale_after_minutes: 10 },
+            params: { enabled: true, stale_after_minutes: 10, timeout_action: 'forward_to_team' },
             headers: admin_headers,
             as: :json
 
