@@ -33,9 +33,9 @@
 #
 # Foreign Keys
 #
-#  fk_rails_...  (broadcast_id => ibsoft_message_broadcasts.id)
-#  fk_rails_...  (conversation_id => conversations.id)
-#  fk_rails_...  (message_id => messages.id)
+#  fk_rails_...  (broadcast_id => ibsoft_message_broadcasts.id) ON DELETE => cascade
+#  fk_rails_...  (conversation_id => conversations.id) ON DELETE => nullify
+#  fk_rails_...  (message_id => messages.id) ON DELETE => nullify
 #
 class Ibsoft::MessageBroadcast::Recipient < ApplicationRecord
   self.table_name = 'ibsoft_message_broadcast_recipients'
