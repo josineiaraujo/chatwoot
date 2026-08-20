@@ -75,6 +75,7 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/candidate_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/dry_run_preview.rb`
 - `app/services/ibsoft/conversation_distribution/execution_config.rb`
+- `app/services/ibsoft/conversation_distribution/business_hours_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/decision_resolver.rb`
 - `app/services/ibsoft/conversation_distribution/unavailability_config.rb`
 - `app/services/ibsoft/conversation_distribution/decision_action_executor.rb`
@@ -408,6 +409,43 @@ Politicas com horario proprio tambem podem gravar intervalos em
 semantica dos intervalos de canais: o inicio e inclusivo e o fim e exclusivo.
 Durante um intervalo, o motor trata a conversa como
 `outside_business_hours` e aplica a acao configurada para esse motivo.
+
+### Calendarios de feriados e politica extra expediente
+
+Documento detalhado: `IBSOFT_BUSINESS_CALENDAR_AND_AFTER_HOURS.md`.
+
+Um departamento pode estar vinculado a um calendario privado Ibsoft. Antes de
+avaliar o horario herdado do canal ou a agenda personalizada, o
+`DecisionResolver` consulta o feriado da data local. Quando encontra uma data,
+o resultado passa a ser `outside_business_hours`, com causa `holiday`, mesmo
+que a grade semanal esteja aberta.
+
+A avaliacao da grade semanal e dos intervalos fica isolada em
+`BusinessHoursEvaluator`. O `DecisionResolver` permanece responsavel apenas por
+combinar esse resultado com o calendario e produzir a decisao de distribuicao.
+
+O vinculo com a politica extra expediente pertence a politica nomeada de
+distribuicao, nao diretamente ao departamento. A acao
+`unavailability.outside_business_hours.action=after_hours_policy` usa
+`after_hours_policy_id` da politica nomeada efetiva. Essa acao nao e aceita em
+`no_available_agent`, preservando as regras independentes de ausencia de agente.
+
+Ao executar a acao, o service `Ibsoft::AfterHours::WaitStarter` envia a
+mensagem normal ou de feriado e cria uma espera unica por conversa. O comando
+e a confirmacao sao copiados para a espera para que uma edicao posterior da
+politica nao altere o que ja foi comunicado. Uma mensagem publica recebida com
+o comando exato resolve a conversa; atribuicao, transferencia ou encerramento
+externo cancelam a espera.
+
+Nao existe polling nem job dedicado. A avaliacao ocorre no caminho normal da
+distribuicao, e a conclusao reage aos eventos existentes por uma extensao
+privada registrada em `config/initializers/ibsoft_after_hours.rb`. Locks de
+banco, indice unico por conversa e cache compartilhado mantem o comportamento
+idempotente em varias replicas.
+
+Ao excluir uma politica extra expediente, `PolicyDestroyer` restaura
+atomicamente a acao das politicas de distribuicao vinculadas para `wait`. Uma
+politica com espera ativa nao pode ser excluida.
 
 ## Pre-requisito operacional para ativacao
 
@@ -988,6 +1026,9 @@ Validacoes protegidas no backend:
 - chaves desconhecidas de `config` sao descartadas na normalizacao da politica,
   mantendo apenas as secoes suportadas pelo modulo;
 - `unavailable.action` deve ser `wait`, `notify_customer` ou `fallback_team`;
+- `unavailability.outside_business_hours.action` tambem aceita
+  `after_hours_policy`, desde que a politica extra expediente pertenca a conta;
+- `unavailability.no_available_agent` nao aceita `after_hours_policy`;
 - `notify_customer` exige mensagem;
 - `fallback_team` exige time existente na mesma conta;
 - `business_hours.mode` deve ser `inherit_channel`, `custom` ou

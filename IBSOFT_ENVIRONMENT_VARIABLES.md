@@ -20,6 +20,9 @@ IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=true
 IBSOFT_CONVERSATION_DISTRIBUTION_JOB_LIMIT=50
 IBSOFT_CONVERSATION_DISTRIBUTION_WATCHDOG_LOCK_TTL_SECONDS=300
 IBSOFT_CONVERSATION_DISTRIBUTION_EVENT_DEDUPE_WINDOW_SECONDS=900
+
+# Necessarias somente para importar feriados pela Invertexto
+IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN=configure-via-secret-manager
 ```
 
 Configuracao recomendada para primeira subida segura:
@@ -274,6 +277,31 @@ nativo selecionado por `ACTIVE_STORAGE_SERVICE`.
 
 As variaveis abaixo nao fazem parte do Chatwoot oficial. Elas controlam modulos
 privados Ibsoft.
+
+### IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN
+
+Exemplo:
+
+```env
+IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN=configure-via-secret-manager
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Autentica o backend Rails na API Invertexto para visualizar e importar
+  feriados nacionais e estaduais.
+- O token nao e salvo no banco e nao e enviado ao navegador.
+
+Cuidados:
+
+- E obrigatorio somente para preview e importacao pela Invertexto.
+- Cadastro manual, vinculos e deteccao de feriados salvos funcionam sem ele.
+- Configure como segredo e nunca registre o valor em Git ou logs.
+- Atualmente apenas o container Rails realiza essa consulta.
 
 ### IBSOFT_META_TEMPLATES_TIMEOUT_SECONDS
 
@@ -530,6 +558,9 @@ Nao devem ser configuradas via `.env`:
 - perfis e permissoes;
 - configuracoes do chat interno.
 - defaults PIX das instancias da API de templates Meta.
+- calendarios e datas de feriados;
+- vinculos entre calendarios e departamentos;
+- politicas extra expediente, mensagens e comando de saida.
 
 ## Comandos de verificacao
 
@@ -539,6 +570,7 @@ Ver variaveis dentro do container `rails`:
 docker compose exec rails printenv INSTALLATION_NAME
 docker compose exec rails printenv IBSOFT_CONVERSATION_DISTRIBUTION_JOB_ENABLED
 docker compose exec rails printenv IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED
+docker compose exec rails /bin/sh -lc 'test -n "$IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN" && echo configurado || echo ausente'
 ```
 
 Ver variaveis dentro do container `sidekiq`:

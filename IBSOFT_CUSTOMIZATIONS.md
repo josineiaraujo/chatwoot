@@ -26,6 +26,9 @@ Documento operacional de variaveis de ambiente:
   envio direto pela Meta, processamento assincrono e acompanhamento de status.
 - `IBSOFT_META_TEMPLATES.md`: documenta o gerenciamento privado de modelos
   WhatsApp Business Cloud, cache, uploads, rotas e pontos de acoplamento.
+- `IBSOFT_BUSINESS_CALENDAR_AND_AFTER_HOURS.md`: documenta calendarios de
+  feriados, politicas extra expediente, comando de saida e integracao com a
+  distribuicao.
 
 ## Como usar antes de sincronizar com upstream
 
@@ -395,6 +398,9 @@ Objetivo:
   `GET|POST /chathub-sender/ixc/pedido/`, processados de forma assincrona e
   serializados por ordem; a rota IXC preserva o envelope obrigatorio `user`,
   `pw`, `dest` e `text`, com os campos da ordem dentro de `text`;
+- permitir um template aprovado padrao para todas as atualizacoes de ordem,
+  com sobrescritas opcionais por evento, envio fora da janela de atendimento e
+  snapshot duravel antes do enqueue;
 - interpretar o formato `[campo]=valor||[outro]=valor`, validando variaveis e
   montando internamente os componentes aceitos pela Meta;
 - enviar templates diretamente pela Meta, sem criar conversa ou mensagem no
@@ -427,6 +433,8 @@ Banco:
 - `db/migrate/20260727213000_add_instance_type_to_ibsoft_external_message_endpoints.rb`;
 - `db/migrate/20260728100000_create_ibsoft_external_message_orders.rb`;
 - `db/migrate/20260729100000_add_order_pix_defaults_to_ibsoft_external_messaging.rb`;
+- `db/migrate/20260814180000_add_failure_diagnostics_to_ibsoft_external_message_endpoints.rb`;
+- `db/migrate/20260814200000_add_template_delivery_to_ibsoft_external_message_order_updates.rb`;
 - tabelas `ibsoft_external_message_endpoints`,
   `ibsoft_external_message_deliveries`, `ibsoft_external_message_orders` e
   `ibsoft_external_message_order_updates`.
@@ -442,13 +450,72 @@ Pontos de acoplamento:
 
 O IXC reutiliza as tabelas existentes; nao exige migration propria e nao
 armazena `user`, `pw` ou o envelope bruto. Nenhum model de conversa/mensagem ou
-service nativo de envio foi alterado.
+service nativo de envio foi alterado. SGP e IXC compartilham o mesmo catalogo,
+validador de configuracao, snapshot, construtor de payload, job e cliente Meta
+para atualizacoes por template. A apresentacao das instancias fica isolada em
+`Ibsoft::ExternalMessaging::EndpointPayload`.
 
 Validacao recomendada:
 
 - `bundle exec rspec spec/models/ibsoft/external_messaging spec/services/ibsoft/external_messaging spec/jobs/ibsoft/external_messaging spec/requests/api/v1/ibsoft/external_messaging spec/requests/api/v1/accounts/ibsoft/external_messaging`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/externalMessaging/specs --no-coverage`
 - `pnpm exec eslint app/javascript/dashboard/ibsoft/externalMessaging`
+
+### 0.0.6. Calendarios de feriados e politicas extra expediente
+
+Documento detalhado: `IBSOFT_BUSINESS_CALENDAR_AND_AFTER_HOURS.md`.
+
+Objetivo:
+
+- Manter calendarios nacionais, estaduais e manuais por conta.
+- Vincular um calendario aos departamentos que devem respeita-lo.
+- Tratar feriado como fora do horario antes da avaliacao da grade semanal.
+- Permitir que a politica nomeada de distribuicao selecione uma politica extra
+  expediente em `unavailability.outside_business_hours`.
+- Enviar mensagem normal ou de feriado e permitir que o cliente encerre a
+  espera por um comando exato configuravel.
+
+Arquivos privados principais:
+
+- `app/models/ibsoft/business_calendar/`
+- `app/services/ibsoft/business_calendar/`
+- `app/controllers/api/v1/accounts/ibsoft/business_calendar/`
+- `app/javascript/dashboard/ibsoft/businessCalendar/`
+- `app/models/ibsoft/after_hours/`
+- `app/services/ibsoft/after_hours/`
+- `app/controllers/api/v1/accounts/ibsoft/after_hours/`
+- `app/javascript/dashboard/ibsoft/afterHours/`
+- `spec/**/ibsoft/business_calendar/`
+- `spec/**/ibsoft/after_hours/`
+
+Banco:
+
+- `db/migrate/20260816100000_create_ibsoft_business_calendars_and_after_hours_policies.rb`
+- `db/migrate/20260816110000_snapshot_ibsoft_after_hours_wait_messages.rb`
+- tabelas `ibsoft_business_calendars`, `ibsoft_business_holidays`,
+  `ibsoft_business_calendar_team_links`, `ibsoft_after_hours_policies` e
+  `ibsoft_after_hours_waits`.
+
+Pontos de acoplamento:
+
+- `config/routes.rb`: registra APIs privadas.
+- indexes i18n `en` e `pt_BR`: registram traducoes proprias.
+- `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`: registra
+  as secoes privadas no menu ChatHub.
+- policy, controller, effective resolver, decision resolver, action executor e
+  validator da distribuicao Ibsoft: transportam e executam a regra.
+- `TeamDistributionSettingsModal.vue`: exibe o calendario do departamento.
+- `config/initializers/ibsoft_after_hours.rb`: aplica extensao privada via
+  `prepend`; o listener nativo permanece intacto.
+
+Variaveis opcionais:
+
+- `IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN`: exigida apenas para importar feriados.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/models/ibsoft/after_hours spec/services/ibsoft/after_hours spec/requests/api/v1/accounts/ibsoft/after_hours spec/services/ibsoft/business_calendar spec/requests/api/v1/accounts/ibsoft/business_calendar`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/afterHours/specs app/javascript/dashboard/ibsoft/businessCalendar/specs`
 
 ### 0.1. Perfis e permissoes Ibsoft
 
@@ -1636,6 +1703,45 @@ Validacao recomendada:
 - `bundle exec rspec spec/services/ibsoft/meta_templates spec/requests/api/v1/accounts/ibsoft/meta_templates`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/metaTemplates/specs app/javascript/dashboard/ibsoft/i18n/specs/translationCompiler.spec.js`
 - `pnpm exec eslint app/javascript/dashboard/ibsoft/metaTemplates`
+
+### 11. Exclusao segura de canais
+
+Objetivo:
+
+- Permitir que o `DeleteObjectJob` nativo conclua a exclusao assincrona de um
+  canal mesmo quando ele possui dados nos modulos privados.
+- Evitar o comportamento em que a API responde com sucesso, a interface remove
+  o canal de forma otimista e ele reaparece apos recarregar porque uma chave
+  estrangeira bloqueou o job em segundo plano.
+
+Implementacao:
+
+- `db/migrate/20260814100000_configure_ibsoft_inbox_deletion_foreign_keys.rb`
+  define no banco o ciclo de vida das referencias privadas ao canal.
+- Registros pertencentes ao canal usam `ON DELETE CASCADE`: politicas por canal
+  e por departamento, politica de automacao parada, intervalos de horario,
+  mensagens externas, ordens, atualizacoes de ordens e disparos em massa.
+- Logs de auditoria de distribuicao sao preservados e recebem
+  `inbox_id = NULL` com `ON DELETE SET NULL`.
+- Destinatarios de disparos sao excluidos com o disparo; suas referencias a
+  conversa e mensagem usam `ON DELETE SET NULL` para nao bloquear a limpeza
+  pesada executada pelo Chatwoot antes de destruir o canal.
+- A migration remove referencias orfas anteriores antes de criar as novas
+  restricoes, permitindo aplicacao em bancos existentes.
+
+Acoplamento:
+
+- Nenhum controller, job, model ou componente original do Chatwoot e alterado.
+- O endpoint e o `DeleteObjectJob` nativos continuam sendo a unica porta de
+  exclusao; a camada privada apenas declara integridade e ciclo de vida no
+  proprio banco.
+
+Validacao recomendada:
+
+- `bundle exec rspec spec/jobs/delete_object_job_spec.rb spec/jobs/ibsoft/inbox_deletion/delete_object_job_spec.rb`
+- `bundle exec rspec spec/controllers/api/v1/accounts/inboxes_controller_spec.rb:375`
+- Em producao, executar `bundle exec rails db:migrate` antes de repetir a
+  exclusao de um canal que possua configuracoes e historicos privados.
 
 ## Arquivos sensiveis para conflito
 
