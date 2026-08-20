@@ -147,13 +147,10 @@ class Ibsoft::ExternalMessaging::OrderStatusContract
   end
 
   def default_message(reference_id, order_status, payment_status)
-    key = if payment_status == 'captured' && order_status == 'completed'
-            'captured_and_completed'
-          elsif payment_status.present?
-            "payment_#{payment_status}"
-          else
-            "order_#{order_status}"
-          end
+    key = Ibsoft::ExternalMessaging::OrderUpdateEventKey.call(
+      order_status: order_status,
+      payment_status: payment_status
+    )
     Ibsoft::ExternalMessaging::OrderUpdateMessageCatalog
       .new(endpoint: endpoint)
       .render(key: key, reference_id: reference_id)

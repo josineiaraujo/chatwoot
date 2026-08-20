@@ -40,6 +40,99 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateSender do
     expect(update.order.reload.order_status).to eq('processing')
   end
 
+  it 'sends the snapshotted template directly to Meta without creating Chatwoot records' do
+    update.update!(
+      delivery_method: 'template',
+      template_name: 'atualizacao_fatura',
+      template_language: 'pt_BR',
+      template_components: [
+        {
+          type: 'body',
+          parameters: [
+            {
+              type: 'text',
+              text: 'Sua fatura está em processamento.',
+              parameter_name: 'mensagem_status'
+            }
+          ]
+        }
+      ]
+    )
+    request = stub_request(:post, messages_url).with do |meta_request|
+      body = JSON.parse(meta_request.body)
+      body['to'] == update.order.recipient &&
+        body['type'] == 'template' &&
+        body.dig('template', 'name') == 'atualizacao_fatura' &&
+        body.dig('template', 'language', 'code') == 'pt_BR' &&
+        body.dig('template', 'components', 0, 'parameters', 0, 'parameter_name') == 'mensagem_status' &&
+        body.dig('template', 'components', 0, 'parameters', 0, 'text') ==
+          'Sua fatura está em processamento.'
+    end.to_return(
+      status: 200,
+      body: { messages: [{ id: 'wamid.template-update-1' }] }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    expect do
+      described_class.new(update: update).call
+    end.to not_change(Conversation, :count).and not_change(Message, :count)
+
+    expect(request).to have_been_requested.once
+    expect(update.reload).to have_attributes(
+      status: 'accepted',
+      meta_message_id: 'wamid.template-update-1'
+    )
+  end
+
+  it 'omits components when the selected template has no variables' do
+    update.update!(
+      delivery_method: 'template',
+      template_name: 'atualizacao_sem_variavel',
+      template_language: 'pt_BR',
+      template_components: []
+    )
+    request = stub_request(:post, messages_url).with do |meta_request|
+      body = JSON.parse(meta_request.body)
+      body['type'] == 'template' &&
+        body.dig('template', 'name') == 'atualizacao_sem_variavel' &&
+        !body.fetch('template').key?('components')
+    end.to_return(
+      status: 200,
+      body: { messages: [{ id: 'wamid.template-without-variable' }] }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    described_class.new(update: update).call
+
+    expect(request).to have_been_requested.once
+    expect(update.reload.status).to eq('accepted')
+  end
+
+  it 'does not fall back to an interactive update when Meta rejects the template' do
+    update.update!(
+      delivery_method: 'template',
+      template_name: 'atualizacao_fatura',
+      template_language: 'pt_BR',
+      template_components: []
+    )
+    request = stub_request(:post, messages_url).with do |meta_request|
+      JSON.parse(meta_request.body)['type'] == 'template'
+    end.to_return(
+      status: 400,
+      body: { error: { code: 13_200, message: 'Template rejected' } }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    described_class.new(update: update).call
+
+    expect(request).to have_been_requested.once
+    expect(update.reload).to have_attributes(
+      status: 'failed',
+      error_code: '13200',
+      attempts_count: 1
+    )
+  end
+
   it 'allows only one worker to claim the update' do
     request = stub_request(:post, messages_url).to_return(
       status: 200,

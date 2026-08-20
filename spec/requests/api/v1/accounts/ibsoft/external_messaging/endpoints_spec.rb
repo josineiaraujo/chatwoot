@@ -17,6 +17,24 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
   end
   let(:base_url) { "/api/v1/accounts/#{account.id}/ibsoft/external_messaging/endpoints" }
 
+  def order_update_template_descriptor(id:, name:, parameter_format: 'POSITIONAL', body_parameter: nil)
+    {
+      'id' => id,
+      'name' => name,
+      'language' => 'pt_BR',
+      'parameter_format' => parameter_format,
+      'body_parameter' => body_parameter
+    }
+  end
+
+  def stub_order_update_template_catalog(endpoint, templates)
+    catalog = instance_double(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog)
+    templates.each { |id, template| allow(catalog).to receive(:find).with(id).and_return(template) }
+    allow(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog).to receive(:new)
+      .with(endpoint: endpoint)
+      .and_return(catalog)
+  end
+
   it 'allows an administrator to create and list an endpoint without exposing its digest' do
     post base_url,
          params: {
@@ -47,6 +65,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
       'order_update_path' => '/chathub-sender/sgp/pedido/',
       'rate_limit_per_second' => 15,
       'allow_order_resends' => true,
+      'failure_diagnostics_enabled' => false,
       'deliveries_count' => 2
     )
     expect(endpoint).not_to have_key('token')
@@ -71,6 +90,24 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
     expect(response).to have_http_status(:success)
     expect(endpoint.reload.allow_order_resends).to be(false)
     expect(response.parsed_body['allow_order_resends']).to be(false)
+  end
+
+  it 'allows administrators to enable detailed failure diagnostics for an instance' do
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel
+    )
+
+    patch "#{base_url}/#{endpoint.id}",
+          params: { failure_diagnostics_enabled: true },
+          headers: admin_headers,
+          as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(endpoint.reload.failure_diagnostics_enabled).to be(true)
+    expect(response.parsed_body['failure_diagnostics_enabled']).to be(true)
   end
 
   it 'does not allow changing the instance type after creation' do
@@ -243,5 +280,125 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
     expect(response).to have_http_status(:success)
     expect(endpoint.reload.order_pix_key).to be_nil
     expect(response.parsed_body['order_defaults_configured']).to be(false)
+  end
+
+  it 'lists only compatible order-update templates for the endpoint channel' do
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel
+    )
+    templates = [
+      {
+        'id' => 'template-1',
+        'name' => 'atualizacao_fatura',
+        'language' => 'pt_BR',
+        'parameter_format' => 'NAMED',
+        'body_parameter' => {
+          'format' => 'named',
+          'key' => 'mensagem_status'
+        }
+      }
+    ]
+    catalog = instance_double(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog, list: templates)
+    allow(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog).to receive(:new)
+      .with(endpoint: endpoint)
+      .and_return(catalog)
+
+    get "#{base_url}/#{endpoint.id}/order_update_templates",
+        headers: admin_headers,
+        as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(response.parsed_body).to eq('templates' => templates)
+  end
+
+  it 'stores the default template and optional event overrides without exposing raw template data' do
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel
+    )
+    default_template = order_update_template_descriptor(
+      id: 'default-1',
+      name: 'atualizacao_padrao',
+      parameter_format: 'NAMED',
+      body_parameter: { 'format' => 'named', 'key' => 'mensagem_status' }
+    )
+    paid_template = order_update_template_descriptor(id: 'paid-1', name: 'pagamento_confirmado')
+    stub_order_update_template_catalog(
+      endpoint,
+      'default-1' => default_template,
+      'paid-1' => paid_template
+    )
+
+    patch "#{base_url}/#{endpoint.id}",
+          params: {
+            order_defaults: {
+              update_delivery: {
+                mode: 'template',
+                default_template_id: 'default-1',
+                overrides: { payment_captured: 'paid-1' }
+              }
+            }
+          },
+          headers: admin_headers,
+          as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(endpoint.reload).to have_attributes(order_update_delivery_mode: 'template')
+    expect(endpoint.order_update_template_settings).to eq(
+      'default' => default_template,
+      'overrides' => { 'payment_captured' => paid_template }
+    )
+    expect(response.parsed_body['order_update_template_ready']).to be(true)
+    expect(response.parsed_body.dig('order_defaults', 'update_delivery')).to include(
+      'mode' => 'template',
+      'template_ready' => true,
+      'default_template' => default_template,
+      'overrides' => { 'payment_captured' => paid_template }
+    )
+  end
+
+  it 'rejects template delivery when the selected template is not compatible' do
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel
+    )
+    catalog = instance_double(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog)
+    allow(catalog).to receive(:find).with('invalid-template').and_return(nil)
+    allow(Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog).to receive(:new)
+      .with(endpoint: endpoint)
+      .and_return(catalog)
+
+    patch "#{base_url}/#{endpoint.id}",
+          params: {
+            order_defaults: {
+              update_delivery: {
+                mode: 'template',
+                default_template_id: 'invalid-template'
+              }
+            }
+          },
+          headers: admin_headers,
+          as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.parsed_body['error']).to eq('order_update_template_invalid')
+    expect(endpoint.reload.order_update_delivery_mode).to eq('interactive')
+  end
+
+  it 'keeps the template catalog isolated by account' do
+    foreign_endpoint = create(:ibsoft_external_message_endpoint)
+
+    get "#{base_url}/#{foreign_endpoint.id}/order_update_templates",
+        headers: admin_headers,
+        as: :json
+
+    expect(response).to have_http_status(:not_found)
   end
 end

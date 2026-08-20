@@ -129,4 +129,34 @@ RSpec.describe Ibsoft::ExternalMessaging::Endpoint do
     expect(endpoint).not_to be_valid
     expect(endpoint.errors[:order_update_messages]).to be_present
   end
+
+  it 'validates that stored order-update template parameters match their declared format' do
+    endpoint = build(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      whatsapp_channel: channel,
+      order_update_delivery_mode: 'template',
+      order_update_template_settings: {
+        'default' => {
+          'id' => 'template-1',
+          'name' => 'atualizacao_fatura',
+          'language' => 'pt_BR',
+          'parameter_format' => 'NAMED',
+          'body_parameter' => { 'format' => 'positional', 'key' => '1' }
+        },
+        'overrides' => {}
+      }
+    )
+
+    expect(endpoint).not_to be_valid
+    expect(endpoint.errors[:order_update_template_settings]).to be_present
+
+    endpoint.order_update_template_settings['default'].merge!(
+      'parameter_format' => 'POSITIONAL',
+      'body_parameter' => { 'format' => 'positional', 'key' => '2' }
+    )
+
+    expect(endpoint).not_to be_valid
+    expect(endpoint.errors[:order_update_template_settings]).to be_present
+  end
 end

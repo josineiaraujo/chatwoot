@@ -60,7 +60,7 @@ const ordersResponse = {
   },
 };
 
-const mountComponent = () =>
+const mountComponent = (endpointOverrides = {}) =>
   shallowMount(OrdersPanel, {
     props: {
       endpoint: {
@@ -68,6 +68,8 @@ const mountComponent = () =>
         retention_days: 30,
         order_defaults_configured: false,
         order_defaults: {},
+        order_update_template_ready: false,
+        ...endpointOverrides,
       },
     },
     global: {
@@ -188,5 +190,23 @@ describe('OrdersPanel', () => {
       },
     });
     expect(dialogCloseMock).toHaveBeenCalled();
+  });
+
+  it('warns until template-based order updates are configured', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      'IBSOFT_EXTERNAL_MESSAGING.ORDERS.TEMPLATE_WARNING_TITLE'
+    );
+  });
+
+  it('hides the warning after template-based order updates are configured', async () => {
+    const wrapper = mountComponent({ order_update_template_ready: true });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain(
+      'IBSOFT_EXTERNAL_MESSAGING.ORDERS.TEMPLATE_WARNING_TITLE'
+    );
   });
 });

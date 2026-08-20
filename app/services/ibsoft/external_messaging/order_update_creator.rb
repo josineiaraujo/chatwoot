@@ -36,7 +36,12 @@ class Ibsoft::ExternalMessaging::OrderUpdateCreator
   end
 
   def create_result(order)
-    update = order.updates.create!(
+    update = order.updates.create!(update_attributes)
+    Result.new(order: order, update: update, created: true, unchanged: false)
+  end
+
+  def update_attributes
+    {
       endpoint: endpoint,
       account: endpoint.account,
       inbox: endpoint.inbox,
@@ -48,9 +53,16 @@ class Ibsoft::ExternalMessaging::OrderUpdateCreator
       requested_by: requested_by,
       source: source,
       status: 'queued',
-      received_at: Time.current
-    )
-    Result.new(order: order, update: update, created: true, unchanged: false)
+      received_at: Time.current,
+      **delivery_snapshot
+    }
+  end
+
+  def delivery_snapshot
+    Ibsoft::ExternalMessaging::OrderUpdateDeliverySnapshot.new(
+      endpoint: endpoint,
+      command: command
+    ).call
   end
 
   def find_order!

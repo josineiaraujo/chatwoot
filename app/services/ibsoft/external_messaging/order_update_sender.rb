@@ -12,7 +12,7 @@ class Ibsoft::ExternalMessaging::OrderUpdateSender
 
     increment_attempt!
     @meta_request_started = true
-    result = Ibsoft::ExternalMessaging::MetaClient.new(order_update: update).send_order_status
+    result = Ibsoft::ExternalMessaging::MetaClient.new(order_update: update).send_order_update
     mark_accepted(result)
   rescue Ibsoft::ExternalMessaging::MetaClient::Error => e
     mark_failed(e)

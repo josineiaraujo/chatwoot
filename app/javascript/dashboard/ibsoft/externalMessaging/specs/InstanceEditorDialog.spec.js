@@ -94,6 +94,7 @@ describe('InstanceEditorDialog', () => {
             inbox_id: 3,
             active: true,
             allow_order_resends: true,
+            failure_diagnostics_enabled: false,
             rate_limit_per_second: 10,
             retention_days: 30,
           },
@@ -112,6 +113,7 @@ describe('InstanceEditorDialog', () => {
       inbox_id: 3,
       active: true,
       allow_order_resends: false,
+      failure_diagnostics_enabled: true,
       rate_limit_per_second: 10,
       retention_days: 45,
     });
@@ -127,6 +129,7 @@ describe('InstanceEditorDialog', () => {
             name: 'ERP atualizado',
             active: true,
             allow_order_resends: false,
+            failure_diagnostics_enabled: true,
             rate_limit_per_second: 10,
             retention_days: 45,
           },

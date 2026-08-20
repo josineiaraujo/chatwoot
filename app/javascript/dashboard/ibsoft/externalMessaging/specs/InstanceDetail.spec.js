@@ -15,31 +15,36 @@ vi.mock('dashboard/composables', () => ({
   useAlert: vi.fn(),
 }));
 
-const mountComponent = (props = {}) =>
-  shallowMount(InstanceDetail, {
+const defaultEndpoint = {
+  id: 7,
+  name: 'ERP principal',
+  instance_type: 'sgp_generic',
+  inbox_name: 'WhatsApp Cloud',
+  token_hint: 'ibext_test...',
+  authentication: {
+    type: 'token',
+    secret_hint: 'ibext_test...',
+  },
+  active: true,
+  rate_limit_per_second: 10,
+  deliveries_count: 1,
+  retention_days: 30,
+  failure_diagnostics_enabled: false,
+  order_defaults_configured: false,
+  order_defaults: {
+    merchant_name: null,
+    key_type: null,
+    key_configured: false,
+    key_hint: null,
+  },
+};
+
+const mountComponent = (props = {}) => {
+  const { endpoint = {}, ...otherProps } = props;
+
+  return shallowMount(InstanceDetail, {
     props: {
-      endpoint: {
-        id: 7,
-        name: 'ERP principal',
-        instance_type: 'sgp_generic',
-        inbox_name: 'WhatsApp Cloud',
-        token_hint: 'ibext_test...',
-        authentication: {
-          type: 'token',
-          secret_hint: 'ibext_test...',
-        },
-        active: true,
-        rate_limit_per_second: 10,
-        deliveries_count: 1,
-        retention_days: 30,
-        order_defaults_configured: false,
-        order_defaults: {
-          merchant_name: null,
-          key_type: null,
-          key_configured: false,
-          key_hint: null,
-        },
-      },
+      endpoint: { ...defaultEndpoint, ...endpoint },
       typeDefinition: {
         label: 'SGP Genérico',
         description: 'Contrato genérico',
@@ -51,7 +56,7 @@ const mountComponent = (props = {}) =>
       orderUpdateEndpointUrl:
         'http://localhost:3000/chathub-sender/sgp/pedido/',
       orderUpdateCurlExample: 'curl --get pedido',
-      ...props,
+      ...otherProps,
     },
     global: {
       stubs: {
@@ -64,6 +69,7 @@ const mountComponent = (props = {}) =>
       },
     },
   });
+};
 
 describe('InstanceDetail', () => {
   it('normalizes Rails locales before formatting dates', () => {
@@ -96,6 +102,55 @@ describe('InstanceDetail', () => {
     expect(wrapper.emitted('loadHistory')).toEqual([
       [{ status: '', page: 1, per_page: 50 }],
     ]);
+  });
+
+  it('shows the persisted failure diagnostic in the delivery history', async () => {
+    const delivery = {
+      id: 31,
+      received_at: '2026-08-14T11:10:45.000Z',
+      recipient: '5577991046096',
+      template_name: 'fatura_disponivel_codigos_pix_boleto',
+      status: 'failed',
+      meta_message_id: null,
+      meta_http_status: 400,
+      error_code: '132000',
+      error_message: 'body: expected 2 parameters, received 3',
+    };
+    const wrapper = mountComponent({
+      endpoint: { failure_diagnostics_enabled: true },
+      deliveries: [delivery],
+      deliveryMeta: { page: 1, per_page: 25, total: 1 },
+      historyLoaded: true,
+    });
+
+    wrapper.vm.selectTab('history');
+    await wrapper.vm.$nextTick();
+
+    const diagnostic = wrapper.get('[data-testid="delivery-diagnostic"]');
+    expect(diagnostic.text()).toContain(delivery.error_message);
+    expect(diagnostic.attributes('title')).toContain(delivery.error_message);
+  });
+
+  it('keeps the original history layout when failure diagnostics are disabled', async () => {
+    const wrapper = mountComponent({
+      deliveries: [
+        {
+          id: 31,
+          status: 'failed',
+          error_code: '132000',
+          error_message: 'Template rejected',
+        },
+      ],
+      deliveryMeta: { page: 1, per_page: 25, total: 1 },
+      historyLoaded: true,
+    });
+
+    wrapper.vm.selectTab('history');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-testid="delivery-diagnostic"]').exists()).toBe(
+      false
+    );
   });
 
   it('shows the order section and delegates configuration to the parent', async () => {

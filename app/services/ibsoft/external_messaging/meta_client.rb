@@ -1,4 +1,6 @@
 class Ibsoft::ExternalMessaging::MetaClient
+  ERROR_MESSAGE_MAX_LENGTH = 2000
+
   Result = Struct.new(:message_id, :http_status, keyword_init: true)
 
   class Error < StandardError
@@ -21,24 +23,12 @@ class Ibsoft::ExternalMessaging::MetaClient
 
   def send_template
     validate_channel!
-    response = HTTParty.post(
-      messages_url,
-      headers: request_headers,
-      body: request_body.to_json,
-      timeout: timeout_seconds
-    )
-    parse_response(response)
+    send_request(request_body)
   end
 
-  def send_order_status
+  def send_order_update
     validate_channel!
-    response = HTTParty.post(
-      messages_url,
-      headers: request_headers,
-      body: order_status_request_body.to_json,
-      timeout: timeout_seconds
-    )
-    parse_response(response)
+    send_request(Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder.new(update: order_update).call)
   end
 
   private
@@ -76,6 +66,16 @@ class Ibsoft::ExternalMessaging::MetaClient
     }
   end
 
+  def send_request(body)
+    response = HTTParty.post(
+      messages_url,
+      headers: request_headers,
+      body: body.to_json,
+      timeout: timeout_seconds
+    )
+    parse_response(response)
+  end
+
   def request_body
     {
       messaging_product: 'whatsapp',
@@ -87,14 +87,21 @@ class Ibsoft::ExternalMessaging::MetaClient
   end
 
   def template_payload
-    {
+    template_payload_for(
       name: delivery.template_name,
+      language: delivery.template_language,
+      components: materialized_template_components
+    )
+  end
+
+  def template_payload_for(name:, language:, components:)
+    {
+      name: name,
       language: {
         policy: 'deterministic',
-        code: delivery.template_language
+        code: language
       }
     }.tap do |template|
-      components = materialized_template_components
       template[:components] = components if components.present?
     end
   end
@@ -110,41 +117,6 @@ class Ibsoft::ExternalMessaging::MetaClient
       code: 'pix_key_missing',
       http_status: nil
     )
-  end
-
-  def order_status_request_body
-    parameters = {
-      reference_id: order_update.order.reference_id
-    }
-    parameters[:order] = order_parameters if order_update.order_status.present?
-    parameters[:payment] = payment_parameters if order_update.payment_status.present?
-
-    {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: order_update.order.recipient,
-      type: 'interactive',
-      interactive: {
-        type: 'order_status',
-        body: { text: order_update.message_content },
-        action: {
-          name: 'review_order',
-          parameters: parameters
-        }
-      }
-    }
-  end
-
-  def order_parameters
-    parameters = { status: order_update.order_status }
-    parameters[:description] = order_update.description if order_update.description.present?
-    parameters
-  end
-
-  def payment_parameters
-    parameters = { status: order_update.payment_status }
-    parameters[:timestamp] = order_update.payment_timestamp if order_update.payment_timestamp.present?
-    parameters
   end
 
   def timeout_seconds
@@ -170,9 +142,33 @@ class Ibsoft::ExternalMessaging::MetaClient
   def raise_meta_error(parsed, http_status)
     error = parsed['error'].is_a?(Hash) ? parsed['error'] : {}
     raise Error.new(
-      error['error_user_msg'].presence || error['message'].presence || I18n.t('ibsoft_external_messaging.errors.meta_rejected'),
+      meta_error_message(error),
       code: error['code'].presence&.to_s || 'meta_rejected',
       http_status: http_status
     )
+  end
+
+  def meta_error_message(error)
+    return legacy_meta_error_message(error) unless record.endpoint.failure_diagnostics_enabled?
+
+    messages = [
+      error['error_user_title'],
+      error['error_user_msg'],
+      error['message'],
+      error.dig('error_data', 'details')
+    ].filter_map { |value| normalized_error_text(value) }.uniq
+
+    messages = [I18n.t('ibsoft_external_messaging.errors.meta_rejected')] if messages.empty?
+    messages.join(' - ').truncate(ERROR_MESSAGE_MAX_LENGTH)
+  end
+
+  def legacy_meta_error_message(error)
+    error['error_user_msg'].presence ||
+      error['message'].presence ||
+      I18n.t('ibsoft_external_messaging.errors.meta_rejected')
+  end
+
+  def normalized_error_text(value)
+    value.to_s.squish.presence
   end
 end

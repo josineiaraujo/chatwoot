@@ -27,6 +27,12 @@ class ExternalMessagingAPI extends ApiClient {
     return axios.post(`${this.url}/endpoints/${endpointId}/rotate_token`);
   }
 
+  getOrderUpdateTemplates(endpointId) {
+    return axios.get(
+      `${this.url}/endpoints/${endpointId}/order_update_templates`
+    );
+  }
+
   getDeliveries(params = {}) {
     return axios.get(`${this.url}/deliveries`, { params });
   }

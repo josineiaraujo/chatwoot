@@ -1,7 +1,8 @@
-import { shallowMount } from '@vue/test-utils';
+import { flushPromises, shallowMount } from '@vue/test-utils';
 import { h } from 'vue';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import externalMessagingAPI from '../api';
 import OrderDefaultsDialog from '../components/OrderDefaultsDialog.vue';
 
 vi.mock('vue-i18n', () => ({
@@ -12,6 +13,12 @@ vi.mock('vue-i18n', () => ({
         key
       ),
   }),
+}));
+
+vi.mock('../api', () => ({
+  default: {
+    getOrderUpdateTemplates: vi.fn(),
+  },
 }));
 
 const dialogOpenMock = vi.fn();
@@ -35,6 +42,7 @@ const mountComponent = () =>
       stubs: {
         Button: true,
         IbsoftSelect: true,
+        Spinner: true,
         ToggleSwitch: true,
         Dialog: {
           name: 'Dialog',
@@ -59,6 +67,13 @@ const mountComponent = () =>
   });
 
 describe('OrderDefaultsDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    externalMessagingAPI.getOrderUpdateTemplates.mockResolvedValue({
+      data: { templates: [] },
+    });
+  });
+
   it('keeps order settings scrollable on short viewports', () => {
     const wrapper = mountComponent();
 
@@ -89,6 +104,7 @@ describe('OrderDefaultsDialog', () => {
               key_type: 'CNPJ',
               clear_key: false,
               messages: emptyMessages,
+              update_delivery: { mode: 'interactive' },
             },
           },
         },
@@ -112,6 +128,7 @@ describe('OrderDefaultsDialog', () => {
       key: 'financeiro@example.com',
       clear_key: false,
       messages: emptyMessages,
+      update_delivery: { mode: 'interactive' },
     });
   });
 
@@ -136,5 +153,81 @@ describe('OrderDefaultsDialog', () => {
       wrapper.emitted('save')[0][0].payload.order_defaults.messages
         .payment_captured
     ).toBe('Payment {{reference_id}} received');
+  });
+
+  it('loads compatible templates and submits the default with an event override', async () => {
+    const templates = [
+      {
+        id: 'default-1',
+        name: 'atualizacao_padrao',
+        language: 'pt_BR',
+        body_parameter: {
+          format: 'named',
+          key: 'mensagem_status',
+        },
+      },
+      {
+        id: 'paid-1',
+        name: 'pagamento_confirmado',
+        language: 'pt_BR',
+        body_parameter: null,
+      },
+    ];
+    externalMessagingAPI.getOrderUpdateTemplates.mockResolvedValue({
+      data: { templates },
+    });
+    const wrapper = mountComponent();
+
+    await wrapper.vm.open({ id: 7, order_defaults: {} });
+    await flushPromises();
+
+    expect(externalMessagingAPI.getOrderUpdateTemplates).toHaveBeenCalledWith(
+      7
+    );
+    expect(wrapper.vm.orderUpdateTemplates).toEqual(templates);
+
+    wrapper.vm.form.update_delivery.mode = 'template';
+    wrapper.vm.form.update_delivery.default_template_id = 'default-1';
+    wrapper.vm.form.update_delivery.overrides.payment_captured = 'paid-1';
+    wrapper.vm.submit();
+
+    expect(
+      wrapper.emitted('save')[0][0].payload.order_defaults.update_delivery
+    ).toEqual({
+      mode: 'template',
+      default_template_id: 'default-1',
+      overrides: { payment_captured: 'paid-1' },
+    });
+  });
+
+  it('preserves the saved template selection if Meta cannot be consulted', async () => {
+    externalMessagingAPI.getOrderUpdateTemplates.mockRejectedValue(
+      new Error('Meta unavailable')
+    );
+    const wrapper = mountComponent();
+    const savedTemplate = {
+      id: 'default-1',
+      name: 'atualizacao_padrao',
+      language: 'pt_BR',
+      body_parameter: null,
+    };
+
+    await wrapper.vm.open({
+      id: 7,
+      order_defaults: {
+        update_delivery: {
+          mode: 'template',
+          default_template: savedTemplate,
+          overrides: {},
+        },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.vm.templatesLoadFailed).toBe(true);
+    expect(wrapper.vm.form.update_delivery.default_template_id).toBe(
+      'default-1'
+    );
+    expect(wrapper.vm.orderUpdateTemplates).toEqual([savedTemplate]);
   });
 });

@@ -310,6 +310,37 @@ onMounted(() => fetchOrders());
         />
       </div>
 
+      <div
+        v-if="!endpoint.order_update_template_ready"
+        class="flex flex-col gap-3 border-b border-n-amber-5 bg-n-amber-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div class="flex min-w-0 items-start gap-3">
+          <i
+            class="i-lucide-triangle-alert mt-0.5 size-5 shrink-0 text-n-amber-11"
+          />
+          <div>
+            <h3 class="mb-1 text-sm font-medium text-n-amber-12">
+              {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.TEMPLATE_WARNING_TITLE') }}
+            </h3>
+            <p class="mb-0 text-body-small text-n-amber-11">
+              {{
+                t(
+                  'IBSOFT_EXTERNAL_MESSAGING.ORDERS.TEMPLATE_WARNING_DESCRIPTION'
+                )
+              }}
+            </p>
+          </div>
+        </div>
+        <Button
+          :label="t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.TEMPLATE_WARNING_ACTION')"
+          icon="i-lucide-file-cog"
+          color="amber"
+          variant="faded"
+          class="shrink-0"
+          @click="emit('configureOrders', endpoint)"
+        />
+      </div>
+
       <dl class="grid sm:grid-cols-2 lg:grid-cols-4">
         <div class="border-b border-n-weak p-4 lg:border-b-0 lg:border-r">
           <dt class="text-label-small text-n-slate-11">

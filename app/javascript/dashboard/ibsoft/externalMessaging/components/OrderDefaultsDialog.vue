@@ -4,8 +4,10 @@ import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
+import externalMessagingAPI from '../api';
 
 defineProps({
   isSaving: {
@@ -24,6 +26,9 @@ const keyHint = ref('');
 const showKey = ref(false);
 const activeTab = ref('payment');
 const messageDefaults = ref({});
+const orderUpdateTemplates = ref([]);
+const isLoadingTemplates = ref(false);
+const templatesLoadFailed = ref(false);
 const referencePlaceholder = '{{reference_id}}';
 const messageKeys = [
   'order_pending',
@@ -43,6 +48,11 @@ const form = reactive({
   key_type: '',
   clear_key: false,
   messages: Object.fromEntries(messageKeys.map(key => [key, ''])),
+  update_delivery: {
+    mode: 'interactive',
+    default_template_id: '',
+    overrides: Object.fromEntries(messageKeys.map(key => [key, ''])),
+  },
 });
 
 const keyTypes = ['CPF', 'CNPJ', 'EMAIL', 'PHONE', 'EVP'];
@@ -54,6 +64,10 @@ const tabs = computed(() => [
   {
     id: 'messages',
     label: t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.TABS.MESSAGES'),
+  },
+  {
+    id: 'delivery',
+    label: t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.TABS.DELIVERY'),
   },
 ]);
 const messageGroups = computed(() => [
@@ -130,12 +144,53 @@ const messageGroups = computed(() => [
     ],
   },
 ]);
+const updateEvents = computed(() =>
+  messageGroups.value.flatMap(group => group.fields)
+);
+const selectedDefaultTemplate = computed(() =>
+  orderUpdateTemplates.value.find(
+    template => template.id === form.update_delivery.default_template_id
+  )
+);
 const isInvalid = computed(
   () =>
     form.merchant_name.trim().length > 100 ||
     form.key.trim().length > 255 ||
-    (form.key_type && !keyTypes.includes(form.key_type))
+    (form.key_type && !keyTypes.includes(form.key_type)) ||
+    (form.update_delivery.mode === 'template' &&
+      !form.update_delivery.default_template_id)
 );
+
+const templateBehaviorLabel = template =>
+  template?.body_parameter
+    ? t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.TEMPLATE_USES_MESSAGE')
+    : t(
+        'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.TEMPLATE_WITHOUT_VARIABLE'
+      );
+
+const templateOptionLabel = template =>
+  t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.TEMPLATE_OPTION', {
+    name: template.name,
+    language: template.language,
+    behavior: templateBehaviorLabel(template),
+  });
+
+const fetchOrderUpdateTemplates = async () => {
+  if (!endpointId.value || isLoadingTemplates.value) return;
+
+  isLoadingTemplates.value = true;
+  templatesLoadFailed.value = false;
+  try {
+    const { data } = await externalMessagingAPI.getOrderUpdateTemplates(
+      endpointId.value
+    );
+    orderUpdateTemplates.value = data.templates || [];
+  } catch {
+    templatesLoadFailed.value = true;
+  } finally {
+    isLoadingTemplates.value = false;
+  }
+};
 
 const reset = () => {
   endpointId.value = null;
@@ -144,13 +199,19 @@ const reset = () => {
   showKey.value = false;
   activeTab.value = 'payment';
   messageDefaults.value = {};
+  orderUpdateTemplates.value = [];
+  isLoadingTemplates.value = false;
+  templatesLoadFailed.value = false;
   form.merchant_name = '';
   form.key = '';
   form.key_type = '';
   form.clear_key = false;
   messageKeys.forEach(key => {
     form.messages[key] = '';
+    form.update_delivery.overrides[key] = '';
   });
+  form.update_delivery.mode = 'interactive';
+  form.update_delivery.default_template_id = '';
 };
 
 const open = async endpoint => {
@@ -166,9 +227,26 @@ const open = async endpoint => {
   messageKeys.forEach(key => {
     form.messages[key] = messages[key] || '';
   });
+  const updateDelivery = endpoint.order_defaults?.update_delivery || {};
+  orderUpdateTemplates.value = [
+    updateDelivery.default_template,
+    ...Object.values(updateDelivery.overrides || {}),
+  ].filter(
+    (template, index, templates) =>
+      template?.id &&
+      templates.findIndex(candidate => candidate?.id === template.id) === index
+  );
+  form.update_delivery.mode = updateDelivery.mode || 'interactive';
+  form.update_delivery.default_template_id =
+    updateDelivery.default_template?.id?.toString() || '';
+  messageKeys.forEach(key => {
+    form.update_delivery.overrides[key] =
+      updateDelivery.overrides?.[key]?.id?.toString() || '';
+  });
 
   await nextTick();
   dialogRef.value?.open();
+  fetchOrderUpdateTemplates();
 };
 
 const close = () => dialogRef.value?.close();
@@ -189,6 +267,19 @@ const submit = () => {
     messages: Object.fromEntries(
       messageKeys.map(key => [key, form.messages[key].trim()])
     ),
+    update_delivery: {
+      mode: form.update_delivery.mode,
+      ...(form.update_delivery.mode === 'template'
+        ? {
+            default_template_id: form.update_delivery.default_template_id,
+            overrides: Object.fromEntries(
+              messageKeys
+                .map(key => [key, form.update_delivery.overrides[key]])
+                .filter(([, templateId]) => templateId)
+            ),
+          }
+        : {}),
+    },
   };
   if (!form.clear_key && form.key.trim()) {
     orderDefaults.key = form.key.trim();
@@ -323,7 +414,11 @@ defineExpose({ open, close });
       </label>
     </div>
 
-    <div v-else class="grid gap-5" role="tabpanel">
+    <div
+      v-else-if="activeTab === 'messages'"
+      class="grid gap-5"
+      role="tabpanel"
+    >
       <div
         class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
       >
@@ -371,6 +466,249 @@ defineExpose({ open, close });
           </label>
         </div>
       </section>
+    </div>
+
+    <div v-else class="grid gap-5" role="tabpanel">
+      <section class="grid gap-3">
+        <div>
+          <h3 class="mb-1 text-heading-3 text-n-slate-12">
+            {{
+              t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.MODE_TITLE')
+            }}
+          </h3>
+          <p class="mb-0 text-body-small text-n-slate-11">
+            {{
+              t(
+                'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.MODE_DESCRIPTION'
+              )
+            }}
+          </p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            class="flex min-h-28 items-start gap-3 rounded-lg border p-4 text-left transition-colors"
+            :class="
+              form.update_delivery.mode === 'interactive'
+                ? 'border-n-blue-8 bg-n-blue-3'
+                : 'border-n-weak bg-n-alpha-1 hover:bg-n-alpha-2'
+            "
+            @click="form.update_delivery.mode = 'interactive'"
+          >
+            <i
+              class="i-lucide-mouse-pointer-click mt-0.5 size-5 shrink-0 text-n-blue-10"
+            />
+            <span>
+              <span class="block text-sm font-medium text-n-slate-12">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.INTERACTIVE_TITLE'
+                  )
+                }}
+              </span>
+              <span class="mt-1 block text-body-small text-n-slate-11">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.INTERACTIVE_DESCRIPTION'
+                  )
+                }}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="flex min-h-28 items-start gap-3 rounded-lg border p-4 text-left transition-colors"
+            :class="
+              form.update_delivery.mode === 'template'
+                ? 'border-n-blue-8 bg-n-blue-3'
+                : 'border-n-weak bg-n-alpha-1 hover:bg-n-alpha-2'
+            "
+            @click="form.update_delivery.mode = 'template'"
+          >
+            <i
+              class="i-lucide-file-text mt-0.5 size-5 shrink-0 text-n-blue-10"
+            />
+            <span>
+              <span class="block text-sm font-medium text-n-slate-12">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.TEMPLATE_TITLE'
+                  )
+                }}
+              </span>
+              <span class="mt-1 block text-body-small text-n-slate-11">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.TEMPLATE_DESCRIPTION'
+                  )
+                }}
+              </span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <template v-if="form.update_delivery.mode === 'template'">
+        <div
+          v-if="isLoadingTemplates"
+          class="grid min-h-36 place-content-center gap-3 text-center text-n-slate-11"
+        >
+          <Spinner />
+          <span class="text-body-small">
+            {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.LOADING') }}
+          </span>
+        </div>
+
+        <div
+          v-else-if="templatesLoadFailed && !orderUpdateTemplates.length"
+          class="flex min-h-36 flex-col items-center justify-center gap-3 rounded-lg border border-n-weak bg-n-alpha-1 p-5 text-center"
+        >
+          <i class="i-lucide-cloud-off size-5 text-n-slate-10" />
+          <p class="mb-0 text-body-small text-n-slate-11">
+            {{
+              t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.LOAD_ERROR')
+            }}
+          </p>
+          <Button
+            :label="t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.RETRY')"
+            icon="i-lucide-refresh-cw"
+            color="slate"
+            variant="faded"
+            size="sm"
+            type="button"
+            @click="fetchOrderUpdateTemplates"
+          />
+        </div>
+
+        <div
+          v-else-if="!orderUpdateTemplates.length"
+          class="flex min-h-36 flex-col items-center justify-center gap-2 rounded-lg border border-n-weak bg-n-alpha-1 p-5 text-center"
+        >
+          <i class="i-lucide-file-search size-5 text-n-slate-10" />
+          <p class="mb-0 max-w-xl text-body-small text-n-slate-11">
+            {{ t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.EMPTY') }}
+          </p>
+        </div>
+
+        <template v-else>
+          <div
+            v-if="templatesLoadFailed"
+            class="flex items-center justify-between gap-3 rounded-lg border border-n-amber-5 bg-n-amber-3 p-3"
+          >
+            <span
+              class="flex items-center gap-2 text-body-small text-n-amber-11"
+            >
+              <i class="i-lucide-triangle-alert size-4 shrink-0" />
+              {{
+                t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.LOAD_ERROR')
+              }}
+            </span>
+            <Button
+              :label="
+                t('IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.RETRY')
+              "
+              icon="i-lucide-refresh-cw"
+              color="slate"
+              variant="faded"
+              size="sm"
+              type="button"
+              @click="fetchOrderUpdateTemplates"
+            />
+          </div>
+
+          <label class="grid gap-1">
+            <span class="text-label-small text-n-slate-11">
+              {{
+                t(
+                  'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.DEFAULT_LABEL'
+                )
+              }}
+            </span>
+            <IbsoftSelect v-model="form.update_delivery.default_template_id">
+              <option value="">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.DEFAULT_PLACEHOLDER'
+                  )
+                }}
+              </option>
+              <option
+                v-for="template in orderUpdateTemplates"
+                :key="template.id"
+                :value="template.id"
+              >
+                {{ templateOptionLabel(template) }}
+              </option>
+            </IbsoftSelect>
+            <span class="text-body-small text-n-slate-10">
+              {{
+                t(
+                  'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.DEFAULT_DESCRIPTION'
+                )
+              }}
+            </span>
+          </label>
+
+          <div
+            v-if="selectedDefaultTemplate"
+            class="flex items-center gap-2 rounded-lg border border-n-weak bg-n-alpha-1 p-3 text-body-small text-n-slate-11"
+          >
+            <i class="i-lucide-info size-4 shrink-0 text-n-blue-10" />
+            {{ templateBehaviorLabel(selectedDefaultTemplate) }}
+          </div>
+
+          <section class="grid gap-3">
+            <div>
+              <h3 class="mb-1 text-heading-3 text-n-slate-12">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.OVERRIDES_TITLE'
+                  )
+                }}
+              </h3>
+              <p class="mb-0 text-body-small text-n-slate-11">
+                {{
+                  t(
+                    'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.OVERRIDES_DESCRIPTION'
+                  )
+                }}
+              </p>
+            </div>
+
+            <div class="grid gap-3 lg:grid-cols-2">
+              <label
+                v-for="event in updateEvents"
+                :key="event.key"
+                class="grid gap-1"
+              >
+                <span class="text-label-small text-n-slate-11">
+                  {{ event.label }}
+                </span>
+                <IbsoftSelect
+                  v-model="form.update_delivery.overrides[event.key]"
+                >
+                  <option value="">
+                    {{
+                      t(
+                        'IBSOFT_EXTERNAL_MESSAGING.ORDERS.MODAL.DELIVERY.USE_DEFAULT'
+                      )
+                    }}
+                  </option>
+                  <option
+                    v-for="template in orderUpdateTemplates"
+                    :key="template.id"
+                    :value="template.id"
+                  >
+                    {{ templateOptionLabel(template) }}
+                  </option>
+                </IbsoftSelect>
+              </label>
+            </div>
+          </section>
+        </template>
+      </template>
     </div>
 
     <template #footer>

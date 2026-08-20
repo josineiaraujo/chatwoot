@@ -25,8 +25,61 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateCreator do
       endpoint_id: endpoint.id,
       account_id: endpoint.account_id,
       inbox_id: endpoint.inbox_id,
-      status: 'queued'
+      status: 'queued',
+      delivery_method: 'interactive',
+      template_name: nil,
+      template_language: nil,
+      template_components: []
     )
+  end
+
+  it 'snapshots the selected template before queueing the update' do
+    endpoint.update!(
+      order_update_delivery_mode: 'template',
+      order_update_template_settings: {
+        'default' => {
+          'id' => 'template-1',
+          'name' => 'atualizacao_fatura',
+          'language' => 'pt_BR',
+          'parameter_format' => 'NAMED',
+          'body_parameter' => {
+            'format' => 'named',
+            'key' => 'mensagem_status'
+          }
+        },
+        'overrides' => {}
+      }
+    )
+
+    result = create_update
+
+    expect(result.update).to have_attributes(
+      delivery_method: 'template',
+      template_name: 'atualizacao_fatura',
+      template_language: 'pt_BR',
+      template_components: [
+        {
+          'type' => 'body',
+          'parameters' => [
+            {
+              'type' => 'text',
+              'text' => 'Processing',
+              'parameter_name' => 'mensagem_status'
+            }
+          ]
+        }
+      ]
+    )
+
+    endpoint.update!(
+      order_update_template_settings: endpoint.order_update_template_settings.deep_merge(
+        'default' => {
+          'name' => 'template_alterado_depois_da_fila'
+        }
+      )
+    )
+
+    expect(result.update.reload.template_name).to eq('atualizacao_fatura')
   end
 
   it 'records the actor and source for a manual update' do

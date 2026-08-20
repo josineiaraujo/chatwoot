@@ -24,6 +24,8 @@
       "ENABLED_DESCRIPTION": "Credentials from inactive instances cannot submit new requests.",
       "ALLOW_ORDER_RESENDS": "Allow resending the same order",
       "ALLOW_ORDER_RESENDS_DESCRIPTION": "New billing messages with the same reference are linked to the existing order while keeping a separate history entry for each delivery.",
+      "FAILURE_DIAGNOSTICS": "Record detailed failure reasons",
+      "FAILURE_DIAGNOSTICS_DESCRIPTION": "Stores Meta's technical failure detail in history. The information is removed with the request when retention expires.",
       "SAVE": "Save instance",
       "SAVED": "Instance saved.",
       "VIEW": "View",
@@ -73,6 +75,9 @@
       "CONFIGURED": "The default PIX data is complete.",
       "WARNING_TITLE": "Incomplete PIX configuration",
       "WARNING_DESCRIPTION": "Provide the merchant name, PIX key type, and key to accept orders that depend on instance defaults.",
+      "TEMPLATE_WARNING_TITLE": "Updates outside the service window are not configured",
+      "TEMPLATE_WARNING_DESCRIPTION": "Select an approved template to update orders and payments even outside Meta's customer service window.",
+      "TEMPLATE_WARNING_ACTION": "Configure delivery",
       "MERCHANT_NAME": "Merchant name",
       "KEY_TYPE": "Key type",
       "PIX_KEY": "PIX key",
@@ -159,7 +164,8 @@
         "TABS": {
           "LABEL": "Order configuration sections",
           "PAYMENT": "Payment",
-          "MESSAGES": "Messages"
+          "MESSAGES": "Messages",
+          "DELIVERY": "Update delivery"
         },
         "MESSAGES": {
           "DESCRIPTION": "These texts are used when the integration omits message or mensagem. Use {placeholder} to insert the order reference.",
@@ -178,6 +184,27 @@
             "PAYMENT_FAILED": "Payment not confirmed",
             "CAPTURED_AND_COMPLETED": "Payment confirmed and order completed"
           }
+        },
+        "DELIVERY": {
+          "MODE_TITLE": "How updates are sent",
+          "MODE_DESCRIPTION": "Choose the format used to notify the customer when an order or payment status changes.",
+          "INTERACTIVE_TITLE": "Interactive update",
+          "INTERACTIVE_DESCRIPTION": "Uses the native order update. Delivery requires an active customer service window.",
+          "TEMPLATE_TITLE": "Update template",
+          "TEMPLATE_DESCRIPTION": "Uses Meta-approved templates and allows updates outside the customer service window.",
+          "LOADING": "Loading approved templates...",
+          "LOAD_ERROR": "Templates cannot be loaded right now. The saved configuration was preserved.",
+          "RETRY": "Try again",
+          "EMPTY": "No compatible order-status template was found for this channel.",
+          "DEFAULT_LABEL": "Default template",
+          "DEFAULT_PLACEHOLDER": "Select the template used by default",
+          "DEFAULT_DESCRIPTION": "This template is used for every update without a specific override.",
+          "OVERRIDES_TITLE": "Specific templates",
+          "OVERRIDES_DESCRIPTION": "Optionally choose another template for specific events. Other events use the default template.",
+          "USE_DEFAULT": "Use the default template",
+          "TEMPLATE_OPTION": "{name} · {language} · {behavior}",
+          "TEMPLATE_USES_MESSAGE": "The single body variable receives the message configured for the event.",
+          "TEMPLATE_WITHOUT_VARIABLE": "The template is sent without body variables."
         },
         "SAVE": "Save configuration"
       }
@@ -417,6 +444,9 @@
       "TEMPLATE": "Template",
       "STATUS": "Status",
       "META_ID": "Meta ID",
+      "DIAGNOSTIC": "Reason",
+      "ERROR_CODE": "Code {code}",
+      "HTTP_STATUS": "HTTP {status}",
       "NOT_AVAILABLE": "Not available",
       "EMPTY": "No external request has been recorded.",
       "PER_PAGE": "Items per page",
