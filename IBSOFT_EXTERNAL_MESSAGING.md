@@ -201,6 +201,28 @@ do envio. Se o ERP informar `message` ou `mensagem`, o valor da requisicao tem
 prioridade somente naquele envio. Instancias antigas usam os textos traduzidos
 do modulo ate que um administrador salve personalizacoes.
 
+Na aba `Envio das atualizacoes`, o administrador escolhe como esses eventos
+serao entregues:
+
+- `interactive`: preserva o envio legado `interactive/order_status`, sujeito a
+  janela de atendimento da Meta;
+- `template`: usa um template aprovado de status de ordem e funciona tambem
+  fora da janela de atendimento.
+
+No modo `template`, um template padrao e obrigatorio e atende todos os eventos.
+Opcionalmente, cada estado de ordem ou pagamento pode selecionar outro template.
+O catalogo aceita apenas templates `UTILITY`, `ORDER_STATUS` e `APPROVED` que
+possam ser preenchidos deterministicamente: sem variavel no corpo ou com uma
+unica variavel no corpo. Templates com cabecalho de midia, variaveis em outros
+componentes ou mais de uma variavel no corpo nao aparecem nessa selecao.
+
+Quando o template possui uma variavel, ela recebe o mesmo texto calculado para
+o evento: primeiro `message`/`mensagem` enviado pelo ERP, depois a sugestao
+personalizada da instancia e, por ultimo, o texto traduzido padrao do modulo.
+Quando o template nao possui variavel, nenhum parametro de corpo e enviado. As
+sugestoes atuais continuam editaveis e podem ser reutilizadas por um unico
+template generico em todos os eventos.
+
 Exemplo:
 
 ```bash
@@ -221,11 +243,17 @@ curl --get 'https://josinei.ibsoftcloud.com.br/chathub-sender/ixc/pedido/' \
 ```
 
 O endpoint valida e persiste a solicitacao antes de responder `202`. O envio
-visivel `interactive/order_status` ocorre no Sidekiq. Se a ordem ja possui os
-estados solicitados, a resposta e `200 unchanged` e nenhuma mensagem e
-enviada. A ordem precisa ter sido aceita pela Meta antes de receber
-atualizacoes. No contrato IXC, `dest` tambem precisa coincidir com o
-destinatario da mensagem que abriu a ordem.
+ocorre no Sidekiq usando o modo e o template copiados para a propria
+atualizacao no momento do aceite. Alterar a configuracao depois disso nao muda
+um item que ja esta na fila. Nao existe fallback silencioso de template para
+`interactive/order_status`: uma configuracao inconsistente impede o enqueue e
+uma rejeicao da Meta fica registrada no historico.
+
+Se a ordem ja possui os estados solicitados, a resposta e `200 unchanged` e
+nenhuma mensagem e enviada. A ordem precisa ter sido aceita pela Meta antes de
+receber atualizacoes. No contrato IXC, `dest` tambem precisa coincidir com o
+destinatario da mensagem que abriu a ordem. Tanto SGP quanto IXC convergem para
+esse mesmo fluxo compartilhado.
 
 ## Interpretacao semantica
 
@@ -468,13 +496,15 @@ em outra instancia sem conflito.
 
 Migration:
 
-- `db/migrate/20260727090000_create_ibsoft_external_messaging.rb`.
-- `db/migrate/20260727213000_add_instance_type_to_ibsoft_external_message_endpoints.rb`.
-- `db/migrate/20260728100000_create_ibsoft_external_message_orders.rb`.
-- `db/migrate/20260729100000_add_order_pix_defaults_to_ibsoft_external_messaging.rb`.
-- `db/migrate/20260729130000_add_external_messaging_retention_and_manual_order_updates.rb`.
-- `db/migrate/20260729170000_add_order_update_messages_to_ibsoft_external_messaging.rb`.
-- `db/migrate/20260805190000_enable_ibsoft_external_order_resends.rb`.
+- `db/migrate/20260727090000_create_ibsoft_external_messaging.rb`;
+- `db/migrate/20260727213000_add_instance_type_to_ibsoft_external_message_endpoints.rb`;
+- `db/migrate/20260728100000_create_ibsoft_external_message_orders.rb`;
+- `db/migrate/20260729100000_add_order_pix_defaults_to_ibsoft_external_messaging.rb`;
+- `db/migrate/20260729130000_add_external_messaging_retention_and_manual_order_updates.rb`;
+- `db/migrate/20260729170000_add_order_update_messages_to_ibsoft_external_messaging.rb`;
+- `db/migrate/20260805190000_enable_ibsoft_external_order_resends.rb`;
+- `db/migrate/20260814180000_add_failure_diagnostics_to_ibsoft_external_message_endpoints.rb`;
+- `db/migrate/20260814200000_add_template_delivery_to_ibsoft_external_message_order_updates.rb`.
 
 Tabelas:
 
@@ -486,12 +516,16 @@ Tabelas:
 A instancia armazena conta, canal, criador, tipo, nome, SHA-256 do segredo de
 autenticacao, dica nao sensivel, estado, limite de envio, politica de reenvio
 de ordens, os tres defaults PIX opcionais e somente as mensagens de atualizacao
-personalizadas pelo administrador. O usuario IXC e derivado do ID da instancia
-e nao ocupa uma coluna. A coluna JSONB
-aceita exclusivamente as dez chaves conhecidas e cada texto e limitado a 1024
-bytes. Textos nao personalizados continuam vindo dos arquivos de traducao. A
-chave PIX usa Active Record Encryption e nunca faz parte do payload
-administrativo.
+personalizadas pelo administrador. Tambem armazena o modo de entrega e
+descritores compactos do template padrao e das sobrescritas: ID, nome, idioma,
+formato da variavel e a unica variavel de corpo, quando existente. O payload
+completo retornado pela Meta nao e persistido.
+
+O usuario IXC e derivado do ID da instancia e nao ocupa uma coluna. A coluna
+JSONB de mensagens aceita exclusivamente as dez chaves conhecidas e cada texto
+e limitado a 1024 bytes. Textos nao personalizados continuam vindo dos arquivos
+de traducao. A chave PIX usa Active Record Encryption e nunca faz parte do
+payload administrativo.
 O nome tecnico da tabela e do model continua usando `endpoint`, preservando o
 contrato interno ja implantado. `InstanceTypeRegistry` e a fonte de verdade
 backend para o caminho publico, que e devolvido no campo `public_path` da API
@@ -519,10 +553,13 @@ O destinatario canonico e o da entrega inicial e nao pode mudar nos reenvios.
 
 `ibsoft_external_message_order_updates` e ao mesmo tempo a fila duravel e a
 auditoria minima de cada mensagem de atualizacao. Armazena apenas estados
-solicitados, texto visivel, descricao, timestamp de pagamento, estado
-operacional, ID/erro da Meta, contador e timestamps. O corpo HTTP original nao
-e armazenado. Atualizacoes manuais tambem guardam a origem `manual` e o usuario
-que solicitou a operacao; chamadas do ERP usam a origem `external_api`.
+solicitados, texto visivel, descricao, timestamp de pagamento, modo de entrega,
+nome/idioma e componentes minimos do template selecionado, estado operacional,
+ID/erro da Meta, contador e timestamps. Esse snapshot permite que workers em
+outras replicas processem a mesma decisao mesmo se a configuracao da instancia
+mudar depois do enqueue. O corpo HTTP original e o payload completo do template
+nao sao armazenados. Atualizacoes manuais tambem guardam a origem `manual` e o
+usuario que solicitou a operacao; chamadas do ERP usam a origem `external_api`.
 
 ## Consulta e atualizacao manual
 
@@ -623,12 +660,17 @@ Para atualizacoes de pedido:
    no IXC, tambem pelo destinatario;
 7. uma trava no registro da ordem calcula o estado projetado da fila;
 8. repeticoes do mesmo estado sao deduplicadas;
-9. `SendOrderUpdateJob` envia pela fila `medium`;
-10. `OrderUpdateSender` processa somente a primeira atualizacao pendente da
-   ordem;
-11. `MetaClient` envia `interactive/order_status`;
-12. o estado canonico so avanca depois do aceite da Meta;
-13. webhooks avancam a atualizacao para `sent`, `delivered`, `read` ou
+9. `OrderUpdateDeliverySnapshot` resolve o template especifico ou padrao e
+   grava a decisao de entrega no registro duravel;
+10. `SendOrderUpdateJob` envia pela fila `medium`;
+11. `OrderUpdateSender` processa somente a primeira atualizacao pendente da
+    ordem;
+12. `OrderUpdatePayloadBuilder` monta o envelope Meta exclusivamente a partir
+    do snapshot persistido;
+13. `MetaClient` envia o template copiado no snapshot ou, para registros no
+    modo legado, `interactive/order_status`;
+14. o estado canonico so avanca depois do aceite da Meta;
+15. webhooks avancam a atualizacao para `sent`, `delivered`, `read` ou
     `failed`.
 
 Para atualizacoes manuais em massa, `BulkOrderUpdateScheduler` valida a selecao
@@ -676,6 +718,21 @@ Backend:
   extracao limitada e sem persistencia de Bearer/token SGP;
 - `app/services/ibsoft/external_messaging/order_update_inbound_request.rb`:
   adapta o contrato SGP ou o envelope IXC para a mesma regra de atualizacao;
+- `app/services/ibsoft/external_messaging/order_update_template_catalog.rb`:
+  reduz o catalogo da Meta aos templates de status que podem ser preenchidos
+  com seguranca;
+- `app/services/ibsoft/external_messaging/order_update_template_settings.rb`:
+  valida e grava o template padrao e as sobrescritas por evento;
+- `app/services/ibsoft/external_messaging/order_update_template_configuration.rb`:
+  normaliza e valida o formato compacto persistido, sem depender da ordem de
+  callbacks do model;
+- `app/services/ibsoft/external_messaging/order_update_delivery_snapshot.rb`:
+  materializa a decisao duravel antes do enqueue;
+- `app/services/ibsoft/external_messaging/order_update_payload_builder.rb`:
+  monta os payloads `template` e `interactive/order_status` sem acesso a
+  configuracao mutavel da instancia;
+- `app/services/ibsoft/external_messaging/endpoint_payload.rb`:
+  apresenta a configuracao administrativa sem expor a chave PIX;
 - `app/services/ibsoft/external_messaging/endpoint_authenticator.rb`:
   autenticacao por contrato exato nas mensagens e por familia nas ordens;
 - `app/jobs/ibsoft/external_messaging/`;
@@ -702,7 +759,8 @@ Frontend:
   selecao;
 - `components/IntegrationInstructions.vue`: guia por cenarios com campos,
   obrigatoriedade, regras e exemplos executaveis do contrato;
-- `components/OrderDefaultsDialog.vue`: edicao isolada dos defaults PIX;
+- `components/OrderDefaultsDialog.vue`: edicao isolada dos defaults PIX, das
+  sugestoes de texto e dos templates de atualizacao;
 - `app/javascript/dashboard/ibsoft/assets/images/logo/sgp/`: logos SGP para os
   temas claro e escuro;
 - `app/javascript/dashboard/ibsoft/assets/images/logo/ixc/`: logos IXC para os
@@ -730,6 +788,11 @@ abre apenas os metadados seguros da credencial ativa. O segredo completo nao e
 recuperavel; somente o comando explicito **Gerar novas credenciais** invalida o
 segredo anterior e exibe o novo valor uma unica vez.
 
+A aba **Ordens** exibe um alerta enquanto a entrega por template nao possuir um
+template padrao valido. A selecao consulta a API administrativa privada
+`GET /api/v1/accounts/:account_id/ibsoft/external_messaging/endpoints/:id/order_update_templates`
+e nunca expoe a credencial da Meta ao navegador.
+
 ## Pontos de acoplamento
 
 Pontos de conexao com o Chatwoot:
@@ -749,6 +812,15 @@ O status usa extensao privada:
 - `config/initializers/ibsoft_external_messaging.rb`;
 - `config/initializers/ibsoft_external_messaging_parameter_filter.rb`;
 - `app/services/ibsoft/external_messaging/whatsapp_status_extension.rb`.
+
+Cada instancia possui a opcao `failure_diagnostics_enabled`, desativada por
+padrao. Quando ela esta desligada, falhas definitivas preservam o comportamento
+original e registram somente a mensagem principal retornada pela Meta. Quando
+ativada, `error_message` combina a mensagem e o detalhe tecnico retornados pela
+Meta, limitados a 2.000 caracteres, e o historico exibe a coluna de diagnostico.
+Payload, valores das variaveis e credenciais nunca sao preservados. O registro
+segue a mesma retencao configurada para a instancia e e eliminado junto com a
+entrega ao expirar o prazo, inclusive quando estiver com status `failed`.
 
 Nenhum service de envio, model de conversa, model de mensagem ou controller de
 webhook do Chatwoot foi editado.
@@ -795,15 +867,17 @@ reais.
 2. Confirmar se `Whatsapp::IncomingMessageBaseService#process_statuses` ainda
    recebe `@processed_params[:statuses]` e possui `inbox`.
 3. Confirmar o contrato de `Channel::Whatsapp#provider_config`.
-4. Preservar as rotas publicas, as rotas administrativas e o registro
+4. Confirmar que o catalogo de templates continua recebendo `sub_category`,
+   `parameter_format` e `components` da API da Meta.
+5. Preservar as rotas publicas, as rotas administrativas e o registro
    `InstanceTypeRegistry`, incluindo `family`, `public_path`,
    `order_update_path`, estrategia de autenticacao, prefixo de usuario, parser
    e contrato.
-5. Confirmar as entradas privadas de recuperacao e limpeza em
+6. Confirmar as entradas privadas de recuperacao e limpeza em
    `config/schedule.yml`.
-6. Rodar migration, specs, RuboCop, ESLint e teste frontend.
-7. Testar token SGP, usuario/senha IXC, aceite assincrono, atualizacao manual,
-   retencao e webhook em homologacao.
+7. Rodar migration, specs, RuboCop, ESLint e teste frontend.
+8. Testar token SGP, usuario/senha IXC, aceite assincrono, atualizacao manual,
+   template com zero/uma variavel, retencao e webhook em homologacao.
 
 Se o Chatwoot oferecer envio direto equivalente, comparar contratos e migrar
 os registros antes de remover o modulo.

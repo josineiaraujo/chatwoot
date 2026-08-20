@@ -29,6 +29,10 @@
 #  index_ibsoft_conversation_distribution_event_logs_on_inbox_id  (inbox_id)
 #  index_ibsoft_conversation_distribution_event_logs_on_team_id   (team_id)
 #
+# Foreign Keys
+#
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => nullify
+#
 class Ibsoft::ConversationDistribution::EventLog < ApplicationRecord
   self.table_name = 'ibsoft_conversation_distribution_event_logs'
 

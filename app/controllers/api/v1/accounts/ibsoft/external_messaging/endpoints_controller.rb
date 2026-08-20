@@ -1,6 +1,10 @@
 class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
   Api::V1::Accounts::Ibsoft::ExternalMessaging::BaseController
-  before_action :set_endpoint, only: [:update, :destroy, :rotate_token]
+  before_action :set_endpoint, only: [:update, :destroy, :rotate_token, :order_update_templates]
+
+  rescue_from Ibsoft::ExternalMessaging::OrderUpdateTemplateSettings::ValidationError,
+              with: :render_order_update_template_validation_error
+  rescue_from Ibsoft::MetaTemplates::Client::Error, with: :render_meta_template_error
 
   def index
     endpoints = scoped_endpoints.to_a
@@ -50,6 +54,12 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
     )
   end
 
+  def order_update_templates
+    templates = Ibsoft::ExternalMessaging::OrderUpdateTemplateCatalog.new(endpoint: @endpoint).list
+
+    render json: { templates: templates }
+  end
+
   private
 
   def scoped_endpoints
@@ -71,7 +81,8 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
       :active,
       :rate_limit_per_second,
       :retention_days,
-      :allow_order_resends
+      :allow_order_resends,
+      :failure_diagnostics_enabled
     ).to_h.merge(
       account: Current.account,
       inbox: whatsapp_cloud_inboxes.find { |inbox| inbox.id == params[:inbox_id].to_i }
@@ -84,7 +95,8 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
       :active,
       :rate_limit_per_second,
       :retention_days,
-      :allow_order_resends
+      :allow_order_resends,
+      :failure_diagnostics_enabled
     )
   end
 
@@ -94,6 +106,7 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
     @endpoint.order_pix_merchant_name = attributes[:merchant_name] if attributes.key?(:merchant_name)
     @endpoint.order_pix_key_type = attributes[:key_type] if attributes.key?(:key_type)
     @endpoint.order_update_messages = attributes[:messages] if attributes.key?(:messages)
+    assign_order_update_delivery(attributes[:update_delivery]) if attributes.key?(:update_delivery)
 
     if ActiveModel::Type::Boolean.new.cast(attributes[:clear_key])
       @endpoint.order_pix_key = nil
@@ -109,11 +122,39 @@ class Api::V1::Accounts::Ibsoft::ExternalMessaging::EndpointsController <
         :key,
         :key_type,
         :clear_key,
-        { messages: Ibsoft::ExternalMessaging::Endpoint::ORDER_UPDATE_MESSAGE_KEYS }
+        { messages: Ibsoft::ExternalMessaging::Endpoint::ORDER_UPDATE_MESSAGE_KEYS },
+        {
+          update_delivery: [
+            :mode,
+            :default_template_id,
+            { overrides: Ibsoft::ExternalMessaging::Endpoint::ORDER_UPDATE_MESSAGE_KEYS }
+          ]
+        }
       ]
     )
           .fetch(:order_defaults, {})
           .to_h
           .with_indifferent_access
+  end
+
+  def assign_order_update_delivery(attributes)
+    Ibsoft::ExternalMessaging::OrderUpdateTemplateSettings.new(
+      endpoint: @endpoint,
+      attributes: attributes
+    ).assign
+  end
+
+  def render_order_update_template_validation_error(error)
+    render json: {
+      error: error.code,
+      message: error.message
+    }, status: :unprocessable_entity
+  end
+
+  def render_meta_template_error(error)
+    render json: {
+      error: error.code,
+      message: error.message
+    }, status: error.http_status || :bad_gateway
   end
 end

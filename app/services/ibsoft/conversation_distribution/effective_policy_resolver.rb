@@ -27,6 +27,8 @@ class Ibsoft::ConversationDistribution::EffectivePolicyResolver
       enabled: false,
       policy_type: 'default',
       source: 'default',
+      after_hours_policy_id: nil,
+      after_hours_policy_name: nil,
       config: Ibsoft::ConversationDistribution::Policy.default_config,
       created_at: nil,
       updated_at: nil

@@ -24,6 +24,8 @@
       "ENABLED_DESCRIPTION": "Credenciais de instâncias inativas não recebem novas solicitações.",
       "ALLOW_ORDER_RESENDS": "Permitir reenvio da mesma ordem",
       "ALLOW_ORDER_RESENDS_DESCRIPTION": "Novas cobranças com a mesma referência são vinculadas à ordem existente, mantendo um histórico separado para cada envio.",
+      "FAILURE_DIAGNOSTICS": "Registrar motivo detalhado das falhas",
+      "FAILURE_DIAGNOSTICS_DESCRIPTION": "Salva no histórico o detalhe técnico retornado pela Meta. A informação é removida junto com a solicitação ao fim da retenção.",
       "SAVE": "Salvar instância",
       "SAVED": "Instância salva.",
       "VIEW": "Visualizar",
@@ -73,6 +75,9 @@
       "CONFIGURED": "Os dados PIX padrão estão completos.",
       "WARNING_TITLE": "Configuração de PIX incompleta",
       "WARNING_DESCRIPTION": "Preencha o nome do recebedor, o tipo e a chave PIX para aceitar ordens que dependam dos valores padrão da instância.",
+      "TEMPLATE_WARNING_TITLE": "Atualizações fora da janela não configuradas",
+      "TEMPLATE_WARNING_DESCRIPTION": "Selecione um template aprovado para atualizar ordens e pagamentos mesmo fora da janela de atendimento da Meta.",
+      "TEMPLATE_WARNING_ACTION": "Configurar envio",
       "MERCHANT_NAME": "Nome do recebedor",
       "KEY_TYPE": "Tipo da chave",
       "PIX_KEY": "Chave PIX",
@@ -159,7 +164,8 @@
         "TABS": {
           "LABEL": "Seções da configuração de ordens",
           "PAYMENT": "Pagamento",
-          "MESSAGES": "Mensagens"
+          "MESSAGES": "Mensagens",
+          "DELIVERY": "Envio das atualizações"
         },
         "MESSAGES": {
           "DESCRIPTION": "Esses textos são usados quando a integração não envia message ou mensagem. Use {placeholder} para inserir a referência da ordem.",
@@ -178,6 +184,27 @@
             "PAYMENT_FAILED": "Pagamento não confirmado",
             "CAPTURED_AND_COMPLETED": "Pagamento confirmado e ordem concluída"
           }
+        },
+        "DELIVERY": {
+          "MODE_TITLE": "Como enviar as atualizações",
+          "MODE_DESCRIPTION": "Escolha o formato usado para avisar o cliente quando uma ordem ou um pagamento mudar de status.",
+          "INTERACTIVE_TITLE": "Atualização interativa",
+          "INTERACTIVE_DESCRIPTION": "Usa a atualização nativa da ordem. O envio depende de uma janela de atendimento ativa com o cliente.",
+          "TEMPLATE_TITLE": "Template de atualização",
+          "TEMPLATE_DESCRIPTION": "Usa templates aprovados pela Meta e permite enviar atualizações fora da janela de atendimento.",
+          "LOADING": "Carregando templates aprovados...",
+          "LOAD_ERROR": "Não foi possível consultar os templates agora. A configuração já salva foi preservada.",
+          "RETRY": "Tentar novamente",
+          "EMPTY": "Nenhum template de status de pedido compatível foi encontrado neste canal.",
+          "DEFAULT_LABEL": "Template padrão",
+          "DEFAULT_PLACEHOLDER": "Selecione o template usado por padrão",
+          "DEFAULT_DESCRIPTION": "Este template será usado em qualquer atualização que não possua uma substituição específica.",
+          "OVERRIDES_TITLE": "Templates específicos",
+          "OVERRIDES_DESCRIPTION": "Opcionalmente, escolha outro template para situações específicas. Os demais eventos usam o template padrão.",
+          "USE_DEFAULT": "Usar o template padrão",
+          "TEMPLATE_OPTION": "{name} · {language} · {behavior}",
+          "TEMPLATE_USES_MESSAGE": "A única variável do corpo receberá o texto configurado para o evento.",
+          "TEMPLATE_WITHOUT_VARIABLE": "O template será enviado sem variáveis no corpo."
         },
         "SAVE": "Salvar configuração"
       }
@@ -417,6 +444,9 @@
       "TEMPLATE": "Template",
       "STATUS": "Status",
       "META_ID": "ID da Meta",
+      "DIAGNOSTIC": "Motivo",
+      "ERROR_CODE": "Código {code}",
+      "HTTP_STATUS": "HTTP {status}",
       "NOT_AVAILABLE": "Não disponível",
       "EMPTY": "Nenhuma solicitação externa foi registrada.",
       "PER_PAGE": "Itens por página",

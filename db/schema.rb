@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_16_110000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -446,8 +446,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.integer "status", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
     t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
@@ -686,8 +686,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.jsonb "phone_number_health", default: {}, null: false
     t.datetime "phone_number_health_checked_at"
     t.string "phone_number_health_error", limit: 500
-    t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
+    t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
   end
 
   create_table "companies", force: :cascade do |t|
@@ -992,10 +992,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "inbox_id"
-    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "(account_id IS NOT NULL) AND (inbox_id IS NULL)"
+    t.index ["account_id", "name", "template_type", "locale"], name: "index_email_templates_on_account_scope", unique: true, where: "((account_id IS NOT NULL) AND (inbox_id IS NULL))"
     t.index ["inbox_id", "name", "template_type", "locale"], name: "index_email_templates_on_inbox_scope", unique: true, where: "(inbox_id IS NOT NULL)"
     t.index ["inbox_id"], name: "index_email_templates_on_inbox_id"
-    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "(account_id IS NULL) AND (inbox_id IS NULL)"
+    t.index ["name", "template_type", "locale"], name: "index_email_templates_on_installation_scope", unique: true, where: "((account_id IS NULL) AND (inbox_id IS NULL))"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -1031,6 +1031,83 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.index ["account_id"], name: "index_ibsoft_access_control_roles_on_account_id"
   end
 
+  create_table "ibsoft_after_hours_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.boolean "enabled", default: false, null: false
+    t.string "exit_command", default: "sair", null: false
+    t.text "regular_message"
+    t.text "holiday_message"
+    t.text "exit_confirmation_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "idx_ibsoft_after_hours_policies_account_name", unique: true
+    t.index ["account_id"], name: "index_ibsoft_after_hours_policies_on_account_id"
+  end
+
+  create_table "ibsoft_after_hours_waits", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "after_hours_policy_id", null: false
+    t.bigint "team_id"
+    t.bigint "business_calendar_id"
+    t.bigint "business_holiday_id"
+    t.bigint "entry_message_id"
+    t.bigint "exit_message_id"
+    t.string "status", default: "active", null: false
+    t.string "cause", null: false
+    t.datetime "started_at", null: false
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "exit_command", null: false
+    t.text "exit_confirmation_message", null: false
+    t.index ["account_id", "status"], name: "idx_ibsoft_after_hours_waits_account_status"
+    t.index ["account_id"], name: "index_ibsoft_after_hours_waits_on_account_id"
+    t.index ["after_hours_policy_id"], name: "idx_ibsoft_after_hours_waits_policy"
+    t.index ["business_calendar_id"], name: "idx_ibsoft_after_hours_waits_calendar"
+    t.index ["business_holiday_id"], name: "idx_ibsoft_after_hours_waits_holiday"
+    t.index ["conversation_id"], name: "index_ibsoft_after_hours_waits_on_conversation_id", unique: true
+    t.index ["entry_message_id"], name: "idx_ibsoft_after_hours_waits_entry_message"
+    t.index ["exit_message_id"], name: "idx_ibsoft_after_hours_waits_exit_message"
+    t.index ["team_id"], name: "index_ibsoft_after_hours_waits_on_team_id"
+  end
+
+  create_table "ibsoft_business_calendar_team_links", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "business_calendar_id", null: false
+    t.bigint "team_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "team_id"], name: "idx_ibsoft_calendar_team_links_account_team", unique: true
+    t.index ["account_id"], name: "index_ibsoft_business_calendar_team_links_on_account_id"
+    t.index ["business_calendar_id"], name: "idx_ibsoft_calendar_team_links_calendar"
+    t.index ["team_id"], name: "index_ibsoft_business_calendar_team_links_on_team_id"
+  end
+
+  create_table "ibsoft_business_calendars", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "idx_ibsoft_business_calendars_account_name", unique: true
+    t.index ["account_id"], name: "index_ibsoft_business_calendars_on_account_id"
+  end
+
+  create_table "ibsoft_business_holidays", force: :cascade do |t|
+    t.bigint "business_calendar_id", null: false
+    t.date "holiday_date", null: false
+    t.string "name", null: false
+    t.string "holiday_kind", default: "holiday", null: false
+    t.string "source", default: "manual", null: false
+    t.string "source_scope", default: "manual", null: false
+    t.string "state_code"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["business_calendar_id", "holiday_date"], name: "idx_ibsoft_business_holidays_calendar_date", unique: true
+    t.index ["business_calendar_id"], name: "idx_ibsoft_business_holidays_calendar"
+  end
+
   create_table "ibsoft_chathub_agent_presence_states", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "user_id", null: false
@@ -1053,6 +1130,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.index ["account_id"], name: "index_ibsoft_chathub_settings_on_account_id", unique: true
   end
 
+  create_table "ibsoft_conversation_distribution_automation_close_schedules", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "automation_handoff_policy_id", null: false
+    t.bigint "trigger_message_id", null: false
+    t.bigint "warning_message_id", null: false
+    t.datetime "close_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "expected_team_id"
+    t.bigint "expected_agent_bot_id"
+    t.datetime "expected_policy_updated_at"
+    t.index ["account_id", "close_at"], name: "idx_ibsoft_auto_close_schedule_due"
+    t.index ["automation_handoff_policy_id"], name: "idx_ibsoft_auto_close_schedule_policy"
+    t.index ["conversation_id"], name: "idx_ibsoft_auto_close_schedule_conversation", unique: true
+  end
+
   create_table "ibsoft_conversation_distribution_automation_handoff_policies", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "inbox_id", null: false
@@ -1063,6 +1157,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.text "customer_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "timeout_action", default: "forward_to_team", null: false
+    t.boolean "close_warning_enabled", default: false, null: false
+    t.text "close_warning_message"
+    t.integer "close_warning_delay_minutes", default: 1, null: false
+    t.boolean "close_final_message_enabled", default: false, null: false
+    t.text "close_final_message"
     t.index ["account_id", "enabled"], name: "idx_ibsoft_automation_handoff_account_enabled"
     t.index ["account_id", "inbox_id"], name: "idx_ibsoft_automation_handoff_account_inbox", unique: true
     t.index ["account_id"], name: "idx_on_account_id_bda58423ea"
@@ -1114,8 +1214,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.jsonb "config", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "after_hours_policy_id"
     t.index ["account_id", "name"], name: "idx_ibsoft_distribution_policies_account_name", unique: true
     t.index ["account_id"], name: "idx_ibsoft_distribution_policies_account"
+    t.index ["after_hours_policy_id"], name: "idx_ibsoft_distribution_policies_after_hours"
   end
 
   create_table "ibsoft_conversation_distribution_team_policies", force: :cascade do |t|
@@ -1212,12 +1314,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.integer "retention_days", default: 30, null: false
     t.jsonb "order_update_messages", default: {}, null: false
     t.boolean "allow_order_resends", default: true, null: false
+    t.boolean "failure_diagnostics_enabled", default: false, null: false
+    t.string "order_update_delivery_mode", default: "interactive", null: false
+    t.jsonb "order_update_template_settings", default: {}, null: false
     t.index ["account_id", "name"], name: "idx_ibsoft_external_endpoints_account_name", unique: true
     t.index ["account_id"], name: "index_ibsoft_external_message_endpoints_on_account_id"
     t.index ["created_by_id"], name: "index_ibsoft_external_message_endpoints_on_created_by_id"
     t.index ["inbox_id"], name: "index_ibsoft_external_message_endpoints_on_inbox_id"
     t.index ["token_digest"], name: "idx_ibsoft_external_endpoints_token", unique: true
     t.check_constraint "jsonb_typeof(order_update_messages) = 'object'::text", name: "chk_ibsoft_ext_endpoints_order_update_messages"
+    t.check_constraint "jsonb_typeof(order_update_template_settings) = 'object'::text", name: "chk_ibsoft_ext_endpoints_update_template_settings"
+    t.check_constraint "order_update_delivery_mode::text = ANY (ARRAY['interactive'::character varying::text, 'template'::character varying::text])", name: "chk_ibsoft_ext_endpoints_update_delivery_mode"
     t.check_constraint "retention_days >= 1 AND retention_days <= 3650", name: "chk_ibsoft_ext_endpoints_retention_days"
   end
 
@@ -1248,6 +1355,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.datetime "updated_at", null: false
     t.string "source", default: "external_api", null: false
     t.bigint "requested_by_id"
+    t.string "delivery_method", default: "interactive", null: false
+    t.string "template_name"
+    t.string "template_language"
+    t.jsonb "template_components", default: [], null: false
     t.index ["account_id", "created_at"], name: "idx_ibsoft_ext_order_updates_account_created"
     t.index ["account_id"], name: "index_ibsoft_external_message_order_updates_on_account_id"
     t.index ["endpoint_id"], name: "idx_ibsoft_ext_order_updates_endpoint"
@@ -1257,12 +1368,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.index ["order_id"], name: "idx_ibsoft_ext_order_updates_order"
     t.index ["requested_by_id"], name: "idx_ibsoft_ext_order_updates_requested_by"
     t.index ["status", "enqueued_at"], name: "idx_ibsoft_ext_order_updates_dispatch"
+    t.check_constraint "delivery_method::text = ANY (ARRAY['interactive'::character varying::text, 'template'::character varying::text])", name: "chk_ibsoft_ext_order_updates_delivery_method"
+    t.check_constraint "jsonb_typeof(template_components) = 'array'::text", name: "chk_ibsoft_ext_order_updates_template_components"
     t.check_constraint "order_status IS NOT NULL OR payment_status IS NOT NULL", name: "chk_ibsoft_ext_order_updates_requested_status"
-    t.check_constraint "order_status IS NULL OR (order_status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'partially_shipped'::character varying, 'shipped'::character varying, 'completed'::character varying, 'canceled'::character varying]::text[]))", name: "chk_ibsoft_ext_order_updates_order_status"
-    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying, 'captured'::character varying, 'failed'::character varying]::text[]))", name: "chk_ibsoft_ext_order_updates_payment_status"
+    t.check_constraint "order_status IS NULL OR (order_status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'partially_shipped'::character varying::text, 'shipped'::character varying::text, 'completed'::character varying::text, 'canceled'::character varying::text]))", name: "chk_ibsoft_ext_order_updates_order_status"
+    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying::text, 'captured'::character varying::text, 'failed'::character varying::text]))", name: "chk_ibsoft_ext_order_updates_payment_status"
     t.check_constraint "payment_timestamp IS NULL OR payment_timestamp > 0", name: "chk_ibsoft_ext_order_updates_payment_timestamp"
-    t.check_constraint "source::text = ANY (ARRAY['external_api'::character varying, 'manual'::character varying]::text[])", name: "chk_ibsoft_ext_order_updates_source"
-    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying, 'processing'::character varying, 'accepted'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'uncertain'::character varying, 'unchanged'::character varying]::text[])", name: "chk_ibsoft_ext_order_updates_status"
+    t.check_constraint "source::text = ANY (ARRAY['external_api'::character varying::text, 'manual'::character varying::text])", name: "chk_ibsoft_ext_order_updates_source"
+    t.check_constraint "status::text = ANY (ARRAY['queued'::character varying::text, 'processing'::character varying::text, 'accepted'::character varying::text, 'sent'::character varying::text, 'delivered'::character varying::text, 'read'::character varying::text, 'failed'::character varying::text, 'uncertain'::character varying::text, 'unchanged'::character varying::text])", name: "chk_ibsoft_ext_order_updates_status"
   end
 
   create_table "ibsoft_external_message_orders", force: :cascade do |t|
@@ -1280,8 +1393,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
     t.index ["endpoint_id", "reference_id"], name: "idx_ibsoft_ext_orders_endpoint_reference", unique: true
     t.index ["inbox_id"], name: "index_ibsoft_external_message_orders_on_inbox_id"
     t.index ["opening_delivery_id"], name: "idx_ibsoft_ext_orders_opening_delivery", unique: true
-    t.check_constraint "order_status::text = ANY (ARRAY['pending'::character varying, 'processing'::character varying, 'partially_shipped'::character varying, 'shipped'::character varying, 'completed'::character varying, 'canceled'::character varying]::text[])", name: "chk_ibsoft_ext_orders_order_status"
-    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying, 'captured'::character varying, 'failed'::character varying]::text[]))", name: "chk_ibsoft_ext_orders_payment_status"
+    t.check_constraint "order_status::text = ANY (ARRAY['pending'::character varying::text, 'processing'::character varying::text, 'partially_shipped'::character varying::text, 'shipped'::character varying::text, 'completed'::character varying::text, 'canceled'::character varying::text])", name: "chk_ibsoft_ext_orders_order_status"
+    t.check_constraint "payment_status IS NULL OR (payment_status::text = ANY (ARRAY['pending'::character varying::text, 'captured'::character varying::text, 'failed'::character varying::text]))", name: "chk_ibsoft_ext_orders_payment_status"
   end
 
   create_table "ibsoft_instagram_inbound_policies", force: :cascade do |t|
@@ -1954,49 +2067,70 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_05_190000) do
   add_foreign_key "ibsoft_access_control_role_assignments", "users"
   add_foreign_key "ibsoft_access_control_role_assignments", "users", column: "created_by_id"
   add_foreign_key "ibsoft_access_control_roles", "accounts"
+  add_foreign_key "ibsoft_after_hours_policies", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_after_hours_waits", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_after_hours_waits", "conversations", on_delete: :cascade
+  add_foreign_key "ibsoft_after_hours_waits", "ibsoft_after_hours_policies", column: "after_hours_policy_id", on_delete: :cascade
+  add_foreign_key "ibsoft_after_hours_waits", "ibsoft_business_calendars", column: "business_calendar_id", on_delete: :nullify
+  add_foreign_key "ibsoft_after_hours_waits", "ibsoft_business_holidays", column: "business_holiday_id", on_delete: :nullify
+  add_foreign_key "ibsoft_after_hours_waits", "messages", column: "entry_message_id", on_delete: :nullify
+  add_foreign_key "ibsoft_after_hours_waits", "messages", column: "exit_message_id", on_delete: :nullify
+  add_foreign_key "ibsoft_after_hours_waits", "teams", on_delete: :nullify
+  add_foreign_key "ibsoft_business_calendar_team_links", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_business_calendar_team_links", "ibsoft_business_calendars", column: "business_calendar_id", on_delete: :cascade
+  add_foreign_key "ibsoft_business_calendar_team_links", "teams", on_delete: :cascade
+  add_foreign_key "ibsoft_business_calendars", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_business_holidays", "ibsoft_business_calendars", column: "business_calendar_id", on_delete: :cascade
   add_foreign_key "ibsoft_chathub_agent_presence_states", "accounts"
   add_foreign_key "ibsoft_chathub_agent_presence_states", "users"
   add_foreign_key "ibsoft_chathub_settings", "accounts"
+  add_foreign_key "ibsoft_conversation_distribution_automation_close_schedules", "accounts", on_delete: :cascade
+  add_foreign_key "ibsoft_conversation_distribution_automation_close_schedules", "conversations", on_delete: :cascade
+  add_foreign_key "ibsoft_conversation_distribution_automation_close_schedules", "ibsoft_conversation_distribution_automation_handoff_policies", column: "automation_handoff_policy_id", on_delete: :cascade
   add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "accounts"
-  add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "inboxes"
+  add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_conversation_distribution_automation_handoff_policies", "teams", column: "target_team_id"
   add_foreign_key "ibsoft_conversation_distribution_channel_policies", "ibsoft_conversation_distribution_policies", column: "distribution_policy_id"
+  add_foreign_key "ibsoft_conversation_distribution_channel_policies", "inboxes", on_delete: :cascade
+  add_foreign_key "ibsoft_conversation_distribution_event_logs", "inboxes", on_delete: :nullify
   add_foreign_key "ibsoft_conversation_distribution_policies", "accounts"
+  add_foreign_key "ibsoft_conversation_distribution_policies", "ibsoft_after_hours_policies", column: "after_hours_policy_id", on_delete: :nullify
   add_foreign_key "ibsoft_conversation_distribution_team_policies", "ibsoft_conversation_distribution_policies", column: "distribution_policy_id"
+  add_foreign_key "ibsoft_conversation_distribution_team_policies", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_erp_connections", "accounts"
   add_foreign_key "ibsoft_external_message_deliveries", "accounts"
   add_foreign_key "ibsoft_external_message_deliveries", "ibsoft_external_message_endpoints", column: "endpoint_id"
   add_foreign_key "ibsoft_external_message_deliveries", "ibsoft_external_message_orders", column: "order_id", on_delete: :nullify
-  add_foreign_key "ibsoft_external_message_deliveries", "inboxes"
+  add_foreign_key "ibsoft_external_message_deliveries", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_external_message_endpoints", "accounts"
-  add_foreign_key "ibsoft_external_message_endpoints", "inboxes"
+  add_foreign_key "ibsoft_external_message_endpoints", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_external_message_endpoints", "users", column: "created_by_id"
   add_foreign_key "ibsoft_external_message_order_updates", "accounts"
   add_foreign_key "ibsoft_external_message_order_updates", "ibsoft_external_message_endpoints", column: "endpoint_id"
   add_foreign_key "ibsoft_external_message_order_updates", "ibsoft_external_message_orders", column: "order_id"
-  add_foreign_key "ibsoft_external_message_order_updates", "inboxes"
+  add_foreign_key "ibsoft_external_message_order_updates", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_external_message_order_updates", "users", column: "requested_by_id"
   add_foreign_key "ibsoft_external_message_orders", "accounts"
   add_foreign_key "ibsoft_external_message_orders", "ibsoft_external_message_deliveries", column: "opening_delivery_id"
   add_foreign_key "ibsoft_external_message_orders", "ibsoft_external_message_endpoints", column: "endpoint_id"
-  add_foreign_key "ibsoft_external_message_orders", "inboxes"
+  add_foreign_key "ibsoft_external_message_orders", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_instagram_inbound_policies", "accounts", on_delete: :cascade
   add_foreign_key "ibsoft_instagram_inbound_policies", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_message_broadcast_group_members", "ibsoft_message_broadcast_groups", column: "group_id"
   add_foreign_key "ibsoft_message_broadcast_groups", "accounts"
   add_foreign_key "ibsoft_message_broadcast_groups", "users", column: "created_by_id"
-  add_foreign_key "ibsoft_message_broadcast_recipients", "conversations"
-  add_foreign_key "ibsoft_message_broadcast_recipients", "ibsoft_message_broadcasts", column: "broadcast_id"
-  add_foreign_key "ibsoft_message_broadcast_recipients", "messages"
+  add_foreign_key "ibsoft_message_broadcast_recipients", "conversations", on_delete: :nullify
+  add_foreign_key "ibsoft_message_broadcast_recipients", "ibsoft_message_broadcasts", column: "broadcast_id", on_delete: :cascade
+  add_foreign_key "ibsoft_message_broadcast_recipients", "messages", on_delete: :nullify
   add_foreign_key "ibsoft_message_broadcasts", "accounts"
   add_foreign_key "ibsoft_message_broadcasts", "ibsoft_erp_connections", column: "erp_connection_id"
-  add_foreign_key "ibsoft_message_broadcasts", "inboxes"
+  add_foreign_key "ibsoft_message_broadcasts", "inboxes", on_delete: :cascade
   add_foreign_key "ibsoft_message_broadcasts", "teams"
   add_foreign_key "ibsoft_message_broadcasts", "users", column: "assignee_id"
   add_foreign_key "ibsoft_message_broadcasts", "users", column: "created_by_id"
   add_foreign_key "ibsoft_message_broadcasts", "users", column: "sent_by_id"
   add_foreign_key "ibsoft_working_hour_breaks", "accounts"
-  add_foreign_key "ibsoft_working_hour_breaks", "inboxes"
+  add_foreign_key "ibsoft_working_hour_breaks", "inboxes", on_delete: :cascade
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
   # no candidate create_trigger statement could be found, creating an adapter-specific one

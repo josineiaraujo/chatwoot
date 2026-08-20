@@ -1,0 +1,91 @@
+{
+  "IBSOFT_BUSINESS_CALENDAR": {
+    "MENU": "Feriados",
+    "TITLE": "Calendários de feriados",
+    "DESCRIPTION": "Cadastre datas sem expediente e vincule os calendários aos departamentos.",
+    "NEW": "Novo calendário",
+    "EMPTY": "Nenhum calendário de feriados foi criado.",
+    "SAVED": "Calendário salvo.",
+    "DELETED": "Calendário excluído.",
+    "CARD": {
+      "SUMMARY": "{holidays} feriados · {teams} departamentos"
+    },
+    "ACTIONS": {
+      "EDIT": "Editar",
+      "DELETE": "Excluir",
+      "SAVE": "Salvar calendário",
+      "ADD": "Adicionar"
+    },
+    "EDITOR": {
+      "EDIT_TITLE": "Editar calendário",
+      "CREATE_TITLE": "Criar calendário",
+      "SAVE_BEFORE_HOLIDAYS": "Salve o calendário para adicionar feriados e importar datas.",
+      "TABS": {
+        "LABEL": "Seções do calendário",
+        "GENERAL": "Geral",
+        "HOLIDAYS": "Feriados",
+        "DEPARTMENTS": "Departamentos"
+      }
+    },
+    "FIELDS": {
+      "NAME": "Nome do calendário",
+      "DATE": "Data",
+      "HOLIDAY_NAME": "Nome do feriado",
+      "KIND": "Tipo"
+    },
+    "KINDS": {
+      "HOLIDAY": "Feriado",
+      "OPTIONAL": "Ponto facultativo"
+    },
+    "HOLIDAYS": {
+      "TITLE": "Datas sem expediente",
+      "DESCRIPTION": "Inclua feriados manualmente ou importe datas oficiais.",
+      "SAVED": "Feriado salvo.",
+      "DELETED": "Feriado excluído.",
+      "EMPTY": "Nenhuma data cadastrada neste calendário.",
+      "DETAILS": "{date} · {kind}"
+    },
+    "DEPARTMENTS": {
+      "TITLE": "Departamentos vinculados",
+      "DESCRIPTION": "As datas deste calendário serão consideradas fora do expediente nos departamentos selecionados.",
+      "SEARCH": "Pesquisar departamentos",
+      "SELECTED": "{count} selecionados",
+      "EMPTY": "Nenhum departamento encontrado."
+    },
+    "IMPORT": {
+      "TITLE": "Importar feriados brasileiros",
+      "DESCRIPTION": "Consulte feriados nacionais e estaduais pela Invertexto e escolha as datas que deseja importar.",
+      "OPEN": "Sincronizar feriados",
+      "YEAR": "Ano",
+      "STATE": "Estado",
+      "NATIONAL": "Somente nacionais",
+      "INCLUDE_OPTIONAL": "Incluir pontos facultativos",
+      "PREVIEW": "Consultar",
+      "FOUND": "{count} datas encontradas",
+      "ITEM": "{date} · {name}",
+      "SELECT_ALL": "Selecionar todas",
+      "SELECTED": "{selected} de {total} selecionadas",
+      "EMPTY": "Nenhum feriado foi encontrado para os filtros informados.",
+      "CONFIRM": "Importar selecionadas",
+      "IMPORTED": "Feriados importados."
+    },
+    "DELETE": {
+      "TITLE": "Excluir calendário",
+      "DESCRIPTION": "Os vínculos com departamentos também serão removidos. Esta ação não pode ser desfeita."
+    },
+    "ERRORS": {
+      "LOAD": "Não foi possível carregar os calendários.",
+      "SAVE": "Não foi possível salvar o calendário.",
+      "HOLIDAY_SAVE": "Não foi possível salvar o feriado.",
+      "HOLIDAY_DELETE": "Não foi possível excluir o feriado.",
+      "IMPORT": "Não foi possível consultar ou importar os feriados.",
+      "TEAMS_LOAD": "Não foi possível carregar os departamentos.",
+      "DELETE": "Não foi possível excluir o calendário."
+    },
+    "TEAM_LINK": {
+      "LABEL": "Calendário de feriados",
+      "NONE": "Não considerar feriados",
+      "HELP": "As datas desse calendário serão tratadas como fora do expediente para este departamento."
+    }
+  }
+}

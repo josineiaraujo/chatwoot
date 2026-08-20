@@ -202,17 +202,38 @@
         "BUTTON": "Automation",
         "TITLE": "{inbox} automation",
         "SAVE": "Save policy",
-        "ENABLE_TITLE": "Forward stuck automations",
-        "ENABLE_DESCRIPTION": "When a conversation remains pending in automation for too long, automatically forward it to a human team.",
-        "STALE_AFTER": "Maximum idle time",
+        "ENABLE_TITLE": "Handle stalled automations",
+        "ENABLE_DESCRIPTION": "The timer starts at the last message sent by the bot while waiting for the customer's reply.",
+        "ACTION_TITLE": "When the time limit is reached",
+        "ACTIONS": {
+          "FORWARD": {
+            "TITLE": "Forward to a team",
+            "DESCRIPTION": "Opens the conversation and places it in the selected team queue."
+          },
+          "CLOSE": {
+            "TITLE": "Close conversation",
+            "DESCRIPTION": "Closes the conversation without forwarding it to human support."
+          }
+        },
+        "STALE_AFTER": "Maximum reply wait time",
         "MINUTES": "minutes",
         "TARGET_TEAM": "Target team",
         "SELECT_TEAM": "Select a team",
-        "INTERNAL_EVENT_NOTICE": "The internal event will always be recorded in the conversation. The customer message is optional.",
+        "INTERNAL_EVENT_NOTICE_FORWARD": "The handoff will be recorded automatically in the conversation. The customer message is optional.",
+        "INTERNAL_EVENT_NOTICE_CLOSE": "The closure will be recorded automatically in the conversation.",
         "CUSTOMER_MESSAGE_TITLE": "Customer message",
-        "CUSTOMER_MESSAGE_DESCRIPTION": "Send a public message when the conversation leaves automation because of inactivity.",
+        "CUSTOMER_MESSAGE_DESCRIPTION": "Send a public message when the configured action is performed.",
         "CUSTOMER_MESSAGE": "Message text",
-        "CUSTOMER_MESSAGE_PLACEHOLDER": "I will forward your conversation to our team.",
+        "CUSTOMER_MESSAGE_PLACEHOLDER_FORWARD": "I will forward your conversation to our team.",
+        "CLOSE_WARNING_TITLE": "Warn before closing",
+        "CLOSE_WARNING_DESCRIPTION": "Sends a warning and cancels the closure if the customer replies during the waiting period.",
+        "CLOSE_WARNING_DELAY": "Time between warning and closure",
+        "CLOSE_WARNING_MESSAGE": "Warning message",
+        "CLOSE_WARNING_MESSAGE_PLACEHOLDER": "Are you still there? Your conversation will be closed in a few minutes.",
+        "CLOSE_FINAL_MESSAGE_TITLE": "Message on closure",
+        "CLOSE_FINAL_MESSAGE_DESCRIPTION": "Sends a public confirmation after the conversation is closed.",
+        "CLOSE_FINAL_MESSAGE": "Closure message",
+        "CLOSE_FINAL_MESSAGE_PLACEHOLDER": "Conversation closed due to inactivity. Send a new message whenever you need assistance.",
         "SAVE_SUCCESS": "Automation policy saved successfully.",
         "SAVE_ERROR": "Could not save the automation policy.",
         "LOAD_ERROR": "Could not load the automation policy."
@@ -1220,7 +1241,10 @@
           "REDISTRIBUTION_COMPLETED": "Redistribution completed",
           "REDISTRIBUTION_SKIPPED": "Redistribution skipped",
           "AUTOMATION_HANDOFF_COMPLETED": "Automation handoff completed",
-          "AUTOMATION_HANDOFF_SKIPPED": "Automation handoff skipped",
+          "AUTOMATION_CLOSE_COMPLETED": "Automation closure completed",
+          "AUTOMATION_CLOSE_WARNING_SENT": "Closure warning sent",
+          "AUTOMATION_CLOSE_CANCELLED": "Automatic closure cancelled",
+          "AUTOMATION_HANDOFF_SKIPPED": "Automation handling skipped",
           "AGENT_CLAIM_COMPLETED": "Agent claim completed",
           "AGENT_CLAIM_SKIPPED": "Agent claim skipped",
           "QUEUE_RETURNED": "Conversation returned to queue"
@@ -1238,6 +1262,9 @@
           "CONVERSATION_NOT_FOUND": "Conversation not found",
           "REQUIRED_ASSIGNMENTS_MISSING": "Required conversations were not selected",
           "AUTOMATION_STALLED": "Stuck automation",
+          "CUSTOMER_REPLIED": "Customer replied to the warning",
+          "CONVERSATION_CHANGED": "Conversation changed during the waiting period",
+          "WARNING_DELIVERY_FAILED": "Warning delivery failed",
           "AGENT_RETURNED_TO_QUEUE": "Agent returned the conversation to the queue"
         }
       },

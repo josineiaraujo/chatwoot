@@ -51,6 +51,7 @@ Backend isolado:
 - `app/models/ibsoft/conversation_distribution/channel_policy.rb`
 - `app/models/ibsoft/conversation_distribution/team_policy.rb`
 - `app/models/ibsoft/conversation_distribution/automation_handoff_policy.rb`
+- `app/models/ibsoft/conversation_distribution/automation_close_schedule.rb`
 - `app/models/ibsoft/conversation_distribution/event_log.rb`
 - `app/models/ibsoft/conversation_distribution/configuration.rb`
 - `app/services/ibsoft/conversation_distribution/configuration_validator.rb`
@@ -60,6 +61,9 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/candidate_finder.rb`
 - `app/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder.rb`
 - `app/services/ibsoft/conversation_distribution/automation_handoff_executor.rb`
+- `app/services/ibsoft/conversation_distribution/automation_waiting_signal.rb`
+- `app/services/ibsoft/conversation_distribution/automation_customer_message_notifier.rb`
+- `app/services/ibsoft/conversation_distribution/automation_close_executor.rb`
 - `app/services/ibsoft/conversation_distribution/source_resolver.rb`
 - `app/services/ibsoft/conversation_distribution/source_marker.rb`
 - `app/services/ibsoft/conversation_distribution/queue_return_marker.rb`
@@ -71,6 +75,7 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/candidate_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/dry_run_preview.rb`
 - `app/services/ibsoft/conversation_distribution/execution_config.rb`
+- `app/services/ibsoft/conversation_distribution/business_hours_evaluator.rb`
 - `app/services/ibsoft/conversation_distribution/decision_resolver.rb`
 - `app/services/ibsoft/conversation_distribution/unavailability_config.rb`
 - `app/services/ibsoft/conversation_distribution/decision_action_executor.rb`
@@ -101,6 +106,7 @@ Backend isolado:
 - `app/services/ibsoft/conversation_distribution/event_log_finder.rb`
 - `app/services/ibsoft/conversation_distribution/supervisor_permission.rb`
 - `app/jobs/ibsoft/conversation_distribution/watchdog_job.rb`
+- `app/jobs/ibsoft/conversation_distribution/automation_close_job.rb`
 - `app/controllers/api/v1/accounts/ibsoft/conversation_distribution/`
 
 Frontend isolado:
@@ -130,6 +136,7 @@ Banco de dados:
 - `ibsoft_conversation_distribution_channel_policies`
 - `ibsoft_conversation_distribution_team_policies`
 - `ibsoft_conversation_distribution_automation_handoff_policies`
+- `ibsoft_conversation_distribution_automation_close_schedules`
 - `ibsoft_conversation_distribution_event_logs`
 
 ## Politicas
@@ -262,23 +269,41 @@ fallback de regra: e ausencia explicita de politica aplicavel naquele ponto.
 
 A tabela `ibsoft_conversation_distribution_automation_handoff_policies`
 configura, por canal de comunicacao, o que fazer quando uma conversa fica presa
-na automacao.
+na automacao aguardando a resposta do cliente a ultima mensagem do robo.
 
 Essa politica e separada da politica nomeada de distribuicao porque resolve um
-problema anterior ao atendimento humano: retirar conversas de `pending` quando a
-automacao ficou parada. Depois que a conversa e encaminhada para um time humano,
-o fluxo normal de distribuicao Ibsoft passa a decidir se atribui a um agente,
-aguarda, envia mensagem de indisponibilidade ou aplica fallback conforme a
-politica de distribuicao vinculada ao canal/time.
+problema anterior ao atendimento humano: tratar conversas de `pending` quando a
+automacao ficou parada. A politica pode encaminhar para atendimento humano ou
+encerrar a conversa. Depois de um encaminhamento, o fluxo normal de distribuicao
+Ibsoft passa a decidir se atribui a um agente, aguarda, envia mensagem de
+indisponibilidade ou aplica fallback conforme a politica de distribuicao
+vinculada ao canal/time.
 
 Campos principais:
 
 - `enabled`: ativa a verificacao no canal;
-- `stale_after_minutes`: tempo maximo que a conversa pode ficar parada na
-  automacao;
-- `target_team_id`: time humano que recebera a conversa;
+- `stale_after_minutes`: tempo maximo aguardando uma resposta do cliente desde
+  a ultima mensagem publica do robo;
+- `timeout_action`: `forward_to_team` para encaminhar ou `close_conversation`
+  para encerrar o atendimento;
+- `target_team_id`: departamento humano que recebera a conversa quando a acao
+  for `forward_to_team`; e nulo em `close_conversation`;
 - `customer_message_enabled` e `customer_message`: mensagem publica opcional ao
-  cliente.
+  cliente no encaminhamento;
+- `close_warning_enabled`: define se o cliente sera avisado antes do
+  encerramento;
+- `close_warning_message`: texto opcional do aviso; vazio usa a mensagem padrao
+  traduzida;
+- `close_warning_delay_minutes`: prazo entre o aviso e o encerramento, entre um
+  minuto e 24 horas;
+- `close_final_message_enabled`: define se o sistema enviara uma confirmacao
+  publica ao encerrar;
+- `close_final_message`: texto opcional da confirmacao; vazio usa a mensagem
+  padrao traduzida.
+
+A migracao que adiciona `timeout_action` usa `forward_to_team` como valor
+padrao. Assim, politicas existentes mantem seu comportamento depois do deploy e
+o encerramento so e ativado por uma escolha explicita do administrador.
 
 O evento interno na conversa e obrigatorio e usa Rails i18n. A mensagem ao
 cliente e opcional, publica e criada como `message_type=template`, para nao
@@ -290,11 +315,17 @@ Uma conversa so e candidata quando:
 - nao possui `assignee_id`;
 - ainda nao possui `first_reply_created_at`;
 - pertence a um canal com politica ativa;
-- `last_activity_at` e mais antigo que `stale_after_minutes`;
-- ha sinal de automacao ativa: bot ativo no canal, `assignee_agent_bot_id` ou
-  historico de mensagem com `sender_type=AgentBot`;
-- nao existe evento `automation_handoff_completed` criado depois da ultima
-  atividade da conversa.
+- sua ultima mensagem publica, desconsiderando mensagens de atividade, e uma
+  mensagem `outgoing` enviada por `AgentBot` ou `Captain::Assistant`;
+- essa mensagem do robo e mais antiga que `stale_after_minutes`;
+- nao existe evento `automation_handoff_completed` ou
+  `automation_close_completed` criado depois dessa mensagem do robo;
+- nao existe um encerramento com aviso ja agendado para a conversa.
+
+Uma nova mensagem publica do robo reinicia a contagem. Uma resposta do cliente
+ou mensagem publica humana deixa a conversa inelegivel. Notas privadas e
+mensagens internas de atividade nao reiniciam a contagem porque nao representam
+uma nova interacao visivel aguardando resposta do cliente.
 
 Essa busca e uma excecao intencional ao escopo `Conversation.unassigned`: ela
 analisa conversas ainda pertencentes ao bot justamente para executar a politica
@@ -302,11 +333,14 @@ de automacao parada. Somente depois do `AutomationHandoffExecutor` limpar
 `assignee_agent_bot_id` a conversa entra na fila humana e pode seguir para a
 distribuicao normal.
 
-O service `AutomationHandoffExecutor` usa `FOR UPDATE SKIP LOCKED` para evitar
-processamento concorrente. Quando
+O finder usa um `LATERAL JOIN` limitado a uma mensagem por conversa, evitando
+carregar o historico inteiro ou executar uma consulta por conversa. O service
+`AutomationHandoffExecutor` usa `FOR UPDATE SKIP LOCKED` e revalida a identidade
+da ultima mensagem publica depois de obter o lock. Assim, uma resposta recebida
+entre a busca e a execucao cancela a acao. Quando
 `IBSOFT_CONVERSATION_DISTRIBUTION_REAL_ASSIGNMENT_ENABLED=false`, ele apenas
 registra `automation_handoff_skipped` com motivo `real_assignment_disabled`.
-Quando a execucao real esta ativa, ele:
+Quando a execucao real esta ativa e a acao e `forward_to_team`, ele:
 
 - abre a conversa;
 - move para o time alvo;
@@ -315,6 +349,47 @@ Quando a execucao real esta ativa, ele:
 - marca `additional_attributes.ibsoft_distribution_source=system_team_transfer`
   e `ibsoft_distribution_source_reason=automation_stalled`;
 - registra `automation_handoff_completed` na auditoria.
+
+Quando a acao e `close_conversation`, ele:
+
+- encerra imediatamente quando `close_warning_enabled=false`;
+- quando o aviso esta ativo, envia a mensagem publica, cria um registro em
+  `ibsoft_conversation_distribution_automation_close_schedules` e agenda o
+  `AutomationCloseJob` para o prazo configurado;
+- no momento do encerramento, marca a conversa como `resolved`, limpa
+  `assignee_agent_bot_id` e remove marcadores de distribuicao ou encaminhamento
+  que nao representam mais o estado atual;
+- registra a atividade interna traduzida e o evento
+  `automation_close_completed` na auditoria;
+- envia a mensagem final somente quando `close_final_message_enabled=true`.
+
+O agendamento persistente guarda somente as referencias necessarias para
+revalidar a decisao: conta, conversa, politica, mensagem original do robo,
+mensagem de aviso, roteamento esperado, versao da politica e horario de
+encerramento. Ele e removido depois do encerramento ou cancelamento; o historico
+operacional permanece em `event_logs`.
+
+O encerramento agendado e cancelado sem fechar a conversa quando:
+
+- o cliente responde depois do aviso;
+- outra mensagem publica substitui o aviso como ultima mensagem;
+- status, departamento, bot ou agente da conversa muda;
+- a politica e desativada, editada ou deixa de ser uma politica de
+  encerramento com aviso;
+- o aviso nao existe ou falhou na entrega.
+
+O job atrasado usa a fila `scheduled_jobs`. O watchdog tambem procura
+agendamentos vencidos antes de executar novas transferencias, funcionando como
+recuperacao caso um job atrasado seja perdido durante reinicio, deploy ou troca
+de instancia. O lock de linha com `FOR UPDATE SKIP LOCKED`, o indice unico por
+conversa e a revalidacao dentro da transacao tornam o fluxo idempotente e seguro
+para varios workers ou replicas da aplicacao.
+
+Em ambas as acoes, a mensagem publica ao cliente continua opcional e usa
+`message_type=template`, portanto nao conta como primeira resposta humana. Os
+arquivos de dominio, API, UI e testes permanecem no namespace/diretorios
+`Ibsoft::ConversationDistribution` e `dashboard/ibsoft`, sem alteracao em
+models, callbacks ou jobs centrais do Chatwoot.
 
 O horario fica dentro da politica nomeada. O campo `business_hours.mode` aceita:
 
@@ -334,6 +409,43 @@ Politicas com horario proprio tambem podem gravar intervalos em
 semantica dos intervalos de canais: o inicio e inclusivo e o fim e exclusivo.
 Durante um intervalo, o motor trata a conversa como
 `outside_business_hours` e aplica a acao configurada para esse motivo.
+
+### Calendarios de feriados e politica extra expediente
+
+Documento detalhado: `IBSOFT_BUSINESS_CALENDAR_AND_AFTER_HOURS.md`.
+
+Um departamento pode estar vinculado a um calendario privado Ibsoft. Antes de
+avaliar o horario herdado do canal ou a agenda personalizada, o
+`DecisionResolver` consulta o feriado da data local. Quando encontra uma data,
+o resultado passa a ser `outside_business_hours`, com causa `holiday`, mesmo
+que a grade semanal esteja aberta.
+
+A avaliacao da grade semanal e dos intervalos fica isolada em
+`BusinessHoursEvaluator`. O `DecisionResolver` permanece responsavel apenas por
+combinar esse resultado com o calendario e produzir a decisao de distribuicao.
+
+O vinculo com a politica extra expediente pertence a politica nomeada de
+distribuicao, nao diretamente ao departamento. A acao
+`unavailability.outside_business_hours.action=after_hours_policy` usa
+`after_hours_policy_id` da politica nomeada efetiva. Essa acao nao e aceita em
+`no_available_agent`, preservando as regras independentes de ausencia de agente.
+
+Ao executar a acao, o service `Ibsoft::AfterHours::WaitStarter` envia a
+mensagem normal ou de feriado e cria uma espera unica por conversa. O comando
+e a confirmacao sao copiados para a espera para que uma edicao posterior da
+politica nao altere o que ja foi comunicado. Uma mensagem publica recebida com
+o comando exato resolve a conversa; atribuicao, transferencia ou encerramento
+externo cancelam a espera.
+
+Nao existe polling nem job dedicado. A avaliacao ocorre no caminho normal da
+distribuicao, e a conclusao reage aos eventos existentes por uma extensao
+privada registrada em `config/initializers/ibsoft_after_hours.rb`. Locks de
+banco, indice unico por conversa e cache compartilhado mantem o comportamento
+idempotente em varias replicas.
+
+Ao excluir uma politica extra expediente, `PolicyDestroyer` restaura
+atomicamente a acao das politicas de distribuicao vinculadas para `wait`. Uma
+politica com espera ativa nao pode ser excluida.
 
 ## Pre-requisito operacional para ativacao
 
@@ -914,6 +1026,9 @@ Validacoes protegidas no backend:
 - chaves desconhecidas de `config` sao descartadas na normalizacao da politica,
   mantendo apenas as secoes suportadas pelo modulo;
 - `unavailable.action` deve ser `wait`, `notify_customer` ou `fallback_team`;
+- `unavailability.outside_business_hours.action` tambem aceita
+  `after_hours_policy`, desde que a politica extra expediente pertenca a conta;
+- `unavailability.no_available_agent` nao aceita `after_hours_policy`;
 - `notify_customer` exige mensagem;
 - `fallback_team` exige time existente na mesma conta;
 - `business_hours.mode` deve ser `inherit_channel`, `custom` ou
@@ -1069,7 +1184,8 @@ de job e atribuicao real.
 
 - `RAILS_ENV=test bundle exec rspec spec/models/ibsoft/conversation_distribution spec/services/ibsoft/conversation_distribution spec/requests/api/v1/accounts/ibsoft/conversation_distribution`
 - `RAILS_ENV=test bundle exec rspec spec/jobs/ibsoft/conversation_distribution/watchdog_job_spec.rb spec/configs/schedule_spec.rb`
-- `bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb`
+- `RAILS_ENV=test bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/models/ibsoft/conversation_distribution/automation_close_schedule_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_automation_close_flow_spec.rb spec/services/ibsoft/conversation_distribution/automation_close_executor_spec.rb spec/services/ibsoft/conversation_distribution/automation_customer_message_notifier_spec.rb spec/services/ibsoft/conversation_distribution/automation_waiting_signal_spec.rb spec/jobs/ibsoft/conversation_distribution/automation_close_job_spec.rb`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/chathubSettings/specs/AutomationHandoffPolicyModal.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferConversationContextMenuAction.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferToAgentDialog.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnDialog.spec.js`

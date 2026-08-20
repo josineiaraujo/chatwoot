@@ -6,7 +6,8 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
 
   ACTIONS_WITH_EFFECTS = [
     Ibsoft::ConversationDistribution::DecisionResolver::ACTION_NOTIFY_CUSTOMER,
-    Ibsoft::ConversationDistribution::DecisionResolver::ACTION_FALLBACK_TEAM
+    Ibsoft::ConversationDistribution::DecisionResolver::ACTION_FALLBACK_TEAM,
+    Ibsoft::ConversationDistribution::DecisionResolver::ACTION_AFTER_HOURS_POLICY
   ].freeze
 
   def initialize(conversation:, decision:, candidate: {})
@@ -18,6 +19,7 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
   def perform
     return decision unless actionable?
 
+    return perform_after_hours_policy_action if decision[:action] == Ibsoft::ConversationDistribution::DecisionResolver::ACTION_AFTER_HOURS_POLICY
     return perform_notify_customer_action if decision[:action] == Ibsoft::ConversationDistribution::DecisionResolver::ACTION_NOTIFY_CUSTOMER
 
     perform_locked_action
@@ -52,9 +54,12 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
     raise
   end
 
-  def actionable?
-    ACTIONS_WITH_EFFECTS.include?(decision[:action])
+  def perform_after_hours_policy_action
+    action_result = Ibsoft::AfterHours::WaitStarter.new(conversation: conversation, decision: decision).perform
+    decision.merge(action_applied: action_result[:applied], action_result: action_result)
   end
+
+  def actionable? = ACTIONS_WITH_EFFECTS.include?(decision[:action])
 
   def apply_action
     case decision[:action]
@@ -184,9 +189,7 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
     additional_attributes.fetch(ACTION_RECORDS_KEY, {}).to_h
   end
 
-  def fallback_history
-    Array(additional_attributes[FALLBACK_HISTORY_KEY]).map(&:to_i)
-  end
+  def fallback_history = Array(additional_attributes[FALLBACK_HISTORY_KEY]).map(&:to_i)
 
   def additional_attributes
     @additional_attributes = (conversation.additional_attributes || {}).deep_dup
@@ -202,9 +205,7 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
     ].join(':')
   end
 
-  def action_result(applied, status, metadata = {})
-    { applied: applied, status: status }.merge(metadata)
-  end
+  def action_result(applied, status, metadata = {}) = { applied: applied, status: status }.merge(metadata)
 
   def with_reloaded_lock(&)
     conversation.reload

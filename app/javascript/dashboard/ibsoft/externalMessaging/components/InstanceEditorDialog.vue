@@ -36,6 +36,7 @@ const form = reactive({
   inbox_id: '',
   active: true,
   allow_order_resends: true,
+  failure_diagnostics_enabled: false,
   rate_limit_per_second: 10,
   retention_days: 30,
 });
@@ -72,6 +73,7 @@ const reset = () => {
   form.inbox_id = props.inboxes[0]?.id || '';
   form.active = true;
   form.allow_order_resends = true;
+  form.failure_diagnostics_enabled = false;
   form.rate_limit_per_second = 10;
   form.retention_days = 30;
 };
@@ -87,6 +89,8 @@ const open = async endpoint => {
     form.inbox_id = endpoint.inbox_id;
     form.active = endpoint.active;
     form.allow_order_resends = endpoint.allow_order_resends !== false;
+    form.failure_diagnostics_enabled =
+      endpoint.failure_diagnostics_enabled === true;
     form.rate_limit_per_second = endpoint.rate_limit_per_second;
     form.retention_days = endpoint.retention_days || 30;
   }
@@ -104,6 +108,7 @@ const submit = () => {
     name: form.name.trim(),
     active: form.active,
     allow_order_resends: form.allow_order_resends,
+    failure_diagnostics_enabled: form.failure_diagnostics_enabled,
     rate_limit_per_second: Number(form.rate_limit_per_second),
     retention_days: Number(form.retention_days),
   };
@@ -285,6 +290,24 @@ defineExpose({ open, close });
           </span>
         </span>
         <ToggleSwitch v-model="form.allow_order_resends" />
+      </label>
+
+      <label
+        class="flex items-center justify-between gap-4 rounded-lg border border-n-weak bg-n-alpha-1 p-4"
+      >
+        <span>
+          <span class="block text-sm font-medium text-n-slate-12">
+            {{ t('IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.FAILURE_DIAGNOSTICS') }}
+          </span>
+          <span class="block text-body-small text-n-slate-11">
+            {{
+              t(
+                'IBSOFT_EXTERNAL_MESSAGING.ENDPOINTS.FAILURE_DIAGNOSTICS_DESCRIPTION'
+              )
+            }}
+          </span>
+        </span>
+        <ToggleSwitch v-model="form.failure_diagnostics_enabled" />
       </label>
     </div>
 

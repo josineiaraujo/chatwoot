@@ -50,7 +50,7 @@
 #
 #  fk_rails_...  (account_id => accounts.id)
 #  fk_rails_...  (endpoint_id => ibsoft_external_message_endpoints.id)
-#  fk_rails_...  (inbox_id => inboxes.id)
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #  fk_rails_...  (order_id => ibsoft_external_message_orders.id) ON DELETE => nullify
 #
 class Ibsoft::ExternalMessaging::Delivery < ApplicationRecord

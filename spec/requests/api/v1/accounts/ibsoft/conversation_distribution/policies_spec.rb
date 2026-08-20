@@ -95,6 +95,55 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
       expect(response.parsed_body.dig('config', 'unavailable', 'action')).to eq('wait')
     end
 
+    it 'links an after-hours policy only to the outside-business-hours action' do
+      after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+
+      post "#{base_url}/policies",
+           params: {
+             name: 'Atendimento fora do expediente',
+             enabled: true,
+             after_hours_policy_id: after_hours_policy.id,
+             config: {
+               unavailability: {
+                 no_available_agent: { action: 'wait' },
+                 outside_business_hours: { action: 'after_hours_policy' }
+               }
+             }
+           },
+           headers: admin_headers,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'after_hours_policy_id' => after_hours_policy.id,
+        'after_hours_policy_name' => after_hours_policy.name
+      )
+      expect(response.parsed_body.dig('config', 'unavailability', 'outside_business_hours', 'action')).to eq(
+        'after_hours_policy'
+      )
+      expect(response.parsed_body.dig('config', 'unavailability', 'no_available_agent', 'action')).to eq('wait')
+    end
+
+    it 'rejects an after-hours policy from another account' do
+      foreign_policy = create(:ibsoft_after_hours_policy)
+
+      post "#{base_url}/policies",
+           params: {
+             name: 'Politica invalida',
+             after_hours_policy_id: foreign_policy.id,
+             config: {
+               unavailability: {
+                 outside_business_hours: { action: 'after_hours_policy' }
+               }
+             }
+           },
+           headers: admin_headers,
+           as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(Ibsoft::ConversationDistribution::Policy.where(account: account, name: 'Politica invalida')).to be_empty
+    end
+
     it 'persists assignment confirmation settings' do
       post "#{base_url}/policies",
            params: {
@@ -177,6 +226,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
             params: {
               enabled: true,
               stale_after_minutes: 12,
+              timeout_action: 'forward_to_team',
               target_team_id: team.id,
               customer_message_enabled: true,
               customer_message: 'Vou encaminhar seu atendimento para nossa equipe.'
@@ -191,6 +241,7 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
         'target_team_id' => team.id,
         'target_team_name' => team.name,
         'stale_after_minutes' => 12,
+        'timeout_action' => 'forward_to_team',
         'customer_message_enabled' => true,
         'customer_message' => 'Vou encaminhar seu atendimento para nossa equipe.'
       )
@@ -200,7 +251,70 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
           as: :json
 
       expect(response).to have_http_status(:success)
-      expect(response.parsed_body).to include('enabled' => true, 'target_team_id' => team.id)
+      expect(response.parsed_body).to include(
+        'enabled' => true,
+        'timeout_action' => 'forward_to_team',
+        'target_team_id' => team.id
+      )
+    end
+
+    it 'allows administrators to close stalled automations without a target team' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 20,
+              timeout_action: 'close_conversation',
+              target_team_id: nil,
+              close_warning_enabled: true,
+              close_warning_message: 'Voce ainda esta ai?',
+              close_warning_delay_minutes: 3,
+              close_final_message_enabled: true,
+              close_final_message: 'Atendimento encerrado por inatividade.'
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'enabled' => true,
+        'stale_after_minutes' => 20,
+        'timeout_action' => 'close_conversation',
+        'target_team_id' => nil,
+        'target_team_name' => nil,
+        'close_warning_enabled' => true,
+        'close_warning_message' => 'Voce ainda esta ai?',
+        'close_warning_delay_minutes' => 3,
+        'close_final_message_enabled' => true,
+        'close_final_message' => 'Atendimento encerrado por inatividade.'
+      )
+    end
+
+    it 'rejects an invalid close warning delay' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 20,
+              timeout_action: 'close_conversation',
+              close_warning_enabled: true,
+              close_warning_delay_minutes: 0
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'rejects unknown automation timeout actions' do
+      patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
+            params: {
+              enabled: true,
+              stale_after_minutes: 10,
+              timeout_action: 'unknown'
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
     end
 
     it 'blocks agents from changing automation handoff policies' do
@@ -212,9 +326,9 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it 'rejects enabling the policy without a target team' do
+    it 'rejects enabling a forward policy without a target team' do
       patch "#{base_url}/automation_handoff_policies/#{inbox.id}",
-            params: { enabled: true, stale_after_minutes: 10 },
+            params: { enabled: true, stale_after_minutes: 10, timeout_action: 'forward_to_team' },
             headers: admin_headers,
             as: :json
 
@@ -282,6 +396,40 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ConversationDistribution::Policies', 
         'override_channel_policy' => true,
         'enabled' => true
       )
+    end
+
+    it 'links a holiday calendar to the department' do
+      calendar = create(:ibsoft_business_calendar, account: account)
+
+      patch "#{base_url}/team_policies/#{team.id}",
+            params: { business_calendar_id: calendar.id },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'business_calendar_id' => calendar.id,
+        'business_calendar_name' => calendar.name
+      )
+      expect(Ibsoft::BusinessCalendar::TeamLink.find_by!(account: account, team: team).business_calendar).to eq(calendar)
+    end
+
+    it 'rolls back the team policy when a holiday calendar belongs to another account' do
+      named_policy = create(:ibsoft_distribution_policy, account: account, enabled: true)
+      foreign_calendar = create(:ibsoft_business_calendar)
+
+      patch "#{base_url}/team_policies/#{team.id}",
+            params: {
+              override_channel_policy: true,
+              distribution_policy_id: named_policy.id,
+              business_calendar_id: foreign_calendar.id
+            },
+            headers: admin_headers,
+            as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(Ibsoft::ConversationDistribution::TeamPolicy.where(account: account, team: team)).to be_empty
+      expect(Ibsoft::BusinessCalendar::TeamLink.where(account: account, team: team)).to be_empty
     end
   end
 

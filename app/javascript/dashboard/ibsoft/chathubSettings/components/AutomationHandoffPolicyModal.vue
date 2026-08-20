@@ -18,6 +18,9 @@ const props = defineProps({
   },
 });
 
+const ACTION_FORWARD_TO_TEAM = 'forward_to_team';
+const ACTION_CLOSE_CONVERSATION = 'close_conversation';
+
 const { t } = useI18n();
 const store = useStore();
 
@@ -37,9 +40,15 @@ const distributionPolicyId = ref(null);
 const form = ref({
   enabled: false,
   stale_after_minutes: 10,
+  timeout_action: ACTION_FORWARD_TO_TEAM,
   target_team_id: null,
   customer_message_enabled: false,
   customer_message: '',
+  close_warning_enabled: false,
+  close_warning_message: '',
+  close_warning_delay_minutes: 1,
+  close_final_message_enabled: false,
+  close_final_message: '',
 });
 
 const dialogTitle = computed(() =>
@@ -71,10 +80,55 @@ const isInvalid = computed(() => {
   if (!form.value.enabled) return false;
 
   const staleMinutes = Number(form.value.stale_after_minutes);
+  const warningDelayMinutes = Number(form.value.close_warning_delay_minutes);
+  const hasInvalidWarningDelay =
+    form.value.timeout_action === ACTION_CLOSE_CONVERSATION &&
+    form.value.close_warning_enabled &&
+    (!Number.isFinite(warningDelayMinutes) ||
+      warningDelayMinutes < 1 ||
+      warningDelayMinutes > 1440);
+
   return (
-    !form.value.target_team_id ||
+    (form.value.timeout_action === ACTION_FORWARD_TO_TEAM &&
+      !form.value.target_team_id) ||
     !Number.isFinite(staleMinutes) ||
-    staleMinutes < 1
+    staleMinutes < 1 ||
+    hasInvalidWarningDelay
+  );
+});
+
+const timeoutActions = computed(() => [
+  {
+    id: ACTION_FORWARD_TO_TEAM,
+    icon: 'i-lucide-users-round',
+    title: t(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTIONS.FORWARD.TITLE'
+    ),
+    description: t(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTIONS.FORWARD.DESCRIPTION'
+    ),
+  },
+  {
+    id: ACTION_CLOSE_CONVERSATION,
+    icon: 'i-lucide-circle-check-big',
+    title: t(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTIONS.CLOSE.TITLE'
+    ),
+    description: t(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTIONS.CLOSE.DESCRIPTION'
+    ),
+  },
+]);
+
+const internalEventNotice = computed(() => {
+  if (form.value.timeout_action === ACTION_CLOSE_CONVERSATION) {
+    return t(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.INTERNAL_EVENT_NOTICE_CLOSE'
+    );
+  }
+
+  return t(
+    'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.INTERNAL_EVENT_NOTICE_FORWARD'
   );
 });
 
@@ -161,9 +215,15 @@ const resetForm = () => {
   form.value = {
     enabled: false,
     stale_after_minutes: 10,
+    timeout_action: ACTION_FORWARD_TO_TEAM,
     target_team_id: null,
     customer_message_enabled: false,
     customer_message: '',
+    close_warning_enabled: false,
+    close_warning_message: '',
+    close_warning_delay_minutes: 1,
+    close_final_message_enabled: false,
+    close_final_message: '',
   };
 };
 
@@ -179,9 +239,15 @@ const applyAutomationPolicy = policy => {
   form.value = {
     enabled: Boolean(policy.enabled),
     stale_after_minutes: policy.stale_after_minutes || 10,
+    timeout_action: policy.timeout_action || ACTION_FORWARD_TO_TEAM,
     target_team_id: policy.target_team_id || null,
     customer_message_enabled: Boolean(policy.customer_message_enabled),
     customer_message: policy.customer_message || '',
+    close_warning_enabled: Boolean(policy.close_warning_enabled),
+    close_warning_message: policy.close_warning_message || '',
+    close_warning_delay_minutes: policy.close_warning_delay_minutes || 1,
+    close_final_message_enabled: Boolean(policy.close_final_message_enabled),
+    close_final_message: policy.close_final_message || '',
   };
 };
 
@@ -291,6 +357,18 @@ const numberValue = event => {
     Number.isFinite(value) && value > 0 ? value : 1;
 };
 
+const closeWarningDelayValue = event => {
+  const value = Number(event.target.value);
+  form.value.close_warning_delay_minutes = Number.isFinite(value) ? value : 1;
+};
+
+const selectTimeoutAction = action => {
+  form.value.timeout_action = action;
+  if (action === ACTION_CLOSE_CONVERSATION) {
+    form.value.target_team_id = null;
+  }
+};
+
 const saveDistributionPolicy = async () => {
   const { data } = await conversationDistributionAPI.updateInboxPolicy(
     inbox.value.id,
@@ -309,9 +387,18 @@ const saveAutomationPolicy = async () => {
       {
         enabled: form.value.enabled,
         stale_after_minutes: form.value.stale_after_minutes,
-        target_team_id: form.value.target_team_id,
+        timeout_action: form.value.timeout_action,
+        target_team_id:
+          form.value.timeout_action === ACTION_FORWARD_TO_TEAM
+            ? form.value.target_team_id
+            : null,
         customer_message_enabled: form.value.customer_message_enabled,
         customer_message: form.value.customer_message,
+        close_warning_enabled: form.value.close_warning_enabled,
+        close_warning_message: form.value.close_warning_message,
+        close_warning_delay_minutes: form.value.close_warning_delay_minutes,
+        close_final_message_enabled: form.value.close_final_message_enabled,
+        close_final_message: form.value.close_final_message,
       }
     );
   applyAutomationPolicy(data);
@@ -507,8 +594,63 @@ defineExpose({ open });
           </div>
         </section>
 
-        <div class="grid items-start gap-4 md:grid-cols-2">
-          <label class="grid content-start gap-1">
+        <section v-if="form.enabled" class="space-y-3">
+          <h3 class="mb-0 text-heading-3 text-n-slate-12">
+            {{
+              t('IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTION_TITLE')
+            }}
+          </h3>
+          <div
+            class="grid gap-3 md:grid-cols-2"
+            role="radiogroup"
+            :aria-label="
+              t('IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.ACTION_TITLE')
+            "
+          >
+            <button
+              v-for="action in timeoutActions"
+              :key="action.id"
+              type="button"
+              class="flex min-h-24 items-start gap-3 rounded-lg border p-4 text-left transition-colors"
+              :class="
+                form.timeout_action === action.id
+                  ? 'border-n-brand bg-n-alpha-2'
+                  : 'border-n-weak bg-n-alpha-1 hover:bg-n-alpha-2'
+              "
+              role="radio"
+              :aria-checked="form.timeout_action === action.id"
+              :data-testid="`automation-action-${action.id}`"
+              @click="selectTimeoutAction(action.id)"
+            >
+              <span
+                class="mt-0.5 size-5 shrink-0 text-n-brand"
+                :class="action.icon"
+              />
+              <span class="min-w-0">
+                <span class="block text-label-medium text-n-slate-12">
+                  {{ action.title }}
+                </span>
+                <span class="mt-1 block text-body-small text-n-slate-11">
+                  {{ action.description }}
+                </span>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <div
+          v-if="form.enabled"
+          class="grid items-start gap-4"
+          :class="
+            form.timeout_action === ACTION_FORWARD_TO_TEAM
+              ? 'md:grid-cols-2'
+              : 'md:grid-cols-1'
+          "
+        >
+          <label
+            class="grid content-start gap-1"
+            data-testid="automation-stale-after"
+          >
             <span class="text-label-small text-n-slate-11">
               {{
                 t(
@@ -534,7 +676,11 @@ defineExpose({ open });
             </div>
           </label>
 
-          <label class="grid content-start gap-1">
+          <label
+            v-if="form.timeout_action === ACTION_FORWARD_TO_TEAM"
+            class="grid content-start gap-1"
+            data-testid="automation-target-team"
+          >
             <span class="text-label-small text-n-slate-11">
               {{
                 t(
@@ -565,16 +711,17 @@ defineExpose({ open });
         </div>
 
         <p
+          v-if="form.enabled"
           class="mb-0 rounded-lg bg-n-alpha-1 px-3 py-2 text-body-small text-n-slate-11"
         >
-          {{
-            t(
-              'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.INTERNAL_EVENT_NOTICE'
-            )
-          }}
+          {{ internalEventNotice }}
         </p>
 
-        <section class="rounded-xl border border-n-weak bg-n-alpha-1 p-4">
+        <section
+          v-if="form.enabled && form.timeout_action === ACTION_FORWARD_TO_TEAM"
+          class="rounded-xl border border-n-weak bg-n-alpha-1 p-4"
+          data-testid="automation-forward-message"
+        >
           <div class="mb-3 flex items-start justify-between gap-4">
             <div>
               <h3 class="mb-1 text-heading-3 text-n-slate-12">
@@ -612,12 +759,151 @@ defineExpose({ open });
               class="resize-y rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm text-n-slate-12"
               :placeholder="
                 t(
-                  'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CUSTOMER_MESSAGE_PLACEHOLDER'
+                  'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CUSTOMER_MESSAGE_PLACEHOLDER_FORWARD'
                 )
               "
             />
           </label>
         </section>
+
+        <template
+          v-if="
+            form.enabled && form.timeout_action === ACTION_CLOSE_CONVERSATION
+          "
+        >
+          <section
+            class="rounded-xl border border-n-weak bg-n-alpha-1 p-4"
+            data-testid="automation-close-warning"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="mb-1 text-heading-3 text-n-slate-12">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_WARNING_TITLE'
+                    )
+                  }}
+                </h3>
+                <p class="mb-0 text-body-small text-n-slate-11">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_WARNING_DESCRIPTION'
+                    )
+                  }}
+                </p>
+              </div>
+              <ToggleSwitch
+                v-model="form.close_warning_enabled"
+                class="shrink-0"
+              />
+            </div>
+
+            <div v-if="form.close_warning_enabled" class="mt-4 grid gap-4">
+              <label class="grid max-w-md gap-1">
+                <span class="text-label-small text-n-slate-11">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_WARNING_DELAY'
+                    )
+                  }}
+                </span>
+                <div
+                  class="grid grid-cols-[minmax(0,1fr)_8rem] items-start gap-2"
+                >
+                  <input
+                    :value="form.close_warning_delay_minutes"
+                    type="number"
+                    min="1"
+                    max="1440"
+                    class="h-10 min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+                    data-testid="automation-close-warning-delay"
+                    @input="closeWarningDelayValue"
+                  />
+                  <span
+                    class="grid h-10 min-h-10 place-items-center rounded-lg bg-n-alpha-2 px-3 text-sm text-n-slate-11"
+                  >
+                    {{
+                      t(
+                        'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.MINUTES'
+                      )
+                    }}
+                  </span>
+                </div>
+              </label>
+
+              <label class="grid gap-1">
+                <span class="text-label-small text-n-slate-11">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_WARNING_MESSAGE'
+                    )
+                  }}
+                </span>
+                <textarea
+                  v-model="form.close_warning_message"
+                  rows="3"
+                  class="resize-y rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm text-n-slate-12"
+                  :placeholder="
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_WARNING_MESSAGE_PLACEHOLDER'
+                    )
+                  "
+                />
+              </label>
+            </div>
+          </section>
+
+          <section
+            class="rounded-xl border border-n-weak bg-n-alpha-1 p-4"
+            data-testid="automation-close-final-message"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="mb-1 text-heading-3 text-n-slate-12">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_FINAL_MESSAGE_TITLE'
+                    )
+                  }}
+                </h3>
+                <p class="mb-0 text-body-small text-n-slate-11">
+                  {{
+                    t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_FINAL_MESSAGE_DESCRIPTION'
+                    )
+                  }}
+                </p>
+              </div>
+              <ToggleSwitch
+                v-model="form.close_final_message_enabled"
+                class="shrink-0"
+              />
+            </div>
+
+            <label
+              v-if="form.close_final_message_enabled"
+              class="mt-4 grid gap-1"
+            >
+              <span class="text-label-small text-n-slate-11">
+                {{
+                  t(
+                    'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_FINAL_MESSAGE'
+                  )
+                }}
+              </span>
+              <textarea
+                v-model="form.close_final_message"
+                rows="3"
+                class="resize-y rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm text-n-slate-12"
+                :placeholder="
+                  t(
+                    'IBSOFT_THEME.CHATHUB_SETTINGS.AUTOMATION_HANDOFF.CLOSE_FINAL_MESSAGE_PLACEHOLDER'
+                  )
+                "
+              />
+            </label>
+          </section>
+        </template>
       </template>
     </div>
   </Dialog>

@@ -40,7 +40,7 @@
 #  fk_rails_...  (assignee_id => users.id)
 #  fk_rails_...  (created_by_id => users.id)
 #  fk_rails_...  (erp_connection_id => ibsoft_erp_connections.id)
-#  fk_rails_...  (inbox_id => inboxes.id)
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #  fk_rails_...  (sent_by_id => users.id)
 #  fk_rails_...  (team_id => teams.id)
 #

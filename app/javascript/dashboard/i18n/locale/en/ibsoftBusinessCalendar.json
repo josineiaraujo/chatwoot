@@ -1,0 +1,91 @@
+{
+  "IBSOFT_BUSINESS_CALENDAR": {
+    "MENU": "Holidays",
+    "TITLE": "Holiday calendars",
+    "DESCRIPTION": "Register non-working dates and link calendars to departments.",
+    "NEW": "New calendar",
+    "EMPTY": "No holiday calendar has been created.",
+    "SAVED": "Calendar saved.",
+    "DELETED": "Calendar deleted.",
+    "CARD": {
+      "SUMMARY": "{holidays} holidays · {teams} departments"
+    },
+    "ACTIONS": {
+      "EDIT": "Edit",
+      "DELETE": "Delete",
+      "SAVE": "Save calendar",
+      "ADD": "Add"
+    },
+    "EDITOR": {
+      "EDIT_TITLE": "Edit calendar",
+      "CREATE_TITLE": "Create calendar",
+      "SAVE_BEFORE_HOLIDAYS": "Save the calendar before adding holidays or importing dates.",
+      "TABS": {
+        "LABEL": "Calendar sections",
+        "GENERAL": "General",
+        "HOLIDAYS": "Holidays",
+        "DEPARTMENTS": "Departments"
+      }
+    },
+    "FIELDS": {
+      "NAME": "Calendar name",
+      "DATE": "Date",
+      "HOLIDAY_NAME": "Holiday name",
+      "KIND": "Type"
+    },
+    "KINDS": {
+      "HOLIDAY": "Holiday",
+      "OPTIONAL": "Optional holiday"
+    },
+    "HOLIDAYS": {
+      "TITLE": "Non-working dates",
+      "DESCRIPTION": "Add holidays manually or import official dates.",
+      "SAVED": "Holiday saved.",
+      "DELETED": "Holiday deleted.",
+      "EMPTY": "No date is registered in this calendar.",
+      "DETAILS": "{date} · {kind}"
+    },
+    "DEPARTMENTS": {
+      "TITLE": "Linked departments",
+      "DESCRIPTION": "Dates in this calendar will be treated as outside business hours for the selected departments.",
+      "SEARCH": "Search departments",
+      "SELECTED": "{count} selected",
+      "EMPTY": "No department found."
+    },
+    "IMPORT": {
+      "TITLE": "Import Brazilian holidays",
+      "DESCRIPTION": "Look up national and state holidays through Invertexto and choose which dates to import.",
+      "OPEN": "Sync holidays",
+      "YEAR": "Year",
+      "STATE": "State",
+      "NATIONAL": "National only",
+      "INCLUDE_OPTIONAL": "Include optional holidays",
+      "PREVIEW": "Look up",
+      "FOUND": "{count} dates found",
+      "ITEM": "{date} · {name}",
+      "SELECT_ALL": "Select all",
+      "SELECTED": "{selected} of {total} selected",
+      "EMPTY": "No holidays were found for the selected filters.",
+      "CONFIRM": "Import selected",
+      "IMPORTED": "Holidays imported."
+    },
+    "DELETE": {
+      "TITLE": "Delete calendar",
+      "DESCRIPTION": "Department links will also be removed. This action cannot be undone."
+    },
+    "ERRORS": {
+      "LOAD": "Could not load calendars.",
+      "SAVE": "Could not save the calendar.",
+      "HOLIDAY_SAVE": "Could not save the holiday.",
+      "HOLIDAY_DELETE": "Could not delete the holiday.",
+      "IMPORT": "Could not look up or import holidays.",
+      "TEAMS_LOAD": "Could not load departments.",
+      "DELETE": "Could not delete the calendar."
+    },
+    "TEAM_LINK": {
+      "LABEL": "Holiday calendar",
+      "NONE": "Do not consider holidays",
+      "HELP": "Dates in this calendar will be treated as outside business hours for this department."
+    }
+  }
+}

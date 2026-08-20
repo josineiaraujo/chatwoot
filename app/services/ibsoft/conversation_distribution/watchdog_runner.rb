@@ -4,7 +4,17 @@ require 'securerandom'
 class Ibsoft::ConversationDistribution::WatchdogRunner
   DEFAULT_ACCOUNT_BATCH_SIZE = 100
   LOCK_KEY = 'IBSOFT_CONVERSATION_DISTRIBUTION::WATCHDOG::%<scope>s'.freeze
-  SUMMARY_COUNTER_KEYS = %i[scanned handoffed assigned redistributed skipped ignored].freeze
+  SUMMARY_COUNTER_KEYS = %i[
+    scanned
+    handoffed
+    warnings_sent
+    closed
+    cancelled
+    assigned
+    redistributed
+    skipped
+    ignored
+  ].freeze
 
   def initialize(account_id: nil, inbox_id: nil, team_id: nil, limit: Ibsoft::ConversationDistribution::ExecutionConfig.job_limit)
     @account_id = account_id
@@ -66,11 +76,26 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
   def run_account(account)
     sync_presence_if_needed(account)
 
+    automation_close_result = automation_close_executor(account).perform
     automation_handoff_result = automation_handoff_executor(account).perform
     assignment_result = assignment_executor(account).perform
     redistribution_result = redistribution_executor(account).perform
 
-    account_result_payload(account, automation_handoff_result, assignment_result, redistribution_result)
+    account_result_payload(
+      account,
+      automation_close_result,
+      automation_handoff_result,
+      assignment_result,
+      redistribution_result
+    )
+  end
+
+  def automation_close_executor(account)
+    Ibsoft::ConversationDistribution::AutomationCloseExecutor.new(
+      account: account,
+      inbox_id: inbox_id,
+      limit: safe_limit
+    )
   end
 
   def automation_handoff_executor(account)
@@ -99,15 +124,17 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     )
   end
 
-  def account_result_payload(account, automation_handoff_result, assignment_result, redistribution_result)
+  def account_result_payload(account, automation_close_result, automation_handoff_result, assignment_result, redistribution_result)
     {
       account_id: account.id,
       real_assignment_enabled: assignment_result[:real_assignment_enabled],
       filters: assignment_result[:filters],
+      automation_close_summary: automation_close_result[:summary],
       automation_handoff_summary: automation_handoff_result[:summary],
       assignment_summary: assignment_result[:summary],
       redistribution_summary: redistribution_result[:summary],
       summary: combined_account_summary(
+        automation_close_result[:summary],
         automation_handoff_result[:summary],
         assignment_result[:summary],
         redistribution_result[:summary]
@@ -139,6 +166,9 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
       accounts: 0,
       scanned: 0,
       handoffed: 0,
+      warnings_sent: 0,
+      closed: 0,
+      cancelled: 0,
       assigned: 0,
       redistributed: 0,
       skipped: 0,
@@ -157,6 +187,7 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     Account.where(id: active_channel_account_ids)
            .or(Account.where(id: active_team_account_ids))
            .or(Account.where(id: active_automation_handoff_account_ids))
+           .or(Account.where(id: active_automation_close_schedule_account_ids))
            .distinct
   end
 
@@ -164,6 +195,10 @@ class Ibsoft::ConversationDistribution::WatchdogRunner
     Ibsoft::ConversationDistribution::AutomationHandoffPolicy
       .enabled
       .select(:account_id)
+  end
+
+  def active_automation_close_schedule_account_ids
+    Ibsoft::ConversationDistribution::AutomationCloseSchedule.select(:account_id)
   end
 
   def active_channel_account_ids

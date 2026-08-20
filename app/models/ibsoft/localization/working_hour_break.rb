@@ -24,7 +24,7 @@
 # Foreign Keys
 #
 #  fk_rails_...  (account_id => accounts.id)
-#  fk_rails_...  (inbox_id => inboxes.id)
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #
 class Ibsoft::Localization::WorkingHourBreak < ApplicationRecord
   self.table_name = 'ibsoft_working_hour_breaks'

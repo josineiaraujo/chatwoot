@@ -7,6 +7,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
 import conversationDistributionAPI from '../api';
+import businessCalendarAPI from 'dashboard/ibsoft/businessCalendar/api';
 
 const props = defineProps({
   show: {
@@ -27,6 +28,8 @@ const overrideChannelPolicy = ref(false);
 const nativeAssignment = ref({});
 const policies = ref([]);
 const distributionPolicyId = ref(null);
+const businessCalendars = ref([]);
+const businessCalendarId = ref(null);
 const isFetching = ref(false);
 const isSaving = ref(false);
 
@@ -57,11 +60,14 @@ const fetchPolicy = async () => {
 
   try {
     isFetching.value = true;
-    const [{ data }, policyResponse] = await Promise.all([
+    const [{ data }, policyResponse, calendarResponse] = await Promise.all([
       conversationDistributionAPI.getTeamPolicy(props.team.id),
       conversationDistributionAPI.getPolicies(),
+      businessCalendarAPI.getCalendars(),
     ]);
     policies.value = policyResponse.data.policies || [];
+    businessCalendars.value = calendarResponse.data.calendars || [];
+    businessCalendarId.value = data.business_calendar_id || null;
     overrideChannelPolicy.value = data.override_channel_policy;
     distributionPolicyId.value = data.distribution_policy_id || null;
     nativeAssignment.value = data.native_assignment || {};
@@ -85,15 +91,18 @@ const savePolicy = async () => {
       {
         override_channel_policy: overrideChannelPolicy.value,
         distribution_policy_id: distributionPolicyId.value,
+        business_calendar_id: businessCalendarId.value,
       }
     );
     distributionPolicyId.value = data.distribution_policy_id || null;
+    businessCalendarId.value = data.business_calendar_id || null;
     overrideChannelPolicy.value = data.override_channel_policy;
     nativeAssignment.value = data.native_assignment || {};
     useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.SAVE_SUCCESS'));
     close();
-  } catch (error) {
+  } catch {
     useAlert(t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.API.SAVE_ERROR'));
+    await fetchPolicy();
   } finally {
     isSaving.value = false;
   }
@@ -183,6 +192,29 @@ watch(
                   )
             }}
           </p>
+
+          <div class="border-t border-n-weak pt-4">
+            <label class="grid gap-1">
+              <span class="text-label-small text-n-slate-11">
+                {{ t('IBSOFT_BUSINESS_CALENDAR.TEAM_LINK.LABEL') }}
+              </span>
+              <IbsoftSelect v-model="businessCalendarId">
+                <option :value="null">
+                  {{ t('IBSOFT_BUSINESS_CALENDAR.TEAM_LINK.NONE') }}
+                </option>
+                <option
+                  v-for="calendar in businessCalendars"
+                  :key="calendar.id"
+                  :value="calendar.id"
+                >
+                  {{ calendar.name }}
+                </option>
+              </IbsoftSelect>
+              <span class="text-body-mini text-n-slate-10">
+                {{ t('IBSOFT_BUSINESS_CALENDAR.TEAM_LINK.HELP') }}
+              </span>
+            </label>
+          </div>
 
           <ul
             v-if="activationWarnings.length"

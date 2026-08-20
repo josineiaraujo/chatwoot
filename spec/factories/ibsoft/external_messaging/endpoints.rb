@@ -11,6 +11,7 @@ FactoryBot.define do
     rate_limit_per_second { 10 }
     retention_days { 30 }
     allow_order_resends { true }
+    failure_diagnostics_enabled { false }
 
     transient do
       whatsapp_channel { nil }

@@ -1,0 +1,51 @@
+{
+  "IBSOFT_AFTER_HOURS": {
+    "MENU": "Políticas extra expediente",
+    "TITLE": "Políticas extra expediente",
+    "DESCRIPTION": "Defina a orientação enviada fora do expediente e o comando que encerra a espera.",
+    "NEW": "Nova política",
+    "EMPTY": "Nenhuma política extra expediente foi criada.",
+    "SAVED": "Política salva.",
+    "DELETED": "Política excluída.",
+    "STATUS": {
+      "ENABLED": "Ativa",
+      "DISABLED": "Inativa"
+    },
+    "CARD": {
+      "DETAILS": "Comando: {command} · Vínculos: {count}"
+    },
+    "ACTIONS": {
+      "EDIT": "Editar",
+      "DELETE": "Excluir",
+      "SAVE": "Salvar política"
+    },
+    "EDITOR": {
+      "EDIT_TITLE": "Editar política extra expediente",
+      "CREATE_TITLE": "Criar política extra expediente"
+    },
+    "FIELDS": {
+      "NAME": "Nome",
+      "ENABLED": "Ativar política",
+      "ENABLED_HELP": "Quando vinculada, a política orientará o cliente que aguarda fora do expediente.",
+      "EXIT_COMMAND": "Comando para sair",
+      "EXIT_COMMAND_HELP": "O cliente deve enviar somente esse comando. Maiúsculas e espaços nas extremidades são ignorados.",
+      "REGULAR_MESSAGE": "Mensagem fora do horário",
+      "HOLIDAY_MESSAGE": "Mensagem em feriados",
+      "CONFIRMATION_MESSAGE": "Confirmação de encerramento"
+    },
+    "DELETE": {
+      "TITLE": "Excluir política",
+      "DESCRIPTION": "A política será desvinculada das regras de distribuição. Esperas ativas impedem a exclusão."
+    },
+    "ERRORS": {
+      "LOAD": "Não foi possível carregar as políticas extra expediente.",
+      "SAVE": "Não foi possível salvar a política extra expediente.",
+      "DELETE": "Não foi possível excluir a política extra expediente."
+    },
+    "DISTRIBUTION": {
+      "ACTION": "Aplicar política extra expediente",
+      "POLICY": "Política extra expediente",
+      "SELECT": "Selecione uma política"
+    }
+  }
+}

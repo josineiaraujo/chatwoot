@@ -2,24 +2,27 @@
 #
 # Table name: ibsoft_external_message_endpoints
 #
-#  id                      :bigint           not null, primary key
-#  active                  :boolean          default(TRUE), not null
-#  allow_order_resends     :boolean          default(TRUE), not null
-#  instance_type           :string           default("sgp_generic"), not null
-#  name                    :string           not null
-#  order_pix_key           :text
-#  order_pix_key_type      :string
-#  order_pix_merchant_name :string
-#  order_update_messages   :jsonb            not null
-#  rate_limit_per_second   :integer          default(10), not null
-#  retention_days          :integer          default(30), not null
-#  token_digest            :string           not null
-#  token_hint              :string           not null
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#  account_id              :bigint           not null
-#  created_by_id           :bigint           not null
-#  inbox_id                :bigint           not null
+#  id                             :bigint           not null, primary key
+#  active                         :boolean          default(TRUE), not null
+#  allow_order_resends            :boolean          default(TRUE), not null
+#  failure_diagnostics_enabled    :boolean          default(FALSE), not null
+#  instance_type                  :string           default("sgp_generic"), not null
+#  name                           :string           not null
+#  order_pix_key                  :text
+#  order_pix_key_type             :string
+#  order_pix_merchant_name        :string
+#  order_update_delivery_mode     :string           default("interactive"), not null
+#  order_update_messages          :jsonb            not null
+#  order_update_template_settings :jsonb            not null
+#  rate_limit_per_second          :integer          default(10), not null
+#  retention_days                 :integer          default(30), not null
+#  token_digest                   :string           not null
+#  token_hint                     :string           not null
+#  created_at                     :datetime         not null
+#  updated_at                     :datetime         not null
+#  account_id                     :bigint           not null
+#  created_by_id                  :bigint           not null
+#  inbox_id                       :bigint           not null
 #
 # Indexes
 #
@@ -33,7 +36,7 @@
 #
 #  fk_rails_...  (account_id => accounts.id)
 #  fk_rails_...  (created_by_id => users.id)
-#  fk_rails_...  (inbox_id => inboxes.id)
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #
 require 'digest'
 
@@ -45,6 +48,7 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   INSTANCE_TYPES = Ibsoft::ExternalMessaging::InstanceTypeRegistry.keys.freeze
   PIX_KEY_TYPES = Ibsoft::ExternalMessaging::OrderPaymentSettingsBuilder::PIX_KEY_TYPES
   ORDER_UPDATE_MESSAGE_KEYS = Ibsoft::ExternalMessaging::OrderUpdateMessageCatalog::KEYS
+  ORDER_UPDATE_DELIVERY_MODES = Ibsoft::ExternalMessaging::OrderUpdateTemplateConfiguration::DELIVERY_MODES
 
   encrypts :order_pix_key if Chatwoot.encryption_configured?
 
@@ -72,10 +76,12 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   validates :order_pix_merchant_name, length: { maximum: 100 }, allow_blank: true
   validates :order_pix_key, length: { maximum: 255 }, allow_blank: true
   validates :order_pix_key_type, inclusion: { in: PIX_KEY_TYPES }, allow_blank: true
+  validates :order_update_delivery_mode, inclusion: { in: ORDER_UPDATE_DELIVERY_MODES }
   validate :inbox_belongs_to_account
   validate :whatsapp_cloud_inbox
   validate :order_pix_key_encryption_available
   validate :order_update_messages_are_valid
+  validate :order_update_template_settings_are_valid
 
   before_validation :normalize_attributes
 
@@ -106,9 +112,7 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   end
 
   def payload(deliveries_count: nil)
-    identity_payload
-      .merge(configuration_payload(deliveries_count: deliveries_count))
-      .merge(timestamp_payload)
+    Ibsoft::ExternalMessaging::EndpointPayload.new(endpoint: self, deliveries_count: deliveries_count).call
   end
 
   def order_defaults_configured?
@@ -116,15 +120,11 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
   end
 
   def order_defaults_payload
-    message_catalog = Ibsoft::ExternalMessaging::OrderUpdateMessageCatalog.new(endpoint: self)
-    {
-      merchant_name: order_pix_merchant_name,
-      key_type: order_pix_key_type,
-      key_configured: order_pix_key.present?,
-      key_hint: masked_order_pix_key,
-      messages: message_catalog.effective,
-      message_defaults: message_catalog.defaults
-    }
+    Ibsoft::ExternalMessaging::EndpointPayload.new(endpoint: self).order_defaults
+  end
+
+  def order_update_template_ready?
+    order_update_template_configuration.ready?
   end
 
   def effective_rate_limit_per_second
@@ -135,51 +135,22 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
 
   private
 
-  def identity_payload
-    {
-      id: id,
-      account_id: account_id,
-      inbox_id: inbox_id,
-      inbox_name: inbox.name,
-      name: name,
-      instance_type: instance_type,
-      integration_family: instance_type_definition.family,
-      public_path: instance_type_definition.public_path,
-      order_update_path: instance_type_definition.order_update_path,
-      token_hint: token_hint,
-      authentication: Ibsoft::ExternalMessaging::InstanceCredentials.new(endpoint: self).public_payload
-    }
-  end
-
-  def configuration_payload(deliveries_count:)
-    {
-      active: active,
-      rate_limit_per_second: rate_limit_per_second,
-      deliveries_count: deliveries_count || deliveries.count,
-      retention_days: retention_days,
-      allow_order_resends: allow_order_resends,
-      order_defaults: order_defaults_payload,
-      order_defaults_configured: order_defaults_configured?
-    }
-  end
-
-  def timestamp_payload
-    {
-      created_at: created_at,
-      updated_at: updated_at
-    }
-  end
-
-  def instance_type_definition
-    Ibsoft::ExternalMessaging::InstanceTypeRegistry.fetch(instance_type)
-  end
-
   def normalize_attributes
     self.name = name.to_s.strip
+    normalize_order_payment_attributes
+    self.order_update_delivery_mode = order_update_delivery_mode.to_s.strip
+    normalize_order_update_template_settings
+    normalize_order_update_messages
+  end
+
+  def normalize_order_payment_attributes
     self.order_pix_merchant_name = order_pix_merchant_name.to_s.strip.presence
     self.order_pix_key = order_pix_key.to_s.strip.presence
     self.order_pix_key_type = order_pix_key_type.to_s.strip.upcase.presence
-    normalize_order_update_messages
+  end
+
+  def normalize_order_update_template_settings
+    self.order_update_template_settings = order_update_template_configuration.normalized_settings
   end
 
   def normalize_order_update_messages
@@ -189,12 +160,6 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
       normalized = value.to_s.strip
       result[key.to_s] = normalized if normalized.present?
     end
-  end
-
-  def masked_order_pix_key
-    return if order_pix_key.blank?
-
-    "****#{order_pix_key.last(4)}"
   end
 
   def order_pix_key_encryption_available
@@ -215,6 +180,19 @@ class Ibsoft::ExternalMessaging::Endpoint < ApplicationRecord
     end
 
     errors.add(:order_update_messages, :too_long)
+  end
+
+  def order_update_template_settings_are_valid
+    return if order_update_template_configuration.valid?
+
+    errors.add(:order_update_template_settings, :invalid)
+  end
+
+  def order_update_template_configuration
+    Ibsoft::ExternalMessaging::OrderUpdateTemplateConfiguration.new(
+      mode: order_update_delivery_mode,
+      settings: order_update_template_settings
+    )
   end
 
   def inbox_belongs_to_account

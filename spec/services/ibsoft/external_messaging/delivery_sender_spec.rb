@@ -61,9 +61,18 @@ RSpec.describe Ibsoft::ExternalMessaging::DeliverySender do
   end
 
   it 'marks a definitive Meta rejection as failed' do
+    delivery.endpoint.update!(failure_diagnostics_enabled: true)
     stub_request(:post, messages_url).to_return(
       status: 400,
-      body: { error: { code: 13_200, message: 'Template rejected' } }.to_json,
+      body: {
+        error: {
+          code: 132_000,
+          message: '(#132000) Number of parameters does not match the expected number of params',
+          error_data: {
+            details: 'body: number of localizable_params (3) does not match the expected number of params (2)'
+          }
+        }
+      }.to_json,
       headers: { 'Content-Type' => 'application/json' }
     )
 
@@ -71,9 +80,36 @@ RSpec.describe Ibsoft::ExternalMessaging::DeliverySender do
 
     expect(delivery.reload).to have_attributes(
       status: 'failed',
-      error_code: '13200',
+      error_code: '132000',
+      error_message: '(#132000) Number of parameters does not match the expected number of params - ' \
+                     'body: number of localizable_params (3) does not match the expected number of params (2)',
       meta_http_status: 400,
       template_components: []
+    )
+  end
+
+  it 'preserves the original failure message when detailed diagnostics are disabled' do
+    stub_request(:post, messages_url).to_return(
+      status: 400,
+      body: {
+        error: {
+          code: 132_000,
+          message: '(#132000) Number of parameters does not match the expected number of params',
+          error_data: {
+            details: 'body: number of localizable_params (3) does not match the expected number of params (2)'
+          }
+        }
+      }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    described_class.new(delivery: delivery).call
+
+    expect(delivery.reload).to have_attributes(
+      status: 'failed',
+      error_code: '132000',
+      error_message: '(#132000) Number of parameters does not match the expected number of params',
+      meta_http_status: 400
     )
   end
 

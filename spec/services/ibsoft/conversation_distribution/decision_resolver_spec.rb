@@ -174,6 +174,107 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionResolver do
     )
   end
 
+  it 'treats a linked holiday as outside business hours even when the policy is always available' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+    distribution_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                                         .distribution_policy
+    distribution_policy.update!(
+      after_hours_policy: after_hours_policy,
+      config: {
+        business_hours: { mode: 'always_available' },
+        unavailability: {
+          outside_business_hours: { action: 'after_hours_policy' }
+        }
+      }
+    )
+    calendar = create(:ibsoft_business_calendar, account: account)
+    create(:ibsoft_business_calendar_team_link, account: account, team: team, business_calendar: calendar)
+    holiday = create(
+      :ibsoft_business_holiday,
+      business_calendar: calendar,
+      holiday_date: Date.new(2026, 7, 1),
+      name: 'Feriado estadual'
+    )
+    Rails.cache.clear
+
+    now = ActiveSupport::TimeZone[inbox.timezone].parse('2026-07-01 10:00:00')
+    decision = described_class.new(conversation: conversation, candidate: candidate, now: now).perform
+
+    expect(decision).to include(
+      action: 'after_hours_policy',
+      reason: 'outside_business_hours',
+      unavailable_action: 'after_hours_policy',
+      within_business_hours: false,
+      outside_business_hours_cause: 'holiday',
+      business_calendar_id: calendar.id,
+      business_holiday_id: holiday.id,
+      holiday_name: 'Feriado estadual',
+      holiday_date: '2026-07-01',
+      after_hours_policy_id: after_hours_policy.id,
+      after_hours_policy_name: after_hours_policy.name
+    )
+  end
+
+  it 'uses the regular after-hours policy when the schedule is closed without a holiday' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+    distribution_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                                         .distribution_policy
+    distribution_policy.update!(
+      after_hours_policy: after_hours_policy,
+      config: {
+        business_hours: {
+          mode: 'custom',
+          timezone: 'America/Sao_Paulo',
+          schedule: [{ day_of_week: 3, closed_all_day: true }]
+        },
+        unavailability: {
+          outside_business_hours: { action: 'after_hours_policy' }
+        }
+      }
+    )
+
+    now = ActiveSupport::TimeZone['America/Sao_Paulo'].parse('2026-07-01 10:00:00')
+    decision = described_class.new(conversation: conversation, candidate: candidate, now: now).perform
+
+    expect(decision).to include(
+      action: 'after_hours_policy',
+      reason: 'outside_business_hours',
+      within_business_hours: false,
+      outside_business_hours_cause: 'schedule',
+      after_hours_policy_id: after_hours_policy.id
+    )
+    expect(decision).not_to include(:business_holiday_id)
+  end
+
+  it 'waits safely when the linked after-hours policy is disabled' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account, enabled: false)
+    distribution_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                                         .distribution_policy
+    distribution_policy.update!(
+      after_hours_policy: after_hours_policy,
+      config: {
+        business_hours: {
+          mode: 'custom',
+          timezone: 'America/Sao_Paulo',
+          schedule: [{ day_of_week: 3, closed_all_day: true }]
+        },
+        unavailability: {
+          outside_business_hours: { action: 'after_hours_policy' }
+        }
+      }
+    )
+
+    now = ActiveSupport::TimeZone['America/Sao_Paulo'].parse('2026-07-01 10:00:00')
+    decision = described_class.new(conversation: conversation, candidate: candidate, now: now).perform
+
+    expect(decision).to include(
+      action: 'wait',
+      reason: 'outside_business_hours',
+      unavailable_action: 'after_hours_policy',
+      after_hours_policy_id: after_hours_policy.id
+    )
+  end
+
   it 'uses the no available agent fallback without applying the outside-hours rule' do
     fallback_team = create(:team, account: account)
     Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)

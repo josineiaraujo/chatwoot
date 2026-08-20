@@ -391,6 +391,20 @@ Rails.application.routes.draw do
               get :effective_policy, to: 'effective_policies#show'
             end
 
+            namespace :business_calendar do
+              resources :calendars do
+                resource :team_links, only: :update, controller: :calendar_team_links
+                resources :holidays, only: [:index, :create, :update, :destroy]
+                post 'holiday_import/preview', to: 'holiday_imports#preview'
+                post 'holiday_import', to: 'holiday_imports#create'
+              end
+              resources :team_links, only: [:show, :update, :destroy], param: :team_id
+            end
+
+            namespace :after_hours do
+              resources :policies, only: [:index, :show, :create, :update, :destroy]
+            end
+
             namespace :chathub_settings do
               resource :setting, only: [:show, :update], controller: :settings
             end
@@ -429,6 +443,7 @@ Rails.application.routes.draw do
             namespace :external_messaging do
               resources :endpoints, only: [:index, :create, :update, :destroy] do
                 post :rotate_token, on: :member
+                get :order_update_templates, on: :member
               end
               resources :deliveries, only: [:index, :show]
               resources :orders, only: [:index] do

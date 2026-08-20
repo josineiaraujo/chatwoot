@@ -161,6 +161,37 @@ const statusLabel = status =>
   statuses.value.find(option => option.value === status)?.label ||
   t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.NOT_AVAILABLE');
 
+const showFailureDiagnostics = computed(
+  () => props.endpoint.failure_diagnostics_enabled === true
+);
+
+const deliveryDiagnostic = delivery => {
+  if (!delivery.error_code && !delivery.error_message) {
+    return t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.NOT_AVAILABLE');
+  }
+
+  const parts = [];
+  if (delivery.error_code) {
+    parts.push(
+      t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.ERROR_CODE', {
+        code: delivery.error_code,
+      })
+    );
+  }
+  if (delivery.meta_http_status) {
+    parts.push(
+      t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.HTTP_STATUS', {
+        status: delivery.meta_http_status,
+      })
+    );
+  }
+  if (delivery.error_message) parts.push(delivery.error_message);
+
+  return (
+    parts.join(' · ') || t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.NOT_AVAILABLE')
+  );
+};
+
 const formatDate = value => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -443,7 +474,10 @@ watch(
         <Spinner />
       </div>
       <div v-else-if="deliveries.length" class="overflow-x-auto">
-        <table class="w-full min-w-[760px] border-collapse text-left">
+        <table
+          class="w-full border-collapse text-left"
+          :class="showFailureDiagnostics ? 'min-w-[1040px]' : 'min-w-[760px]'"
+        >
           <thead>
             <tr class="border-b border-n-weak text-label-small text-n-slate-11">
               <th class="px-4 py-3">
@@ -460,6 +494,9 @@ watch(
               </th>
               <th class="px-4 py-3">
                 {{ t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.META_ID') }}
+              </th>
+              <th v-if="showFailureDiagnostics" class="px-4 py-3">
+                {{ t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.DIAGNOSTIC') }}
               </th>
             </tr>
           </thead>
@@ -496,6 +533,18 @@ watch(
                   delivery.meta_message_id ||
                   t('IBSOFT_EXTERNAL_MESSAGING.DELIVERIES.NOT_AVAILABLE')
                 }}
+              </td>
+              <td
+                v-if="showFailureDiagnostics"
+                class="max-w-80 px-4 py-3 text-label-small text-n-slate-11"
+              >
+                <span
+                  class="block max-w-80 truncate"
+                  data-testid="delivery-diagnostic"
+                  :title="deliveryDiagnostic(delivery)"
+                >
+                  {{ deliveryDiagnostic(delivery) }}
+                </span>
               </td>
             </tr>
           </tbody>

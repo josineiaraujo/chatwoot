@@ -2,18 +2,20 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
   ACTION_KEYS = {
     assignment_completed: 'ibsoft.conversation_distribution.activity.assignment_completed',
     agent_claim_completed: 'ibsoft.conversation_distribution.activity.agent_claim_completed',
+    automation_close_completed: 'ibsoft.conversation_distribution.activity.automation_close_completed',
     automation_handoff_completed: 'ibsoft.conversation_distribution.activity.automation_handoff_completed',
     queue_returned: 'ibsoft.conversation_distribution.activity.queue_returned',
     queue_transferred: 'ibsoft.conversation_distribution.activity.queue_transferred',
     redistribution_completed: 'ibsoft.conversation_distribution.activity.redistribution_completed'
   }.freeze
 
-  def initialize(conversation:, action:, assignee: nil, previous_assignee: nil, target_team: nil)
+  def initialize(conversation:, action:, **context)
     @conversation = conversation
     @action = action&.to_sym
-    @assignee = assignee
-    @previous_assignee = previous_assignee
-    @target_team = target_team
+    @assignee = context[:assignee]
+    @previous_assignee = context[:previous_assignee]
+    @target_team = context[:target_team]
+    @stale_after_minutes = context[:stale_after_minutes]
   end
 
   def perform
@@ -35,7 +37,7 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
 
   private
 
-  attr_reader :conversation, :action, :assignee, :previous_assignee, :target_team
+  attr_reader :conversation, :action, :assignee, :previous_assignee, :target_team, :stale_after_minutes
 
   def skipped(status)
     { applied: false, status: status }
@@ -55,7 +57,8 @@ class Ibsoft::ConversationDistribution::ActivityMessageNotifier
     {
       assignee_name: assignee_name(assignee),
       previous_assignee_name: assignee_name(previous_assignee),
-      target_team_name: team_name(target_team)
+      target_team_name: team_name(target_team),
+      stale_after_minutes: stale_after_minutes
     }
   end
 
