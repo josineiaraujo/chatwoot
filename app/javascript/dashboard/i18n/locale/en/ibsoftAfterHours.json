@@ -1,0 +1,51 @@
+{
+  "IBSOFT_AFTER_HOURS": {
+    "MENU": "After-hours policies",
+    "TITLE": "After-hours policies",
+    "DESCRIPTION": "Define the guidance sent outside business hours and the command that ends the wait.",
+    "NEW": "New policy",
+    "EMPTY": "No after-hours policy has been created.",
+    "SAVED": "Policy saved.",
+    "DELETED": "Policy deleted.",
+    "STATUS": {
+      "ENABLED": "Active",
+      "DISABLED": "Inactive"
+    },
+    "CARD": {
+      "DETAILS": "Command: {command} · Links: {count}"
+    },
+    "ACTIONS": {
+      "EDIT": "Edit",
+      "DELETE": "Delete",
+      "SAVE": "Save policy"
+    },
+    "EDITOR": {
+      "EDIT_TITLE": "Edit after-hours policy",
+      "CREATE_TITLE": "Create after-hours policy"
+    },
+    "FIELDS": {
+      "NAME": "Name",
+      "ENABLED": "Enable policy",
+      "ENABLED_HELP": "When linked, this policy guides customers waiting outside business hours.",
+      "EXIT_COMMAND": "Exit command",
+      "EXIT_COMMAND_HELP": "The customer must send only this command. Letter case and surrounding spaces are ignored.",
+      "REGULAR_MESSAGE": "Outside-hours message",
+      "HOLIDAY_MESSAGE": "Holiday message",
+      "CONFIRMATION_MESSAGE": "Closure confirmation"
+    },
+    "DELETE": {
+      "TITLE": "Delete policy",
+      "DESCRIPTION": "The policy will be unlinked from distribution rules. Active waits prevent deletion."
+    },
+    "ERRORS": {
+      "LOAD": "Could not load after-hours policies.",
+      "SAVE": "Could not save the after-hours policy.",
+      "DELETE": "Could not delete the after-hours policy."
+    },
+    "DISTRIBUTION": {
+      "ACTION": "Apply after-hours policy",
+      "POLICY": "After-hours policy",
+      "SELECT": "Select a policy"
+    }
+  }
+}

@@ -11,6 +11,8 @@ import { useAlert } from 'dashboard/composables';
 import chathubSettingsAPI from '../api';
 import { normalizeChathubSettingsConfig } from '../defaults';
 import DistributionPolicyCatalog from '../components/DistributionPolicyCatalog.vue';
+import AfterHoursPolicyCatalog from 'dashboard/ibsoft/afterHours/components/AfterHoursPolicyCatalog.vue';
+import BusinessCalendarCatalog from 'dashboard/ibsoft/businessCalendar/components/BusinessCalendarCatalog.vue';
 import AccessControlPanel from 'dashboard/ibsoft/accessControl/components/AccessControlPanel.vue';
 import AgentProvisioningPanel from 'dashboard/ibsoft/agentProvisioning/components/AgentProvisioningPanel.vue';
 import { settingsSections } from '../settingsSections';
@@ -21,7 +23,12 @@ const router = useRouter();
 const store = useStore();
 
 const DEFAULT_SECTION = 'attendance';
-const BASE_SECTION_IDS = Object.freeze(['attendance', 'policies']);
+const BASE_SECTION_IDS = Object.freeze([
+  'attendance',
+  'policies',
+  'after_hours',
+  'business_calendars',
+]);
 const ADMIN_SECTION_IDS = Object.freeze([
   ...settingsSections.map(section => section.id),
   'agent_provisioning',
@@ -86,6 +93,16 @@ const menuItems = computed(() => {
       id: 'policies',
       icon: 'i-lucide-workflow',
       label: t('IBSOFT_THEME.CHATHUB_SETTINGS.MENU.POLICIES'),
+    },
+    {
+      id: 'after_hours',
+      icon: 'i-lucide-moon-star',
+      label: t('IBSOFT_AFTER_HOURS.MENU'),
+    },
+    {
+      id: 'business_calendars',
+      icon: 'i-lucide-calendar-days',
+      label: t('IBSOFT_BUSINESS_CALENDAR.MENU'),
     },
   ];
 
@@ -484,6 +501,12 @@ watch(
           </template>
 
           <DistributionPolicyCatalog v-else-if="activeSection === 'policies'" />
+          <AfterHoursPolicyCatalog
+            v-else-if="activeSection === 'after_hours'"
+          />
+          <BusinessCalendarCatalog
+            v-else-if="activeSection === 'business_calendars'"
+          />
           <component
             :is="activeIntegratedSection?.component"
             v-else-if="activeIntegratedSection && isAdmin"

@@ -10,12 +10,15 @@ import { useAlert } from 'dashboard/composables';
 import conversationDistributionAPI from 'dashboard/ibsoft/conversationDistribution/api';
 import DistributionPolicyForm from 'dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue';
 import { normalizePolicyConfig } from 'dashboard/ibsoft/conversationDistribution/policyDefaults';
+import afterHoursAPI from 'dashboard/ibsoft/afterHours/api';
 import DistributionPolicyCard from './DistributionPolicyCard.vue';
 
 const { t } = useI18n();
 const store = useStore();
 
 const policies = ref([]);
+const afterHoursPolicies = ref([]);
+const afterHoursPolicyId = ref(null);
 const editingPolicyId = ref(null);
 const policyName = ref('');
 const enabled = ref(false);
@@ -37,7 +40,13 @@ const dialogTitle = computed(() =>
     ? t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.CREATE_TITLE')
     : t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.EDIT_TITLE')
 );
-const isPolicyNameBlank = computed(() => !policyName.value.trim());
+const isPolicyInvalid = computed(
+  () =>
+    !policyName.value.trim() ||
+    (config.value.unavailability.outside_business_hours.action ===
+      'after_hours_policy' &&
+      !afterHoursPolicyId.value)
+);
 const selectedPolicyUsage = computed(() => {
   if (!editingPolicy.value) return null;
 
@@ -52,6 +61,7 @@ const resetEditor = () => {
   policyName.value = '';
   enabled.value = false;
   config.value = normalizePolicyConfig({});
+  afterHoursPolicyId.value = null;
   isCreating.value = false;
 };
 
@@ -60,14 +70,19 @@ const applyPolicy = policy => {
   policyName.value = policy.name;
   enabled.value = policy.enabled;
   config.value = normalizePolicyConfig(policy.config || {});
+  afterHoursPolicyId.value = policy.after_hours_policy_id || null;
   isCreating.value = false;
 };
 
 const fetchPolicies = async () => {
   isFetching.value = true;
   try {
-    const { data } = await conversationDistributionAPI.getPolicies();
+    const [{ data }, afterHoursResponse] = await Promise.all([
+      conversationDistributionAPI.getPolicies(),
+      afterHoursAPI.getPolicies(),
+    ]);
     policies.value = data.policies || [];
+    afterHoursPolicies.value = afterHoursResponse.data.policies || [];
 
     if (editingPolicyId.value && editingPolicy.value) {
       applyPolicy(editingPolicy.value);
@@ -89,6 +104,7 @@ const openCreatePolicy = () => {
   policyName.value = t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.NEW_NAME');
   enabled.value = false;
   config.value = normalizePolicyConfig({});
+  afterHoursPolicyId.value = null;
   isCreating.value = true;
   openPolicyDialog();
 };
@@ -108,6 +124,11 @@ const savePolicy = async () => {
       name: policyName.value,
       enabled: enabled.value,
       config: config.value,
+      after_hours_policy_id:
+        config.value.unavailability.outside_business_hours.action ===
+        'after_hours_policy'
+          ? afterHoursPolicyId.value
+          : null,
     };
     const { data } = isCreating.value
       ? await conversationDistributionAPI.createPolicy(payload)
@@ -196,10 +217,7 @@ onMounted(() => {
       <Spinner />
     </div>
 
-    <div
-      v-else-if="policies.length"
-      class="flex flex-col gap-4 pt-4"
-    >
+    <div v-else-if="policies.length" class="flex flex-col gap-4 pt-4">
       <DistributionPolicyCard
         v-for="policy in policies"
         :id="policy.id"
@@ -233,7 +251,7 @@ onMounted(() => {
       :confirm-button-label="
         t('IBSOFT_THEME.CONVERSATION_DISTRIBUTION.ACTIONS.SAVE')
       "
-      :disable-confirm-button="isPolicyNameBlank"
+      :disable-confirm-button="isPolicyInvalid"
       :is-loading="isSaving"
       @confirm="savePolicy"
       @close="resetEditor"
@@ -265,6 +283,10 @@ onMounted(() => {
           :teams="teams"
           :is-loading="isSaving"
           :show-actions="false"
+          :after-hours-policies="afterHoursPolicies"
+          :after-hours-policy-id="afterHoursPolicyId"
+          allow-after-hours-policy
+          @update:after-hours-policy-id="afterHoursPolicyId = $event"
           @save="savePolicy"
         />
       </div>

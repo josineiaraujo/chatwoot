@@ -144,6 +144,56 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     expect(conversation.reload.team).to eq(fallback_team)
   end
 
+  it 'starts an after-hours wait once and sends the policy message once' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+    decision = {
+      action: 'after_hours_policy',
+      reason: 'outside_business_hours',
+      policy_id: nil,
+      after_hours_policy_id: after_hours_policy.id,
+      outside_business_hours_cause: 'schedule'
+    }
+
+    first_result = described_class.new(conversation: conversation, decision: decision).perform
+    second_result = described_class.new(conversation: conversation.reload, decision: decision).perform
+
+    wait = Ibsoft::AfterHours::Wait.find_by!(conversation: conversation)
+    messages = conversation.reload.messages.outgoing.where(content: after_hours_policy.regular_message)
+    expect(first_result).to include(action_applied: true)
+    expect(first_result.dig(:action_result, :status)).to eq('wait_started')
+    expect(second_result).to include(action_applied: false)
+    expect(second_result.dig(:action_result, :status)).to eq('already_active')
+    expect(wait).to be_active
+    expect(wait.entry_message).to eq(messages.first)
+    expect(messages.count).to eq(1)
+  end
+
+  it 'uses the holiday message and stores the calendar references' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+    calendar = create(:ibsoft_business_calendar, account: account)
+    holiday = create(:ibsoft_business_holiday, business_calendar: calendar)
+    decision = {
+      action: 'after_hours_policy',
+      reason: 'outside_business_hours',
+      policy_id: nil,
+      after_hours_policy_id: after_hours_policy.id,
+      outside_business_hours_cause: 'holiday',
+      business_calendar_id: calendar.id,
+      business_holiday_id: holiday.id
+    }
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    wait = Ibsoft::AfterHours::Wait.find_by!(conversation: conversation)
+    expect(result).to include(action_applied: true)
+    expect(wait).to have_attributes(
+      cause: 'holiday',
+      business_calendar_id: calendar.id,
+      business_holiday_id: holiday.id
+    )
+    expect(wait.entry_message.content).to eq(after_hours_policy.holiday_message)
+  end
+
   it 'blocks fallback cycles' do
     fallback_team = create(:team, account: account)
     conversation.update!(

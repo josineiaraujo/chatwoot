@@ -64,12 +64,25 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  afterHoursPolicies: {
+    type: Array,
+    default: () => [],
+  },
+  afterHoursPolicyId: {
+    type: [Number, String],
+    default: null,
+  },
+  allowAfterHoursPolicy: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
   'update:enabled',
   'update:modelValue',
   'update:overrideChannelPolicy',
+  'update:afterHoursPolicyId',
   'save',
 ]);
 
@@ -157,6 +170,11 @@ const enabledModel = computed({
 const overrideModel = computed({
   get: () => props.overrideChannelPolicy,
   set: value => emit('update:overrideChannelPolicy', value),
+});
+
+const afterHoursPolicyModel = computed({
+  get: () => props.afterHoursPolicyId,
+  set: value => emit('update:afterHoursPolicyId', value || null),
 });
 
 const fallbackTeams = computed(() =>
@@ -1079,6 +1097,9 @@ onMounted(() => {
                     )
                   }}
                 </option>
+                <option v-if="allowAfterHoursPolicy" value="after_hours_policy">
+                  {{ t('IBSOFT_AFTER_HOURS.DISTRIBUTION.ACTION') }}
+                </option>
               </IbsoftSelect>
             </label>
 
@@ -1115,6 +1136,36 @@ onMounted(() => {
                   :value="team.id"
                 >
                   {{ team.name }}
+                </option>
+              </IbsoftSelect>
+            </label>
+
+            <label
+              v-if="
+                allowAfterHoursPolicy &&
+                config.unavailability.outside_business_hours.action ===
+                  'after_hours_policy'
+              "
+              class="flex flex-col gap-1"
+            >
+              <span class="text-label-small text-n-slate-11">
+                {{ t('IBSOFT_AFTER_HOURS.DISTRIBUTION.POLICY') }}
+              </span>
+              <IbsoftSelect v-model="afterHoursPolicyModel">
+                <option :value="null">
+                  {{ t('IBSOFT_AFTER_HOURS.DISTRIBUTION.SELECT') }}
+                </option>
+                <option
+                  v-for="afterHoursPolicy in afterHoursPolicies"
+                  :key="afterHoursPolicy.id"
+                  :value="afterHoursPolicy.id"
+                >
+                  {{ afterHoursPolicy.name }}
+                  {{
+                    afterHoursPolicy.enabled
+                      ? ''
+                      : `(${t('IBSOFT_AFTER_HOURS.STATUS.DISABLED')})`
+                  }}
                 </option>
               </IbsoftSelect>
             </label>

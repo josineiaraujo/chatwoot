@@ -19,6 +19,7 @@
 # Foreign Keys
 #
 #  fk_rails_...  (distribution_policy_id => ibsoft_conversation_distribution_policies.id)
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #
 class Ibsoft::ConversationDistribution::ChannelPolicy < ApplicationRecord
   self.table_name = 'ibsoft_conversation_distribution_channel_policies'
@@ -54,6 +55,8 @@ class Ibsoft::ConversationDistribution::ChannelPolicy < ApplicationRecord
       config: policy ? policy.effective_config : Ibsoft::ConversationDistribution::Policy.default_config,
       distribution_policy_id: policy&.id,
       distribution_policy_name: policy&.name,
+      after_hours_policy_id: policy&.after_hours_policy_id,
+      after_hours_policy_name: policy&.after_hours_policy&.name,
       created_at: created_at,
       updated_at: updated_at
     }

@@ -4,6 +4,7 @@ class Ibsoft::ConversationDistribution::DecisionResolver
   ACTION_WAIT = 'wait'.freeze
   ACTION_NOTIFY_CUSTOMER = 'notify_customer'.freeze
   ACTION_FALLBACK_TEAM = 'fallback_team'.freeze
+  ACTION_AFTER_HOURS_POLICY = 'after_hours_policy'.freeze
 
   def initialize(conversation:, candidate:, now: Time.current)
     @conversation = conversation
@@ -32,6 +33,8 @@ class Ibsoft::ConversationDistribution::DecisionResolver
     when 'fallback_team'
       fallback_team_id = fallback_team_id(unavailable_config)
       fallback_team_id.present? ? fallback_team_decision(reason, unavailable_config) : wait_decision(reason, unavailable_config)
+    when 'after_hours_policy'
+      after_hours_policy_decision(reason, unavailable_config)
     else
       wait_decision(reason, unavailable_config)
     end
@@ -63,13 +66,14 @@ class Ibsoft::ConversationDistribution::DecisionResolver
   def within_business_hours_payload
     return {} unless defined?(@within_business_hours)
 
-    { within_business_hours: @within_business_hours }
+    { within_business_hours: @within_business_hours }.merge(outside_business_hours_payload)
   end
 
   def unavailable_payload(unavailable_config)
     {
       unavailable_action: unavailable_action(unavailable_config),
-      fallback_team_id: fallback_team_id(unavailable_config)
+      fallback_team_id: fallback_team_id(unavailable_config),
+      after_hours_policy_id: policy[:after_hours_policy_id]
     }
   end
 
@@ -81,93 +85,74 @@ class Ibsoft::ConversationDistribution::DecisionResolver
     decision(ACTION_WAIT, reason, unavailable_payload(unavailable_config))
   end
 
+  def after_hours_policy_decision(reason, unavailable_config)
+    return wait_decision(reason, unavailable_config) unless enabled_after_hours_policy?
+
+    decision(
+      ACTION_AFTER_HOURS_POLICY,
+      reason,
+      unavailable_payload(unavailable_config).merge(after_hours_policy_name: policy[:after_hours_policy_name])
+    )
+  end
+
   def within_business_hours?
-    @within_business_hours = case business_hours_mode
-                             when 'always_available'
-                               true
-                             when 'custom'
-                               custom_schedule_open?
-                             else
-                               inbox_working_now?
-                             end
+    if holiday_for_today.present?
+      @outside_business_hours_cause = 'holiday'
+      @within_business_hours = false
+      return false
+    end
+
+    @within_business_hours = business_hours_evaluator.open?
+    @outside_business_hours_cause = 'schedule' unless @within_business_hours
+    @within_business_hours
   end
 
-  def inbox_working_now?
-    return true unless conversation.inbox.working_hours_enabled?
+  def outside_business_hours_payload
+    return {} unless @within_business_hours == false
 
-    conversation.inbox.working_now?
+    payload = { outside_business_hours_cause: @outside_business_hours_cause }
+    return payload if holiday_for_today.blank?
+
+    payload.merge(
+      business_calendar_id: holiday_for_today[:business_calendar_id],
+      business_holiday_id: holiday_for_today[:id],
+      holiday_name: holiday_for_today[:name],
+      holiday_date: holiday_for_today[:holiday_date]
+    )
   end
 
-  def custom_schedule_open?
-    return true if custom_schedule.blank?
+  def holiday_for_today
+    return @holiday_for_today if defined?(@holiday_for_today)
+    return if conversation.team.blank?
 
-    working_day = custom_schedule_day
-    return true if working_day.blank?
-    return false if working_day_closed?(working_day)
-    return !inside_custom_break? if working_day_open_all_day?(working_day)
-    return true unless working_day_values_present?(working_day)
-
-    inside_working_day_window?(working_day) && !inside_custom_break?
+    @holiday_for_today = Ibsoft::BusinessCalendar::HolidayResolver.new(
+      account: conversation.account,
+      team: conversation.team,
+      date: local_now.to_date
+    ).perform
   end
 
-  def custom_schedule_day
-    custom_schedule.find { |item| item['day_of_week'].to_i == local_now.wday }
-  end
+  def enabled_after_hours_policy?
+    after_hours_policy_id = policy[:after_hours_policy_id]
+    return false if after_hours_policy_id.blank?
 
-  def working_day_closed?(working_day)
-    ActiveModel::Type::Boolean.new.cast(working_day['closed_all_day'])
-  end
-
-  def working_day_open_all_day?(working_day)
-    ActiveModel::Type::Boolean.new.cast(working_day['open_all_day'])
-  end
-
-  def inside_working_day_window?(working_day)
-    local_now.between?(day_time(working_day['open_hour'], working_day['open_minutes']),
-                       day_time(working_day['close_hour'], working_day['close_minutes']))
-  end
-
-  def working_day_values_present?(working_day)
-    %w[open_hour open_minutes close_hour close_minutes].all? { |key| working_day[key].present? }
-  end
-
-  def day_time(hour, minutes)
-    local_now.change(hour: hour.to_i, min: minutes.to_i)
+    Ibsoft::AfterHours::Policy.exists?(
+      id: after_hours_policy_id,
+      account_id: conversation.account_id,
+      enabled: true
+    )
   end
 
   def local_now
-    @local_now ||= now.in_time_zone(custom_timezone)
+    business_hours_evaluator.local_now
   end
 
-  def custom_timezone
-    ActiveSupport::TimeZone[business_hours_config['timezone']].presence || conversation.inbox.timezone
-  end
-
-  def custom_schedule
-    Array(business_hours_config['schedule']).map(&:stringify_keys)
-  end
-
-  def inside_custom_break?
-    custom_breaks
-      .select { |item| item['day_of_week'].to_i == local_now.wday }
-      .any? { |item| custom_break_contains?(item) }
-  end
-
-  def custom_break_contains?(break_config)
-    current_minutes = (local_now.hour * 60) + local_now.min
-    current_minutes >= break_start_minutes(break_config) && current_minutes < break_end_minutes(break_config)
-  end
-
-  def break_start_minutes(break_config)
-    (break_config['start_hour'].to_i * 60) + break_config['start_minutes'].to_i
-  end
-
-  def break_end_minutes(break_config)
-    (break_config['end_hour'].to_i * 60) + break_config['end_minutes'].to_i
-  end
-
-  def custom_breaks
-    Array(business_hours_config['breaks']).map(&:stringify_keys)
+  def business_hours_evaluator
+    @business_hours_evaluator ||= Ibsoft::ConversationDistribution::BusinessHoursEvaluator.new(
+      conversation: conversation,
+      config: business_hours_config,
+      now: now
+    )
   end
 
   def business_hours_mode

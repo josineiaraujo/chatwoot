@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import TeamDistributionSettingsModal from '../components/TeamDistributionSettingsModal.vue';
 import conversationDistributionAPI from '../api';
+import businessCalendarAPI from 'dashboard/ibsoft/businessCalendar/api';
 
 const alertMock = vi.fn();
 
@@ -21,6 +22,12 @@ vi.mock('../api', () => ({
     getTeamPolicy: vi.fn(),
     getPolicies: vi.fn(),
     updateTeamPolicy: vi.fn(),
+  },
+}));
+
+vi.mock('dashboard/ibsoft/businessCalendar/api', () => ({
+  default: {
+    getCalendars: vi.fn(),
   },
 }));
 
@@ -65,12 +72,18 @@ describe('TeamDistributionSettingsModal', () => {
       data: {
         override_channel_policy: true,
         distribution_policy_id: 15,
+        business_calendar_id: 8,
         native_assignment: {},
       },
     });
     conversationDistributionAPI.getPolicies.mockResolvedValue({
       data: {
         policies: [{ id: 15, name: 'Comercial' }],
+      },
+    });
+    businessCalendarAPI.getCalendars.mockResolvedValue({
+      data: {
+        calendars: [{ id: 8, name: 'Feriados BA' }],
       },
     });
   });
@@ -95,6 +108,7 @@ describe('TeamDistributionSettingsModal', () => {
       {
         override_channel_policy: true,
         distribution_policy_id: 15,
+        business_calendar_id: 8,
       }
     );
     expect(wrapper.emitted('update:show')).toEqual([[false]]);

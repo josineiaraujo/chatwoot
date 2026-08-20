@@ -46,6 +46,13 @@ class Api::V1::Accounts::Ibsoft::ConversationDistribution::PoliciesController <
     attrs[:name] = params[:name] if params.key?(:name)
     attrs[:enabled] = boolean_param(:enabled) if params.key?(:enabled)
     attrs[:config] = distribution_config if params.key?(:config)
+    attrs[:after_hours_policy] = after_hours_policy_from_param if params.key?(:after_hours_policy_id)
     attrs
+  end
+
+  def after_hours_policy_from_param
+    return if params[:after_hours_policy_id].blank?
+
+    Ibsoft::AfterHours::Policy.find_by!(account: Current.account, id: params[:after_hours_policy_id])
   end
 end
