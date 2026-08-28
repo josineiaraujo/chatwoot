@@ -9,6 +9,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import { useAlert } from 'dashboard/composables';
+import IbsoftDialogHeader from 'dashboard/ibsoft/components/IbsoftDialogHeader.vue';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
 import businessCalendarAPI from '../api';
 
@@ -192,6 +193,10 @@ const openSyncDialog = async () => {
   hasPreviewedImport.value = false;
   await nextTick();
   syncDialogRef.value?.open();
+};
+
+const closeSyncDialog = () => {
+  syncDialogRef.value?.close();
 };
 
 const resetSyncDialog = () => {
@@ -448,13 +453,18 @@ onMounted(() => {
       width="3xl"
       position="top"
       overflow-y-auto
-      :title="editorTitle"
       :confirm-button-label="t('IBSOFT_BUSINESS_CALENDAR.ACTIONS.SAVE')"
       :disable-confirm-button="!calendarName.trim()"
       :is-loading="isSaving"
       @confirm="saveCalendar"
       @close="resetEditor"
     >
+      <IbsoftDialogHeader
+        :title="editorTitle"
+        :close-label="t('IBSOFT_BUSINESS_CALENDAR.ACTIONS.CLOSE')"
+        @close="closeEditor"
+      />
+
       <div
         class="mb-5 flex gap-1 rounded-lg bg-n-alpha-1 p-1"
         role="tablist"
@@ -533,7 +543,7 @@ onMounted(() => {
               <input
                 v-model="holidayForm.holiday_date"
                 type="date"
-                class="min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+                class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
               />
             </label>
             <label class="grid gap-1">
@@ -543,7 +553,7 @@ onMounted(() => {
               <input
                 v-model="holidayForm.name"
                 type="text"
-                class="min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+                class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
               />
             </label>
             <label class="grid gap-1">
@@ -672,12 +682,17 @@ onMounted(() => {
       width="2xl"
       position="top"
       overflow-y-auto
-      :title="t('IBSOFT_BUSINESS_CALENDAR.IMPORT.TITLE')"
-      :description="t('IBSOFT_BUSINESS_CALENDAR.IMPORT.DESCRIPTION')"
       :show-cancel-button="false"
       :show-confirm-button="false"
       @close="resetSyncDialog"
     >
+      <IbsoftDialogHeader
+        :title="t('IBSOFT_BUSINESS_CALENDAR.IMPORT.TITLE')"
+        :description="t('IBSOFT_BUSINESS_CALENDAR.IMPORT.DESCRIPTION')"
+        :close-label="t('IBSOFT_BUSINESS_CALENDAR.ACTIONS.CLOSE')"
+        @close="closeSyncDialog"
+      />
+
       <div class="grid gap-5">
         <div
           class="grid gap-3 md:grid-cols-[10rem_11rem_minmax(0,1fr)_auto] md:items-end"
@@ -691,7 +706,7 @@ onMounted(() => {
               type="number"
               min="2020"
               max="2100"
-              class="min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+              class="!mb-0 h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
             />
           </label>
           <label class="grid gap-1">

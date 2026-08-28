@@ -55,8 +55,20 @@ const mountComponent = () =>
         Button: true,
         Checkbox: true,
         Dialog: {
+          emits: ['close'],
           template: '<div><slot /></div>',
-          methods: { open: vi.fn(), close: vi.fn() },
+          methods: {
+            open: vi.fn(),
+            close() {
+              this.$emit('close');
+            },
+          },
+        },
+        IbsoftDialogHeader: {
+          props: ['title', 'description', 'closeLabel'],
+          emits: ['close'],
+          template:
+            '<button class="ibsoft-dialog-close" @click="$emit(\'close\')" />',
         },
         Spinner: true,
         ToggleSwitch: true,
@@ -156,6 +168,22 @@ describe('BusinessCalendarCatalog', () => {
     expect(wrapper.vm.formatHolidayDate('2026-01-01')).toBe('01/01/2026');
   });
 
+  it('closes both calendar modals from their header actions', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    const closeButtons = wrapper.findAll('.ibsoft-dialog-close');
+
+    expect(closeButtons).toHaveLength(2);
+
+    wrapper.vm.currentCalendar = { id: 4 };
+    await closeButtons[0].trigger('click');
+    expect(wrapper.vm.currentCalendar).toBeNull();
+
+    wrapper.vm.importPreview = [{ holiday_date: '2026-01-01' }];
+    await closeButtons[1].trigger('click');
+    expect(wrapper.vm.importPreview).toEqual([]);
+  });
+
   it('persists all selected departments when editing a calendar', async () => {
     const wrapper = mountComponent();
     await wrapper.vm.openEditor({ id: 4 });
@@ -250,5 +278,96 @@ describe('BusinessCalendarCatalog', () => {
 
     wrapper.vm.toggleAllImportDates(false);
     expect(wrapper.vm.selectedImportDates).toEqual([]);
+  });
+
+  it('filters departments by name without changing the shared store list', () => {
+    const wrapper = mountComponent();
+
+    wrapper.vm.teamSearch = 'SUP';
+
+    expect(wrapper.vm.filteredTeams).toEqual([{ id: 12, name: 'Suporte' }]);
+    expect(mocks.store.getters['teams/getTeams']).toHaveLength(2);
+  });
+
+  it('creates a holiday and refreshes the edited calendar', async () => {
+    businessCalendarAPI.createHoliday.mockResolvedValue({ data: { id: 31 } });
+    const wrapper = mountComponent();
+    await wrapper.vm.openEditor({ id: 4 });
+    wrapper.vm.holidayForm = {
+      id: null,
+      holiday_date: '2026-12-25',
+      name: 'Natal',
+      holiday_kind: 'holiday',
+    };
+
+    await wrapper.vm.saveHoliday();
+
+    expect(businessCalendarAPI.createHoliday).toHaveBeenCalledWith(4, {
+      holiday_date: '2026-12-25',
+      name: 'Natal',
+      holiday_kind: 'holiday',
+    });
+    expect(businessCalendarAPI.getCalendar).toHaveBeenCalledTimes(2);
+    expect(wrapper.vm.holidayForm.name).toBe('');
+  });
+
+  it('updates an existing holiday without creating a duplicate', async () => {
+    businessCalendarAPI.updateHoliday.mockResolvedValue({ data: { id: 31 } });
+    const wrapper = mountComponent();
+    await wrapper.vm.openEditor({ id: 4 });
+    wrapper.vm.editHoliday({
+      id: 31,
+      holiday_date: '2026-12-24',
+      name: 'Recesso',
+      holiday_kind: 'optional',
+    });
+
+    await wrapper.vm.saveHoliday();
+
+    expect(businessCalendarAPI.updateHoliday).toHaveBeenCalledWith(4, 31, {
+      holiday_date: '2026-12-24',
+      name: 'Recesso',
+      holiday_kind: 'optional',
+    });
+    expect(businessCalendarAPI.createHoliday).not.toHaveBeenCalled();
+  });
+
+  it('deletes a holiday and refreshes both detail and catalog', async () => {
+    businessCalendarAPI.deleteHoliday.mockResolvedValue({});
+    const wrapper = mountComponent();
+    await wrapper.vm.openEditor({ id: 4 });
+
+    await wrapper.vm.deleteHoliday(31);
+
+    expect(businessCalendarAPI.deleteHoliday).toHaveBeenCalledWith(4, 31);
+    expect(businessCalendarAPI.getCalendar).toHaveBeenCalledTimes(2);
+    expect(businessCalendarAPI.getCalendars).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not import holidays until at least one date is selected', async () => {
+    const wrapper = mountComponent();
+    await wrapper.vm.openEditor({ id: 4 });
+    await wrapper.vm.previewImport();
+
+    await wrapper.vm.importHolidays();
+
+    expect(businessCalendarAPI.importHolidays).not.toHaveBeenCalled();
+    expect(wrapper.vm.isImporting).toBe(false);
+  });
+
+  it('reports import failures without keeping the interface loading', async () => {
+    businessCalendarAPI.previewImport.mockRejectedValue(
+      new Error('request failed')
+    );
+    const wrapper = mountComponent();
+    await wrapper.vm.openEditor({ id: 4 });
+
+    await wrapper.vm.previewImport();
+
+    expect(mocks.alert).toHaveBeenCalledWith(
+      'IBSOFT_BUSINESS_CALENDAR.ERRORS.IMPORT'
+    );
+    expect(wrapper.vm.isImporting).toBe(false);
+    expect(wrapper.vm.hasPreviewedImport).toBe(false);
   });
 });

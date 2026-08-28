@@ -108,6 +108,37 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
     expect(conversation.reload.assignee).to eq(manual_agent)
   end
 
+  it 'preserves the current assignee instead of redistributing during a linked holiday' do
+    calendar = create(:ibsoft_business_calendar, account: account)
+    create(:ibsoft_business_calendar_team_link, account: account, team: team, business_calendar: calendar)
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      current_agent.id.to_s => 'online',
+      next_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    travel_to Time.zone.parse('2026-07-01 10:00:00') do
+      assignment_event.update!(created_at: 20.minutes.ago, updated_at: 20.minutes.ago)
+      holiday = create(
+        :ibsoft_business_holiday,
+        business_calendar: calendar,
+        holiday_date: Time.current.in_time_zone(inbox.timezone).to_date
+      )
+      Rails.cache.clear
+
+      result = described_class.new(account: account).perform
+
+      expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 1)
+      expect(result[:summary][:by_reason]).to include('outside_business_hours' => 1)
+      expect(result.dig(:results, 0, :decision)).to include(
+        action: 'wait',
+        outside_business_hours_cause: 'holiday',
+        business_holiday_id: holiday.id
+      )
+      expect(conversation.reload.assignee).to eq(current_agent)
+    end
+  end
+
   it 'does not redistribute while real execution is disabled' do
     allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(next_agent.id.to_s => 'online')
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
@@ -124,6 +155,30 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
       event_type: 'redistribution_skipped',
       reason: 'real_assignment_disabled'
     )
+  end
+
+  it 'ignores candidates when the effective distribution policy is disabled' do
+    channel_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+    channel_policy.distribution_policy.update!(enabled: false)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 0, ignored: 1)
+    expect(result[:summary][:by_reason]).to include('policy_disabled' => 1)
+    expect(conversation.reload.assignee).to eq(current_agent)
+  end
+
+  it 'ignores candidates when first-response redistribution is disabled' do
+    policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+    policy.distribution_policy.update!(config: redistribution_config.deep_merge(redistribution: { enabled: false }))
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 0, ignored: 1)
+    expect(result[:summary][:by_reason]).to include('redistribution_disabled' => 1)
+    expect(conversation.reload.assignee).to eq(current_agent)
   end
 
   it 'does not create duplicate skipped logs for the same conversation and reason inside the dedupe window' do
@@ -143,6 +198,77 @@ RSpec.describe Ibsoft::ConversationDistribution::RedistributionExecutor do
     expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 1)
     expect(result[:summary][:by_reason]).to include('no_available_agent' => 1)
     expect(conversation.reload.assignee).to eq(current_agent)
+  end
+
+  it 'keeps the current assignee when every replacement reaches protected capacity' do
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(
+      current_agent.id.to_s => 'online',
+      next_agent.id.to_s => 'online'
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new).and_return(
+      instance_double(
+        Ibsoft::ConversationDistribution::AgentCapacityGuard,
+        perform: { status: :capacity_reached, assignment: nil }
+      )
+    )
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 1)
+    expect(result[:summary][:by_reason]).to include('no_available_agent' => 1)
+    expect(conversation.reload.assignee).to eq(current_agent)
+  end
+
+  it 'preserves the current assignee outside a custom business-hours schedule' do
+    policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+    policy.distribution_policy.update!(
+      config: redistribution_config.deep_merge(
+        business_hours: {
+          mode: 'custom',
+          timezone: 'America/Sao_Paulo',
+          schedule: [
+            {
+              day_of_week: 1,
+              open_hour: 9,
+              open_minutes: 0,
+              close_hour: 10,
+              close_minutes: 0,
+              open_all_day: false,
+              closed_all_day: false
+            }
+          ],
+          breaks: []
+        }
+      )
+    )
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    travel_to Time.zone.parse('2026-08-24 15:00:00') do
+      assignment_event.update!(created_at: 20.minutes.ago, updated_at: 20.minutes.ago)
+      result = described_class.new(account: account).perform
+
+      expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 1)
+      expect(result[:summary][:by_reason]).to include('outside_business_hours' => 1)
+      expect(conversation.reload.assignee).to eq(current_agent)
+    end
+  end
+
+  it 'does not overwrite a candidate changed after it was selected for redistribution' do
+    allow(OnlineStatusTracker).to receive(:get_available_users).with(account.id).and_return(next_agent.id.to_s => 'online')
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+    guard = instance_double(Ibsoft::ConversationDistribution::AgentCapacityGuard)
+    allow(Ibsoft::ConversationDistribution::AgentCapacityGuard).to receive(:new).and_return(guard)
+    allow(guard).to receive(:perform) do
+      conversation.update!(assignee: manual_agent)
+      { status: :candidate_changed, assignment: nil }
+    end
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:summary]).to include(scanned: 1, redistributed: 0, skipped: 1)
+    expect(result[:summary][:by_reason]).to include('candidate_already_changed' => 1)
+    expect(conversation.reload.assignee).to eq(manual_agent)
   end
 
   it 'ignores conversations whose timeout has not been reached yet without logging a skipped event' do

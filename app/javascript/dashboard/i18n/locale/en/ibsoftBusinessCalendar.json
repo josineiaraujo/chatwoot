@@ -14,7 +14,8 @@
       "EDIT": "Edit",
       "DELETE": "Delete",
       "SAVE": "Save calendar",
-      "ADD": "Add"
+      "ADD": "Add",
+      "CLOSE": "Close"
     },
     "EDITOR": {
       "EDIT_TITLE": "Edit calendar",

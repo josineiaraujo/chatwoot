@@ -105,6 +105,51 @@ RSpec.describe Ibsoft::ConversationDistribution::ManualAssignmentService do
     expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
   end
 
+  it 'routes a transferred conversation into the holiday after-hours policy through the immediate watchdog' do
+    after_hours_policy = create(:ibsoft_after_hours_policy, account: account)
+    distribution_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+                                                                         .distribution_policy
+    distribution_policy.update!(
+      after_hours_policy: after_hours_policy,
+      config: distribution_policy.config.deep_merge(
+        'business_hours' => { 'mode' => 'always_available' },
+        'unavailability' => {
+          'outside_business_hours' => { 'action' => 'after_hours_policy' }
+        }
+      )
+    )
+    calendar = create(:ibsoft_business_calendar, account: account)
+    create(:ibsoft_business_calendar_team_link, account: account, team: target_team, business_calendar: calendar)
+
+    travel_to Time.zone.parse('2026-07-01 10:00:00') do
+      holiday = create(
+        :ibsoft_business_holiday,
+        business_calendar: calendar,
+        holiday_date: Time.current.in_time_zone(inbox.timezone).to_date
+      )
+      Rails.cache.clear
+
+      perform_enqueued_jobs(only: Ibsoft::ConversationDistribution::WatchdogJob) do
+        perform_assignment('team', target_team.id)
+      end
+
+      wait = Ibsoft::AfterHours::Wait.find_by!(conversation: conversation)
+      expect(conversation.reload).to have_attributes(
+        status: 'open',
+        team_id: target_team.id,
+        assignee_id: nil,
+        assignee_agent_bot_id: nil
+      )
+      expect(wait).to have_attributes(
+        status: 'active',
+        cause: 'holiday',
+        business_calendar_id: calendar.id,
+        business_holiday_id: holiday.id
+      )
+      expect(wait.entry_message.content).to eq(after_hours_policy.holiday_message)
+    end
+  end
+
   it 'removes stale attention and participation when a team transfer clears the assignee' do
     notification = create(
       :notification,
@@ -186,6 +231,13 @@ RSpec.describe Ibsoft::ConversationDistribution::ManualAssignmentService do
       .to raise_error(described_class::Error, 'manual_assignment_invalid_target')
 
     expect(conversation.reload.assignee).to eq(actor)
+  end
+
+  it 'rejects an unsupported assignment type before changing the conversation' do
+    expect { perform_assignment('unsupported', target_agent.id) }
+      .to raise_error(described_class::Error, 'manual_assignment_invalid_type')
+
+    expect(conversation.reload).to have_attributes(team_id: source_team.id, assignee_id: actor.id)
   end
 
   it 'rejects fractional target identifiers instead of truncating them' do
@@ -273,6 +325,24 @@ RSpec.describe Ibsoft::ConversationDistribution::ManualAssignmentService do
     ).perform
 
     expect(conversation.reload.assignee).to eq(regular_agent)
+  end
+
+  it 'removes the current assignee without queueing when the conversation has no department' do
+    conversation.update!(team: nil)
+
+    expect do
+      result = perform_assignment('agent', 0)
+      expect(result).to include(queue_returned: false, distribution_enqueued: false)
+    end.not_to have_enqueued_job(Ibsoft::ConversationDistribution::WatchdogJob)
+
+    expect(conversation.reload).to have_attributes(team_id: nil, assignee_id: nil, assignee_agent_bot_id: nil)
+  end
+
+  it 'removes the department without enqueueing distribution when the target is zero' do
+    result = perform_assignment('team', 0)
+
+    expect(result).to include(distribution_enqueued: false, queue_returned: false)
+    expect(conversation.reload).to have_attributes(status: 'open', team_id: nil, assignee_id: actor.id)
   end
 
   private

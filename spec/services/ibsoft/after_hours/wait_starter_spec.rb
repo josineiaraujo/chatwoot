@@ -96,6 +96,66 @@ RSpec.describe Ibsoft::AfterHours::WaitStarter do
     expect(Ibsoft::AfterHours::Wait.where(conversation: conversation)).to be_empty
   end
 
+  it 'does not start a wait for a resolved conversation' do
+    conversation.update!(status: :resolved)
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(applied: false, status: 'conversation_not_eligible')
+    expect(Ibsoft::AfterHours::Wait.where(conversation: conversation)).to be_empty
+  end
+
+  it 'does not start a wait without a department' do
+    conversation.update!(team: nil)
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(applied: false, status: 'conversation_not_eligible')
+    expect(Ibsoft::AfterHours::Wait.where(conversation: conversation)).to be_empty
+  end
+
+  it 'does not start a wait with a disabled policy' do
+    policy.update!(enabled: false)
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(applied: false, status: 'policy_not_available')
+    expect(Ibsoft::AfterHours::Wait.where(conversation: conversation)).to be_empty
+  end
+
+  it 'cancels the reserved wait when the conversation becomes ineligible before delivery' do
+    lock_calls = 0
+    allow(conversation).to receive(:with_lock).and_wrap_original do |method, *args, &block|
+      lock_calls += 1
+      result = method.call(*args, &block)
+      conversation.update!(status: :resolved) if lock_calls == 1
+      result
+    end
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    wait = Ibsoft::AfterHours::Wait.find_by!(conversation: conversation)
+    expect(result).to include(applied: false, status: 'conversation_not_eligible', wait_id: wait.id)
+    expect(wait.reload).to have_attributes(status: 'cancelled', finished_at: be_present)
+    expect(conversation.messages.where(content: policy.regular_message)).to be_empty
+  end
+
+  it 'cancels the wait when the entry message cannot be delivered' do
+    builder = instance_double(Messages::MessageBuilder)
+    allow(builder).to receive(:perform).and_raise(StandardError, 'delivery failed')
+    allow(Messages::MessageBuilder).to receive(:new).and_return(builder)
+
+    expect do
+      described_class.new(conversation: conversation, decision: decision).perform
+    end.to raise_error(StandardError, 'delivery failed')
+
+    expect(Ibsoft::AfterHours::Wait.find_by!(conversation: conversation)).to have_attributes(
+      status: 'cancelled',
+      finished_at: be_present,
+      entry_message_id: nil
+    )
+  end
+
   it 'does not use a policy from another account' do
     foreign_policy = create(:ibsoft_after_hours_policy)
 

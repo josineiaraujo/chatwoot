@@ -202,6 +202,43 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
     expect(conversation.reload.assignee).to eq(agent)
   end
 
+  it 'rejects an unsupported queue-return mode' do
+    expect do
+      described_class.new(
+        conversation: conversation,
+        actor: agent,
+        team: source_team,
+        mode: :unsupported
+      ).perform
+    end.to raise_error(described_class::Error, 'queue_return_invalid_mode')
+
+    expect(conversation.reload.assignee).to eq(agent)
+  end
+
+  it 'rejects a missing target team' do
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: nil).perform
+    end.to raise_error(described_class::Error, 'queue_return_missing_team')
+  end
+
+  it 'rejects a target team from another account' do
+    other_team = create(:team)
+
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: other_team).perform
+    end.to raise_error(described_class::Error, 'queue_return_missing_team')
+
+    expect(conversation.reload).to have_attributes(team_id: source_team.id, assignee_id: agent.id)
+  end
+
+  it 'rejects a self return when the conversation is not open' do
+    conversation.update!(status: :pending)
+
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: source_team).perform
+    end.to raise_error(described_class::Error, 'queue_return_not_open')
+  end
+
   it 'returns an unavailable result without changing native self-unassignment behavior when distribution is disabled' do
     allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:job_enabled?).and_return(false)
 
@@ -213,6 +250,36 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
     ).perform
 
     expect(result).to eq(queued: false, reason: 'queue_return_distribution_disabled')
+    expect(conversation.reload.assignee).to eq(agent)
+  end
+
+  it 'rejects queue return while real assignment is in safe mode' do
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(false)
+
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: source_team).perform
+    end.to raise_error(described_class::Error, 'queue_return_real_assignment_disabled')
+
+    expect(conversation.reload.assignee).to eq(agent)
+  end
+
+  it 'rejects queue return when the effective policy is disabled' do
+    channel_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+    channel_policy.distribution_policy.update!(enabled: false)
+
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: source_team).perform
+    end.to raise_error(described_class::Error, 'queue_return_policy_disabled')
+  end
+
+  it 'rejects queue return when manual team transfers are excluded by the policy' do
+    channel_policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
+    channel_policy.distribution_policy.update!(config: { eligible_sources: ['automation_handoff'] })
+
+    expect do
+      described_class.new(conversation: conversation, actor: agent, team: source_team).perform
+    end.to raise_error(described_class::Error, 'queue_return_source_not_allowed')
+
     expect(conversation.reload.assignee).to eq(agent)
   end
 

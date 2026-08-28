@@ -56,6 +56,22 @@ RSpec.describe Ibsoft::AfterHours::ExitCommandHandler do
     expect(conversation.reload).to be_open
   end
 
+  it 'does not consume a message that only contains the command as part of a sentence' do
+    message = incoming_message(content: 'quero sair agora')
+    wait = active_wait
+
+    expect(described_class.new(message: message).perform).to be(false)
+    expect(wait.reload).to be_active
+    expect(conversation.reload).to be_open
+  end
+
+  it 'does nothing when the conversation has no active wait' do
+    message = incoming_message(content: 'sair')
+
+    expect(described_class.new(message: message).perform).to be(false)
+    expect(conversation.reload).to be_open
+  end
+
   it 'uses the command and confirmation captured when the wait began' do
     original_confirmation = policy.exit_confirmation_message
     message = incoming_message(content: 'sair')
@@ -91,6 +107,53 @@ RSpec.describe Ibsoft::AfterHours::ExitCommandHandler do
 
     expect(result).to be(false)
     expect(wait.reload).to have_attributes(status: 'cancelled', finished_at: be_present)
+    expect(conversation.reload).to be_open
+  end
+
+  it 'does not resolve a conversation moved to another department while waiting' do
+    message = incoming_message(content: 'sair')
+    wait = active_wait
+    conversation.update!(team: create(:team, account: account))
+
+    expect(described_class.new(message: message).perform).to be(false)
+    expect(wait.reload).to have_attributes(status: 'cancelled', finished_at: be_present)
+    expect(conversation.reload).to be_open
+  end
+
+  it 'does not resolve a conversation already closed while waiting' do
+    message = incoming_message(content: 'sair')
+    wait = active_wait
+    conversation.update!(status: :resolved)
+
+    expect(described_class.new(message: message).perform).to be(false)
+    expect(wait.reload).to have_attributes(status: 'cancelled', finished_at: be_present)
+    expect(conversation.reload).to be_resolved
+  end
+
+  it 'handles the command only once' do
+    first_message = incoming_message(content: 'sair')
+    second_message = incoming_message(content: 'sair')
+    wait = active_wait
+
+    expect(described_class.new(message: first_message).perform).to be(true)
+
+    expect(described_class.new(message: second_message).perform).to be(false)
+    expect(wait.reload.status).to eq('exited')
+    expect(conversation.messages.outgoing.where(content: policy.exit_confirmation_message).count).to eq(1)
+  end
+
+  it 'keeps the wait active when the confirmation cannot be delivered' do
+    message = incoming_message(content: 'sair')
+    wait = active_wait
+    builder = instance_double(Messages::MessageBuilder)
+    allow(builder).to receive(:perform).and_raise(StandardError, 'delivery failed')
+    allow(Messages::MessageBuilder).to receive(:new).and_return(builder)
+
+    expect do
+      described_class.new(message: message).perform
+    end.to raise_error(StandardError, 'delivery failed')
+
+    expect(wait.reload).to be_active
     expect(conversation.reload).to be_open
   end
 

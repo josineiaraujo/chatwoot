@@ -87,6 +87,55 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentRoundLimiter do
     expect(processable_ids(limiter, candidates)).to eq([1, 3])
   end
 
+  it 'processes exactly the configured number of candidates at the boundary' do
+    candidates = build_candidates(
+      count: 4,
+      policy: {
+        max_assignments_per_round_enabled: true,
+        max_assignments_per_round: 3
+      }
+    )
+
+    limiter = described_class.new(candidates: candidates)
+
+    expect(processable_ids(limiter, candidates)).to eq([1, 2, 3])
+  end
+
+  it 'uses the safe default limit when the configured limit is zero' do
+    candidates = build_candidates(
+      count: 55,
+      policy: {
+        max_assignments_per_round_enabled: true,
+        max_assignments_per_round: 0
+      }
+    )
+
+    limiter = described_class.new(candidates: candidates)
+
+    expect(processable_ids(limiter, candidates)).to eq((1..50).to_a)
+  end
+
+  it 'uses the safe default limit when the configured limit is malformed' do
+    candidates = build_candidates(
+      count: 55,
+      policy: {
+        max_assignments_per_round_enabled: true,
+        max_assignments_per_round: 'invalid'
+      }
+    )
+
+    limiter = described_class.new(candidates: candidates)
+
+    expect(processable_ids(limiter, candidates)).to eq((1..50).to_a)
+  end
+
+  it 'handles a list containing no eligible candidates' do
+    candidates = build_candidates(count: 3, policy: {}).each { |candidate| candidate[:eligible] = false }
+    limiter = described_class.new(candidates: candidates)
+
+    expect(processable_ids(limiter, candidates)).to eq([1, 2, 3])
+  end
+
   def processable_ids(limiter, candidates)
     candidates
       .select { |candidate| limiter.processable?(candidate) }

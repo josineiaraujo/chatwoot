@@ -316,4 +316,63 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffExecutor do
       :count
     )
   end
+
+  it 'does not act when the policy is disabled after candidate discovery' do
+    candidate = Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder.new(account: account).perform.first
+    policy.update!(enabled: false)
+    finder = instance_double(
+      Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder,
+      perform: [candidate],
+      safe_limit: 50
+    )
+    executor = described_class.new(account: account)
+    allow(executor).to receive(:candidate_finder).and_return(finder)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = executor.perform
+
+    expect(result[:summary]).to include(scanned: 1, handoffed: 0, closed: 0, skipped: 1)
+    expect(conversation.reload).to have_attributes(status: 'pending', team_id: source_team.id)
+    expect(Ibsoft::ConversationDistribution::EventLog.last).to have_attributes(
+      event_type: 'automation_handoff_skipped',
+      reason: 'candidate_already_changed'
+    )
+  end
+
+  it 'does not act when a forwarding policy loses its target after candidate discovery' do
+    candidate = Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder.new(account: account).perform.first
+    # Simulates legacy/corrupted data that cannot be created through model validations.
+    policy.update_column(:target_team_id, nil) # rubocop:disable Rails/SkipsModelValidations
+    finder = instance_double(
+      Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder,
+      perform: [candidate],
+      safe_limit: 50
+    )
+    executor = described_class.new(account: account)
+    allow(executor).to receive(:candidate_finder).and_return(finder)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = executor.perform
+
+    expect(result[:summary]).to include(scanned: 1, handoffed: 0, closed: 0, skipped: 1)
+    expect(conversation.reload).to have_attributes(status: 'pending', team_id: source_team.id)
+  end
+
+  it 'does not fail the batch when a candidate conversation is deleted before execution' do
+    candidate = Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder.new(account: account).perform.first
+    conversation.destroy!
+    finder = instance_double(
+      Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinder,
+      perform: [candidate],
+      safe_limit: 50
+    )
+    executor = described_class.new(account: account)
+    allow(executor).to receive(:candidate_finder).and_return(finder)
+    allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive(:real_assignment_enabled?).and_return(true)
+
+    result = executor.perform
+
+    expect(result[:summary]).to include(scanned: 1, handoffed: 0, closed: 0, skipped: 1)
+    expect(result[:results].first).to include(status: 'skipped', reason: 'candidate_already_changed')
+  end
 end

@@ -54,11 +54,42 @@ RSpec.describe Ibsoft::ConversationDistribution::AssignmentRateLimiter do
   end
 
   describe '#within_limit?' do
+    it 'returns true immediately below the configured rolling window limit' do
+      allow(Redis::Alfred).to receive(:zremrangebyscore)
+      allow(Redis::Alfred).to receive(:zcard).with(assignment_key).and_return(1)
+
+      expect(limiter.within_limit?).to be(true)
+    end
+
     it 'returns false when the rolling window count reaches the configured limit' do
       allow(Redis::Alfred).to receive(:zremrangebyscore)
       allow(Redis::Alfred).to receive(:zcard).with(assignment_key).and_return(2)
 
       expect(limiter.within_limit?).to be(false)
     end
+
+    it 'uses safe defaults when limit and window are invalid' do
+      policy[:config]['distribution']['fair_distribution_limit'] = 0
+      policy[:config]['distribution']['fair_distribution_window'] = 0
+      expect(Redis::Alfred).to receive(:zremrangebyscore).with(assignment_key, '-inf', now.to_i - 3600)
+      expect(Redis::Alfred).to receive(:zcard).with(assignment_key).and_return(99)
+
+      expect(limiter.within_limit?).to be(true)
+    end
+  end
+
+  it 'uses a separate key when the conversation has no team' do
+    conversation.update!(team: nil)
+    key_without_team = format(
+      described_class::KEY,
+      account_id: account.id,
+      inbox_id: inbox.id,
+      team_id: 'none',
+      agent_id: agent.id
+    )
+    expect(Redis::Alfred).to receive(:zremrangebyscore).with(key_without_team, '-inf', now.to_i - 3600)
+    expect(Redis::Alfred).to receive(:zcard).with(key_without_team).and_return(0)
+
+    expect(limiter.current_count).to eq(0)
   end
 end
