@@ -100,28 +100,18 @@ const handleDelete = () => emit('delete', props.id);
             @click="handleEdit"
           />
           <div class="h-2.5 w-px bg-n-slate-5" />
-          <Button
-            icon="i-lucide-trash"
-            sm
-            slate
-            ghost
-            @click="handleDelete"
-          />
+          <Button icon="i-lucide-trash" sm slate ghost @click="handleDelete" />
         </div>
       </div>
 
       <div class="flex items-center gap-3 py-1.5">
         <span class="text-body-para text-n-slate-11">
-          {{
-            `${t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.ORDER')}:`
-          }}
+          {{ `${t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.ORDER')}:` }}
           <span class="text-n-slate-12">{{ assignmentOrderLabel }}</span>
         </span>
         <div class="h-3 w-px bg-n-strong" />
         <span class="text-body-para text-n-slate-11">
-          {{
-            `${t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.PRIORITY')}:`
-          }}
+          {{ `${t('IBSOFT_THEME.CHATHUB_SETTINGS.POLICIES.PRIORITY')}:` }}
           <span class="text-n-slate-12">{{ conversationPriorityLabel }}</span>
         </span>
       </div>

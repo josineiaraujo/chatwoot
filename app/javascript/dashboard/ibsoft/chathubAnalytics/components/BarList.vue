@@ -33,7 +33,9 @@ defineProps({
       <div class="h-2 overflow-hidden rounded-full bg-n-alpha-2">
         <div
           class="h-full rounded-full bg-n-brand"
-          :style="{ width: `${Math.min(Math.max(item.percent || 0, 0), 100)}%` }"
+          :style="{
+            width: `${Math.min(Math.max(item.percent || 0, 0), 100)}%`,
+          }"
         />
       </div>
     </div>
