@@ -67,7 +67,12 @@ describe('AccessControlPanel', () => {
             assignments_count: 1,
           },
         ],
-        available_permissions: [],
+        available_permissions: [
+          {
+            key: 'ibsoft_message_broadcast_manage',
+            group: 'ibsoft',
+          },
+        ],
       },
     });
     accessControlAPI.getAssignments.mockResolvedValue({
@@ -95,6 +100,15 @@ describe('AccessControlPanel', () => {
     );
     expect(wrapper.text()).not.toContain(
       'IBSOFT_THEME.CHATHUB_SETTINGS.ACCESS_CONTROL.ASSIGNMENTS_TITLE'
+    );
+  });
+
+  it('shows the translated message broadcast permission', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      'IBSOFT_THEME.CHATHUB_SETTINGS.ACCESS_CONTROL.PERMISSIONS.IBSOFT_MESSAGE_BROADCAST_MANAGE'
     );
   });
 });

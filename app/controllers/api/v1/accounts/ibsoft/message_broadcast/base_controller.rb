@@ -1,10 +1,10 @@
 class Api::V1::Accounts::Ibsoft::MessageBroadcast::BaseController < Api::V1::Accounts::BaseController
-  before_action :check_admin_authorization!
+  before_action :check_message_broadcast_authorization!
 
   private
 
-  def check_admin_authorization!
-    return if Current.account_user&.administrator?
+  def check_message_broadcast_authorization!
+    return if Ibsoft::MessageBroadcast::Permission.can_manage?(Current.account_user)
 
     raise Pundit::NotAuthorizedError
   end

@@ -399,7 +399,8 @@
           "REPORT_MANAGE": "Access reports",
           "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base",
           "IBSOFT_CONVERSATION_DISTRIBUTION_SUPERVISE": "Access conversation supervision",
-          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Manage ChatHub settings"
+          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Manage ChatHub settings",
+          "IBSOFT_MESSAGE_BROADCAST_MANAGE": "Manage message broadcasts"
         }
       },
       "ERRORS": {

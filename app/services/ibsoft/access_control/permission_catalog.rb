@@ -16,6 +16,7 @@ class Ibsoft::AccessControl::PermissionCatalog
   IBSOFT_PERMISSIONS = %w[
     ibsoft_conversation_distribution_supervise
     ibsoft_chathub_settings_manage
+    ibsoft_message_broadcast_manage
   ].freeze
 
   PERMISSIONS = (CORE_PERMISSIONS + IBSOFT_PERMISSIONS).freeze

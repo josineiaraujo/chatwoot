@@ -13,6 +13,10 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::AccessControl::Roles', type: :request
 
     expect(response).to have_http_status(:success)
     expect(response.parsed_body).to include('roles', 'available_permissions')
+    expect(response.parsed_body['available_permissions']).to include(
+      'key' => Ibsoft::MessageBroadcast::Permission::PERMISSION,
+      'group' => 'ibsoft'
+    )
 
     post "#{base_url}/roles",
          params: {

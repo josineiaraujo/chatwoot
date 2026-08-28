@@ -22,6 +22,7 @@ import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
 import Logo from 'next/icon/Logo.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
+import { canManageMessageBroadcast } from 'dashboard/ibsoft/messageBroadcast/permissions';
 import {
   SIDEBAR_SORT_SECTIONS,
   getSidebarSortOptions,
@@ -303,8 +304,8 @@ const canManageChathubSettings = computed(() => {
   );
 });
 
-const canUseMessageBroadcast = computed(
-  () => activeAccount.value?.role === 'administrator'
+const canUseMessageBroadcast = computed(() =>
+  canManageMessageBroadcast(activeAccount.value)
 );
 
 onMounted(() => {

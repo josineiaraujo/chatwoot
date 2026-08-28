@@ -102,6 +102,9 @@ const permissionLabels = computed(() => ({
   ibsoft_chathub_settings_manage: t(
     'IBSOFT_THEME.CHATHUB_SETTINGS.ACCESS_CONTROL.PERMISSIONS.IBSOFT_CHATHUB_SETTINGS_MANAGE'
   ),
+  ibsoft_message_broadcast_manage: t(
+    'IBSOFT_THEME.CHATHUB_SETTINGS.ACCESS_CONTROL.PERMISSIONS.IBSOFT_MESSAGE_BROADCAST_MANAGE'
+  ),
 }));
 
 const groupLabels = computed(() => ({
