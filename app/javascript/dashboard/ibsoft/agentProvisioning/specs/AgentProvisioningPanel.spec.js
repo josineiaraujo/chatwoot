@@ -62,7 +62,16 @@ const mountComponent = () =>
             '@click="$emit(\'click\')">{{ label }}</button>',
         },
         IbsoftSelect: {
-          props: ['modelValue'],
+          props: {
+            modelValue: {
+              type: [String, Number, Boolean, Object],
+              default: '',
+            },
+            clearable: {
+              type: Boolean,
+              default: true,
+            },
+          },
           emits: ['update:modelValue'],
           template:
             '<select v-bind="$attrs" :value="modelValue" ' +
@@ -163,6 +172,28 @@ describe('AgentProvisioningPanel', () => {
     expect(
       wrapper.find('[data-testid="agent-availability-select"]').element.value
     ).toBe('offline');
+  });
+
+  it('keeps required agent selectors without a clear action', async () => {
+    agentProvisioningAPI.getAgents.mockResolvedValueOnce({
+      data: { agents: [agentPayload()], profiles: [] },
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    const selectors = [
+      'agent-availability-select',
+      'agent-create-profile',
+      'agent-edit-profile',
+      'agent-edit-availability',
+    ];
+
+    selectors.forEach(testId => {
+      expect(
+        wrapper.findComponent(`[data-testid="${testId}"]`).props('clearable')
+      ).toBe(false);
+    });
   });
 
   it('creates an agent and displays the temporary password from the response', async () => {
