@@ -23,6 +23,10 @@ IBSOFT_CONVERSATION_DISTRIBUTION_EVENT_DEDUPE_WINDOW_SECONDS=900
 
 # Necessarias somente para importar feriados pela Invertexto
 IBSOFT_INVERTEXTO_HOLIDAYS_TOKEN=configure-via-secret-manager
+
+# Opcionais; os valores abaixo ja sao os defaults do disparo em massa
+IBSOFT_MESSAGE_BROADCAST_RATE_LIMIT_PER_SECOND=10
+IBSOFT_MESSAGE_BROADCAST_META_TIMEOUT_SECONDS=20
 ```
 
 Configuracao recomendada para primeira subida segura:
@@ -386,6 +390,64 @@ Cuidados:
 - Nao e obrigatoria.
 - Um timeout deixa a entrega como `uncertain` e nao causa retry automatico,
   porque a Meta pode ter aceitado a mensagem antes da interrupcao da resposta.
+- Configure o mesmo valor em todos os containers Sidekiq.
+
+### IBSOFT_MESSAGE_BROADCAST_RATE_LIMIT_PER_SECOND
+
+Exemplo opcional:
+
+```env
+IBSOFT_MESSAGE_BROADCAST_RATE_LIMIT_PER_SECOND=10
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Define quantas entregas por segundo cada disparo em massa pode reservar para
+  o respectivo canal WhatsApp.
+
+Default:
+
+- `10` entregas por segundo.
+- Valores sao limitados automaticamente entre 1 e 80.
+
+Cuidados:
+
+- Nao e obrigatoria.
+- O rate limit usa Redis compartilhado e deve ter o mesmo valor em todos os
+  containers Sidekiq.
+- Aumente somente depois de validar os limites e a qualidade do numero na Meta.
+
+### IBSOFT_MESSAGE_BROADCAST_META_TIMEOUT_SECONDS
+
+Exemplo opcional:
+
+```env
+IBSOFT_MESSAGE_BROADCAST_META_TIMEOUT_SECONDS=20
+```
+
+Origem:
+
+- Ibsoft.
+
+Motivo:
+
+- Define o timeout HTTP dos workers que entregam templates de disparos em massa
+  para a Meta.
+
+Default:
+
+- `20` segundos.
+- Valores sao limitados automaticamente entre 5 e 60 segundos.
+
+Cuidados:
+
+- Nao e obrigatoria.
+- Um timeout depois do inicio da requisicao deixa o destinatario como
+  `uncertain`, evitando reenvio automatico e possivel duplicidade.
 - Configure o mesmo valor em todos os containers Sidekiq.
 
 ### IBSOFT_CONVERSATION_DISTRIBUTION_JOB_ENABLED

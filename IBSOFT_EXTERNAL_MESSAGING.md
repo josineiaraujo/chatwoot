@@ -17,8 +17,10 @@ assincronamente.
 - uma conta pode criar varias instancias;
 - cada instancia possui um tipo imutavel e pertence a exatamente uma conta e
   um canal;
-- os tipos atuais sao `sgp_generic`, exibido como **SGP Generico**, e `ixc`,
-  exibido como **IXC**;
+- os tipos atuais sao `standard`, exibido como **Padrao**, `sgp_generic`,
+  exibido como **SGP Generico**, e `ixc`, exibido como **IXC**;
+- `standard` e a primeira opcao e o tipo pre-selecionado para novas instancias
+  no dashboard; instancias existentes preservam integralmente o tipo gravado;
 - cada contrato possui autenticacao propria, mas a credencial sempre identifica
   instancia, conta e canal;
 - segredos em texto puro sao exibidos somente na criacao ou rotacao;
@@ -32,12 +34,57 @@ assincronamente.
   dentro da instancia, mas cada reenvio possui entrega e historico proprios;
 - ordens pagas, concluidas ou canceladas nao aceitam novos envios;
 - nao existe retry automatico depois de uma tentativa com resultado ambiguo;
-- o SGP usa `msg`, `to` e `token`; o IXC preserva exatamente o envelope nativo
-  `user`, `pw`, `dest` e `text`;
+- o contrato padrao usa somente `POST`, Bearer, `text/plain` e o destinatario
+  semantico `[to]`; o SGP usa `msg`, `to` e `token`; o IXC preserva exatamente
+  o envelope nativo `user`, `pw`, `dest` e `text`;
 - atualizacoes de pedido usam um contrato compartilhado por familia em
   `/chathub-sender/<familia>/pedido/`, independentemente do contrato de criacao;
 - novos tipos devem ser registrados em `InstanceTypeRegistry`, com parser e
   contrato proprios, sem condicionais no controller.
+
+## Contrato publico padrao
+
+O contrato `standard` e o caminho recomendado para novas integracoes. Ele
+preserva exatamente o envelope do MVP:
+
+```http
+POST /chathub-sender/
+Authorization: Bearer TOKEN_DO_ENDPOINT
+Content-Type: text/plain; charset=UTF-8
+```
+
+O corpo inteiro e o texto semantico no formato
+`[campo]=valor||[outro_campo]=valor`. O destinatario e obrigatorio no proprio
+corpo como `[to]`:
+
+```bash
+curl --request POST 'https://ibsoftcloud.com.br/chathub-sender/' \
+  --header 'Authorization: Bearer TOKEN_DO_ENDPOINT' \
+  --header 'Content-Type: text/plain; charset=UTF-8' \
+  --data-raw '[template_name]=lembrete_fatura_pdf_pix||[template_type]=order||[to]=5575982479788||[tipo-canal]=whatsapp-cloud||[header_type]=document||[header_link]=https://sistema.example/boleto/120.pdf||[body.nome_cliente]=Edilson Torres||[body.vencimento_fatura]=01/08/2026||[order.reference_id]=120||[order.total]=55.75||[order.item_name]=Fatura de internet||[order.payment.pix.code]=PIX_COPIA_E_COLA||[order.payment.pix.merchant_name]=Empresa||[order.payment.pix.key]=12345678000199||[order.payment.pix.key_type]=CNPJ||[order.payment.boleto.digitable_line]=00190000090123456700400000102178515250000005575'
+```
+
+O contrato e deliberadamente estrito:
+
+- aceita somente `POST`;
+- aceita somente `Content-Type: text/plain`, com charset opcional;
+- autentica somente pelo header `Authorization: Bearer`;
+- aceita somente `[to]` como destinatario;
+- aceita somente `||` como separador entre campos;
+- nao aceita JSON, form data, query string, aliases de destinatario ou token no
+  corpo;
+- limita o corpo a 64 KiB e valida UTF-8 antes de interpretar os campos.
+
+Depois da validacao, o corpo usa o mesmo parser semantico, builders, registro
+duravel, rate limiter, Sidekiq e cliente Meta dos demais contratos. Cada `POST`
+e uma solicitacao independente e cria uma entrega propria. A resposta `202`
+significa que a solicitacao foi aceita para processamento, nao que a Meta ja a
+entregou.
+
+O contrato padrao nao cria contato, conversa ou mensagem no Chatwoot e nao
+persiste o corpo bruto. Somente os campos operacionais minimos ja definidos no
+modulo sao gravados. Nenhuma tabela ou migration adicional foi necessaria para
+incluir este tipo.
 
 ## Contrato publico SGP Generico
 
@@ -48,12 +95,10 @@ GET /chathub-sender/sgp/generico/
 ```
 
 No caminho publico, `sgp` identifica a familia da integracao e `generico`
-identifica o contrato da API. Um futuro contrato padrao devera ser registrado
-como outro tipo de instancia e usar `/chathub-sender/sgp/padrao/`, com parser e
-contrato proprios. O token somente e aceito na rota correspondente ao tipo da
-instancia que o emitiu para criar uma mensagem. A rota de pedido aceita tokens
-de qualquer tipo registrado na familia `sgp`, desde que a ordem pertenca a
-mesma conta e ao mesmo canal da instancia.
+identifica o contrato da API. O token somente e aceito na rota correspondente
+ao tipo da instancia que o emitiu para criar uma mensagem. A rota de pedido
+aceita tokens de qualquer tipo registrado na familia `sgp`, desde que a ordem
+pertenca a mesma conta e ao mesmo canal da instancia.
 
 Parametros obrigatorios:
 
@@ -152,17 +197,19 @@ campos semanticos da ordem ficam dentro de `text`.
 Atualizacoes de ordem e pagamento usam:
 
 ```http
+POST /chathub-sender/pedido/
 GET|POST /chathub-sender/sgp/pedido/
 GET|POST /chathub-sender/ixc/pedido/
 ```
 
-Cada caminho pertence a uma familia e nao a um contrato especifico. Assim, uma
-ordem criada por `sgp_generic` ou por um futuro `sgp_standard` usa a rota SGP;
-contratos IXC usam a rota IXC. Em todos os casos, conta e canal da credencial
-precisam coincidir com a ordem.
+Cada caminho pertence a uma familia. Uma ordem criada por `standard` usa a
+rota sem familia; uma ordem criada por `sgp_generic` usa a rota SGP; contratos
+IXC usam a rota IXC. Em todos os casos, conta e canal da credencial precisam
+coincidir com a ordem.
 
 Autenticacao:
 
+- na rota padrao, use exclusivamente `Authorization: Bearer TOKEN`;
 - na rota SGP, use `Authorization: Bearer TOKEN` para `POST`;
 - na rota SGP, `token=TOKEN` tambem e aceito em `GET` por compatibilidade;
 - na rota IXC, envie `user` e `pw` no envelope obrigatorio;
@@ -171,6 +218,8 @@ Autenticacao:
 
 Formatos:
 
+- o contrato padrao aceita exclusivamente `POST text/plain` no formato
+  `[campo]=valor||[outro]=valor`, sem query string;
 - SGP aceita `GET` com campos escalares, `POST text/plain` no formato
   `[campo]=valor||[outro]=valor` e `POST application/json`;
 - IXC aceita `GET`, `POST application/x-www-form-urlencoded` e
@@ -190,6 +239,9 @@ Estado:
 - `order_status` ou `status_pedido`;
 - `payment_status` ou `status_pagamento`;
 - aliases em portugues sao normalizados;
+- `status=pago` e `status=paid` concluem a ordem e capturam o pagamento; use
+  os campos explicitos quando os dois estados precisarem evoluir de forma
+  independente;
 - `message`/`mensagem` e `description`/`descricao` sao opcionais;
 - `payment_timestamp` e opcional e exige um estado de pagamento.
 
@@ -223,7 +275,22 @@ Quando o template nao possui variavel, nenhum parametro de corpo e enviado. As
 sugestoes atuais continuam editaveis e podem ser reutilizadas por um unico
 template generico em todos os eventos.
 
+Toda atualizacao de estado da ordem enviada por template inclui ainda o
+componente runtime `order_status`, com o `reference_id` da mensagem original e
+o novo estado. Esse componente e o que vincula a notificacao ao card de pedido
+existente na Meta. Atualizacoes exclusivamente de pagamento continuam
+independentes e nao fabricam uma mudanca de estado da ordem.
+
 Exemplo:
+
+```bash
+curl --request POST 'https://ibsoftcloud.com.br/chathub-sender/pedido/' \
+  --header 'Authorization: Bearer TOKEN_DO_ENDPOINT' \
+  --header 'Content-Type: text/plain; charset=UTF-8' \
+  --data-raw '[fatura_id]=9388||[status]=pago'
+```
+
+O mesmo estado pelo contrato SGP Generico:
 
 ```bash
 curl --get 'https://josinei.ibsoftcloud.com.br/chathub-sender/sgp/pedido/' \
@@ -252,7 +319,7 @@ uma rejeicao da Meta fica registrada no historico.
 Se a ordem ja possui os estados solicitados, a resposta e `200 unchanged` e
 nenhuma mensagem e enviada. A ordem precisa ter sido aceita pela Meta antes de
 receber atualizacoes. No contrato IXC, `dest` tambem precisa coincidir com o
-destinatario da mensagem que abriu a ordem. Tanto SGP quanto IXC convergem para
+destinatario da mensagem que abriu a ordem. Padrao, SGP e IXC convergem para
 esse mesmo fluxo compartilhado.
 
 ## Interpretacao semantica
@@ -281,8 +348,11 @@ Campos principais:
 
 ### Campos base
 
-Os parametros externos `msg`, `to` e `token` sao sempre obrigatorios.
-Dentro de `msg`, os campos base sao:
+No envelope SGP, os parametros externos `msg`, `to` e `token` sao
+obrigatorios. No contrato padrao, os mesmos campos semanticos ficam diretamente
+no corpo e o destinatario usa `[to]`; o token fica somente no header Bearer. No
+IXC, eles ficam dentro de `text`, com `dest`, `user` e `pw` no envelope. Os
+campos semanticos base sao:
 
 | Campo | Obrigatoriedade | Regra |
 | --- | --- | --- |
@@ -620,8 +690,9 @@ o prazo definido pelo administrador.
 ## Processamento assincrono
 
 1. A rota informa o tipo ao `InstanceTypeRegistry`.
-2. O parser registrado le o envelope SGP (`msg`, `to`, `token`) ou IXC
-   (`user`, `pw`, `dest`, `text`).
+2. O parser registrado le o contrato padrao (Bearer e corpo semantico com
+   `[to]`), o envelope SGP (`msg`, `to`, `token`) ou o envelope IXC (`user`,
+   `pw`, `dest`, `text`).
 3. `EndpointAuthenticator` valida o segredo e impede que credenciais de um
    contrato sejam usadas na rota de outro.
 4. `FieldPayloadParser` interpreta os campos semanticos.
@@ -651,26 +722,28 @@ endpoint de mensagens, entao um timeout pode ocorrer depois do aceite.
 Para atualizacoes de pedido:
 
 1. `OrderUpdateInboundRequest` seleciona o contrato pela familia da rota;
-2. no SGP, `OrderUpdateCredentials` e `OrderStatusRequestParser` extraem token
+2. no contrato padrao, valida `POST text/plain`, extrai o Bearer e interpreta o
+   corpo semantico sem query string;
+3. no SGP, `OrderUpdateCredentials` e `OrderStatusRequestParser` extraem token
    e campos diretos;
-3. no IXC, `IxcInboundRequestParser` valida `user`, `pw`, `dest` e `text`;
-4. `EndpointAuthenticator` valida a credencial e impede cruzamento de familia;
-5. `OrderStatusContract` normaliza aliases e valida estados;
-6. `OrderUpdateCreator` localiza a ordem pela conta e canal da instancia e,
+4. no IXC, `IxcInboundRequestParser` valida `user`, `pw`, `dest` e `text`;
+5. `EndpointAuthenticator` valida a credencial e impede cruzamento de familia;
+6. `OrderStatusContract` normaliza aliases e valida estados;
+7. `OrderUpdateCreator` localiza a ordem pela conta e canal da instancia e,
    no IXC, tambem pelo destinatario;
-7. uma trava no registro da ordem calcula o estado projetado da fila;
-8. repeticoes do mesmo estado sao deduplicadas;
-9. `OrderUpdateDeliverySnapshot` resolve o template especifico ou padrao e
+8. uma trava no registro da ordem calcula o estado projetado da fila;
+9. repeticoes do mesmo estado sao deduplicadas;
+10. `OrderUpdateDeliverySnapshot` resolve o template especifico ou padrao e
    grava a decisao de entrega no registro duravel;
-10. `SendOrderUpdateJob` envia pela fila `medium`;
-11. `OrderUpdateSender` processa somente a primeira atualizacao pendente da
+11. `SendOrderUpdateJob` envia pela fila `medium`;
+12. `OrderUpdateSender` processa somente a primeira atualizacao pendente da
     ordem;
-12. `OrderUpdatePayloadBuilder` monta o envelope Meta exclusivamente a partir
+13. `OrderUpdatePayloadBuilder` monta o envelope Meta exclusivamente a partir
     do snapshot persistido;
-13. `MetaClient` envia o template copiado no snapshot ou, para registros no
+14. `MetaClient` envia o template copiado no snapshot ou, para registros no
     modo legado, `interactive/order_status`;
-14. o estado canonico so avanca depois do aceite da Meta;
-15. webhooks avancam a atualizacao para `sent`, `delivered`, `read` ou
+15. o estado canonico so avanca depois do aceite da Meta;
+16. webhooks avancam a atualizacao para `sent`, `delivered`, `read` ou
     `failed`.
 
 Para atualizacoes manuais em massa, `BulkOrderUpdateScheduler` valida a selecao
@@ -706,7 +779,8 @@ Em auto scaling, Rails, Sidekiq e scheduler devem compartilhar PostgreSQL e
 Redis. O proxy deve aplicar limites adicionais de requisicao, URL e query
 string. Como SGP usa GET e IXC pode usar GET, o limite de URL do proxy precisa
 comportar os templates usados pelos ERPs. Para IXC, POST e recomendado para
-evitar senha na URL e nos access logs intermediarios.
+evitar senha na URL e nos access logs intermediarios. O contrato padrao evita
+query string e credenciais na URL por definicao.
 
 ## Estrutura
 
@@ -714,6 +788,9 @@ Backend:
 
 - `app/models/ibsoft/external_messaging/`;
 - `app/services/ibsoft/external_messaging/`;
+- `app/services/ibsoft/external_messaging/standard_inbound_request_parser.rb`:
+  valida exclusivamente o envelope Bearer com `POST text/plain`, extrai `[to]`
+  e entrega somente os campos semanticos ao pipeline compartilhado;
 - `app/services/ibsoft/external_messaging/order_update_credentials.rb`:
   extracao limitada e sem persistencia de Bearer/token SGP;
 - `app/services/ibsoft/external_messaging/order_update_inbound_request.rb`:
@@ -744,8 +821,8 @@ Frontend:
 - `app/javascript/dashboard/ibsoft/externalMessaging/`;
 - `instanceTypes.js`: catalogo frontend dos tipos suportados, incluindo marca
   visual e traducoes de cada contrato;
-- `integrationContracts.js`: adaptador de apresentacao dos envelopes SGP e
-  IXC, sem condicionais espalhadas pela interface;
+- `integrationContracts.js`: adaptador de apresentacao dos contratos Padrao,
+  SGP e IXC, sem condicionais espalhadas pela interface;
 - `components/InstanceCard.vue`: resumo operacional de uma instancia;
 - `components/InstanceTypeMark.vue`: alternancia de logo por tema, com fallback
   para icone dos tipos sem marca propria;
@@ -797,8 +874,8 @@ e nunca expoe a credencial da Meta ao navegador.
 
 Pontos de conexao com o Chatwoot:
 
-- `config/routes.rb`: rotas publicas vinculadas explicitamente aos tipos SGP e
-  IXC, as rotas compartilhadas de pedido de cada familia e rotas
+- `config/routes.rb`: rotas publicas vinculadas explicitamente aos tipos
+  Padrao, SGP e IXC, as rotas de pedido de cada familia e rotas
   administrativas;
 - `config/schedule.yml`: jobs de recuperacao e retencao;
 - `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: rota;
@@ -875,9 +952,11 @@ reais.
    e contrato.
 6. Confirmar as entradas privadas de recuperacao e limpeza em
    `config/schedule.yml`.
-7. Rodar migration, specs, RuboCop, ESLint e teste frontend.
-8. Testar token SGP, usuario/senha IXC, aceite assincrono, atualizacao manual,
-   template com zero/uma variavel, retencao e webhook em homologacao.
+7. Rodar migrations pendentes do modulo, specs, RuboCop, ESLint e teste
+   frontend. A inclusao do tipo `standard` nao possui migration propria.
+8. Testar Bearer e `POST text/plain` do contrato padrao, token SGP,
+   usuario/senha IXC, aceite assincrono, atualizacao manual, template com
+   zero/uma variavel, retencao e webhook em homologacao.
 
 Se o Chatwoot oferecer envio direto equivalente, comparar contratos e migrar
 os registros antes de remover o modulo.

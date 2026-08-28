@@ -277,7 +277,8 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
   rota frontend privada `ibsoft_message_broadcast`.
 - `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adiciona o
-  item de menu `Disparo de mensagens` para administradores.
+  item de menu `Disparo de mensagens` para administradores e agentes com a
+  permissao `ibsoft_message_broadcast_manage`.
 - `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
   `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: textos da UI.
 
@@ -389,11 +390,15 @@ Objetivo:
 
 - receber solicitacoes de ERPs por endpoints autenticados vinculados a um
   canal WhatsApp Business Cloud;
+- manter o contrato recomendado `standard` em `POST /chathub-sender/`,
+  autenticado exclusivamente por Bearer e com corpo `text/plain` no formato
+  `[campo]=valor||...||[to]=destinatario`;
 - manter o contrato SGP Generico em
   `GET /chathub-sender/sgp/generico/` com `msg`, `to` e `token`;
 - manter o contrato nativo IXC em `GET|POST /chathub-sender/ixc/`, com
   `user`, `pw`, `dest` e `text`;
 - atualizar ordens e pagamentos pelos contratos compartilhados de familia
+  `POST /chathub-sender/pedido/`,
   `GET|POST /chathub-sender/sgp/pedido/` e
   `GET|POST /chathub-sender/ixc/pedido/`, processados de forma assincrona e
   serializados por ordem; a rota IXC preserva o envelope obrigatorio `user`,
@@ -413,7 +418,8 @@ Objetivo:
 - configurar defaults PIX por instancia, com prioridade para valores enviados
   pelo ERP e chave separada do JSON operacional;
 - suportar novos tipos por registro de parser, autenticacao e contrato; os
-  tipos atuais sao `sgp_generic` (**SGP Generico**) e `ixc` (**IXC**).
+  tipos atuais sao `standard` (**Padrao**), `sgp_generic` (**SGP Generico**) e
+  `ixc` (**IXC**).
 
 Arquivos privados principais:
 
@@ -448,12 +454,12 @@ Pontos de acoplamento:
 - indexes i18n `en` e `pt_BR`;
 - `db/schema.rb`.
 
-O IXC reutiliza as tabelas existentes; nao exige migration propria e nao
-armazena `user`, `pw` ou o envelope bruto. Nenhum model de conversa/mensagem ou
-service nativo de envio foi alterado. SGP e IXC compartilham o mesmo catalogo,
-validador de configuracao, snapshot, construtor de payload, job e cliente Meta
-para atualizacoes por template. A apresentacao das instancias fica isolada em
-`Ibsoft::ExternalMessaging::EndpointPayload`.
+Os contratos Padrao e IXC reutilizam as tabelas existentes; nao exigem migration
+propria e nao armazenam credenciais nem o envelope bruto. Nenhum model de
+conversa/mensagem ou service nativo de envio foi alterado. Padrao, SGP e IXC
+compartilham o mesmo catalogo, validador de configuracao, snapshot, construtor
+de payload, job e cliente Meta para atualizacoes por template. A apresentacao
+das instancias fica isolada em `Ibsoft::ExternalMessaging::EndpointPayload`.
 
 Validacao recomendada:
 
@@ -731,6 +737,8 @@ Arquivos privados principais:
 - `app/controllers/api/v1/accounts/ibsoft/conversation_distribution/`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/supervisorAlertAudioNotifications.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/supervisorAlertRefresh.js`
 - `config/locales/ibsoft_conversation_distribution.*.yml`
 - `spec/**/ibsoft/conversation_distribution/`
 
@@ -809,7 +817,11 @@ Pontos de acoplamento no Chatwoot original:
   dentro da Home e e exibido somente para administradores ou usuarios com
   permissao `ibsoft_conversation_distribution_supervise`.
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`:
-  adiciona o retorno para `ibsoft_chathub_home` no cabecalho da supervisao.
+  adiciona o retorno para `ibsoft_chathub_home` no cabecalho da supervisao e
+  mantem alertas atualizados enquanto a rota estiver aberta. O ciclo privado
+  roda a cada 60 segundos, preserva a tabela durante a atualizacao e toca um
+  unico som somente quando surgir alerta novo, respeitando as preferencias de
+  audio do usuario.
 - `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
   `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: registram
   textos da UI do modulo.
