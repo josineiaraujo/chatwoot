@@ -3,11 +3,17 @@ import ixcLightLogo from '../assets/images/logo/ixc/light.png';
 import sgpDarkLogo from '../assets/images/logo/sgp/dark.png';
 import sgpLightLogo from '../assets/images/logo/sgp/light.png';
 
-export const DEFAULT_INSTANCE_TYPE = 'sgp_generic';
+export const DEFAULT_INSTANCE_TYPE = 'standard';
 
 export const INSTANCE_TYPES = Object.freeze([
   Object.freeze({
     value: DEFAULT_INSTANCE_TYPE,
+    icon: 'i-lucide-send',
+    label: t => t('IBSOFT_EXTERNAL_MESSAGING.TYPES.STANDARD.NAME'),
+    description: t => t('IBSOFT_EXTERNAL_MESSAGING.TYPES.STANDARD.DESCRIPTION'),
+  }),
+  Object.freeze({
+    value: 'sgp_generic',
     icon: 'i-lucide-braces',
     logo: Object.freeze({
       light: sgpLightLogo,

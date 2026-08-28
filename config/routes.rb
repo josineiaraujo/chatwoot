@@ -40,6 +40,21 @@ Rails.application.routes.draw do
 
   get '/health', to: 'health#show'
   get '/api', to: 'api#index'
+  match '/chathub-sender',
+        to: 'api/v1/ibsoft/external_messaging/messages#create',
+        via: :all,
+        defaults: {
+          format: 'json',
+          ibsoft_external_messaging_instance_type: 'standard'
+        },
+        as: :ibsoft_external_messaging_standard
+  post '/chathub-sender/pedido',
+       to: 'api/v1/ibsoft/external_messaging/order_updates#create',
+       defaults: {
+         format: 'json',
+         ibsoft_external_messaging_family: 'standard'
+       },
+       as: :ibsoft_external_messaging_standard_order_update
   get '/chathub-sender/sgp/generico',
       to: 'api/v1/ibsoft/external_messaging/messages#create',
       defaults: {

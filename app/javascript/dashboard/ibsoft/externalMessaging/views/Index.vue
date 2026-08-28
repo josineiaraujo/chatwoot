@@ -15,6 +15,7 @@ import {
   buildOrderUpdateCurl as buildContractOrderUpdateCurl,
   buildPublicCurl as buildContractCurl,
   isIxcContract,
+  isStandardContract,
   issuedCredentialsFrom,
 } from '../integrationContracts';
 import { findInstanceType, translatedInstanceTypes } from '../instanceTypes';
@@ -71,10 +72,16 @@ const orderUpdateEndpointUrl = computed(() => {
   return publicPath ? `${origin}${publicPath}` : '';
 });
 const integrationParameters = computed(() => {
-  const parameterNames = isIxcContract(selectedEndpoint.value?.instance_type)
-    ? ['user', 'pw', 'dest', 'text']
-    : ['msg', 'to', 'token'];
+  const instanceType = selectedEndpoint.value?.instance_type;
   const descriptions = {
+    authorization: t(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.AUTHORIZATION'
+    ),
+    contentType: t(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.CONTENT_TYPE'
+    ),
+    toField: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.TO_FIELD'),
+    body: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.BODY'),
     user: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.USER'),
     pw: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.PW'),
     dest: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.DEST'),
@@ -83,6 +90,19 @@ const integrationParameters = computed(() => {
     to: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.TO'),
     token: t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.PARAMETERS.TOKEN'),
   };
+
+  if (isStandardContract(instanceType)) {
+    return [
+      { name: 'Authorization', description: descriptions.authorization },
+      { name: 'Content-Type', description: descriptions.contentType },
+      { name: '[to]', description: descriptions.toField },
+      { name: 'body', description: descriptions.body },
+    ];
+  }
+
+  const parameterNames = isIxcContract(instanceType)
+    ? ['user', 'pw', 'dest', 'text']
+    : ['msg', 'to', 'token'];
 
   return parameterNames.map(name => ({
     name,

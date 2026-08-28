@@ -13,6 +13,7 @@ class Ibsoft::ExternalMessaging::OrderUpdateInboundRequest
 
   def call
     return ixc_request if family == 'ixc'
+    return standard_request if family == 'standard'
 
     sgp_request
   end
@@ -51,5 +52,45 @@ class Ibsoft::ExternalMessaging::OrderUpdateInboundRequest
         query_parameters: query_parameters
       ).call
     )
+  end
+
+  def standard_request
+    validate_standard_request!
+
+    Result.new(
+      credentials: Ibsoft::ExternalMessaging::OrderUpdateCredentials.new(
+        method: method,
+        authorization: authorization,
+        query_parameters: {}
+      ).call,
+      fields: Ibsoft::ExternalMessaging::OrderStatusRequestParser.new(
+        method: method,
+        media_type: media_type,
+        raw_body: validated_standard_body,
+        query_parameters: {}
+      ).call
+    )
+  end
+
+  def validate_standard_request!
+    raise_error('standard_method_not_allowed', http_status: :method_not_allowed) unless method.upcase == 'POST'
+    return if media_type.downcase == 'text/plain'
+
+    raise_error('standard_content_type_invalid', http_status: :unsupported_media_type)
+  end
+
+  def validated_standard_body
+    payload = raw_body.dup.force_encoding(Encoding::UTF_8)
+    raise_error('payload_invalid_encoding') unless payload.valid_encoding?
+
+    payload = payload.strip
+    raise_error('payload_invalid_format') unless payload.start_with?('[')
+    raise_error('payload_invalid_separator') if payload.gsub('||', '').include?('|')
+
+    payload
+  end
+
+  def raise_error(code, **)
+    raise Ibsoft::ExternalMessaging::InvalidRequest.new(code, **)
   end
 end

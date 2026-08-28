@@ -196,4 +196,50 @@ describe('IntegrationInstructions', () => {
       "--data-urlencode 'text=[fatura_id]=9388||[status]=pago'"
     );
   });
+
+  it('documents the strict standard POST contract without legacy parameters', () => {
+    const wrapper = shallowMount(IntegrationInstructions, {
+      props: {
+        instanceType: 'standard',
+        publicEndpointUrl: 'https://example.test/chathub-sender/',
+        publicCurlExample: 'curl ordem padrao',
+        orderUpdateEndpointUrl: 'https://example.test/chathub-sender/pedido/',
+        orderUpdateCurlExample:
+          "curl --request POST --header 'Authorization: Bearer token' --data-raw '[fatura_id]=9388||[status]=pago'",
+        integrationParameters: [
+          { name: 'Authorization', description: 'Bearer' },
+          { name: 'Content-Type', description: 'text/plain' },
+          { name: '[to]', description: 'Destinatário' },
+          { name: 'body', description: 'Mensagem' },
+        ],
+      },
+      global: {
+        stubs: {
+          Button: true,
+        },
+      },
+    });
+
+    expect(wrapper.vm.requestMethod).toBe(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.STANDARD_METHOD'
+    );
+    const simple = wrapper.vm.scenarios.find(
+      scenario => scenario.id === 'simple'
+    );
+    expect(simple.example).toContain('curl --request POST');
+    expect(simple.example).toContain("--header 'Authorization: Bearer ");
+    expect(simple.example).toContain(
+      "--header 'Content-Type: text/plain; charset=UTF-8'"
+    );
+    expect(simple.example).toContain('||[to]=');
+    expect(simple.example).not.toContain('--data-urlencode');
+
+    const orderUpdate = wrapper.vm.scenarios.find(
+      scenario => scenario.id === 'order_update'
+    );
+    expect(orderUpdate.fields.map(field => field.name)).not.toContain('token');
+    expect(orderUpdate.rules).toContain(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION_STANDARD'
+    );
+  });
 });

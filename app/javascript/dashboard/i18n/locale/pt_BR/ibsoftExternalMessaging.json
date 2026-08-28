@@ -42,6 +42,10 @@
       "EMPTY": "Crie a primeira instância para conectar um sistema externo a um canal do WhatsApp Business Cloud."
     },
     "TYPES": {
+      "STANDARD": {
+        "NAME": "Padrão",
+        "DESCRIPTION": "Contrato principal por POST, Bearer Token e corpo semântico em texto puro."
+      },
       "SGP_GENERIC": {
         "NAME": "SGP Genérico",
         "DESCRIPTION": "Integração compatível com o contrato genérico por parâmetros msg, to e token."
@@ -251,6 +255,8 @@
       "CURL_COPIED": "Comando copiado.",
       "REQUEST": {
         "TITLE": "Requisição",
+        "STANDARD_DESCRIPTION": "Use POST com Bearer Token e corpo text/plain na URL pública.",
+        "STANDARD_METHOD": "POST",
         "DESCRIPTION": "Use o método GET na URL pública do módulo.",
         "METHOD": "GET",
         "IXC_DESCRIPTION": "Use GET, POST com formulário ou POST com JSON na URL pública do contrato IXC.",
@@ -262,6 +268,10 @@
         "DESCRIPTION": "Os três parâmetros fazem parte do contrato obrigatório.",
         "NAME": "Parâmetro",
         "PURPOSE": "Finalidade",
+        "AUTHORIZATION": "Cabeçalho Bearer com o token exclusivo da instância. Ele identifica a conta e o canal.",
+        "CONTENT_TYPE": "Cabeçalho obrigatório com o valor text/plain; charset=UTF-8.",
+        "TO_FIELD": "Campo obrigatório dentro do corpo semântico com o telefone do destinatário e código do país.",
+        "BODY": "Corpo em texto puro no formato [campo]=valor{'|'}{'|'}[outro]=valor. Não use JSON nem parâmetros de URL.",
         "MSG": "Template e variáveis no formato [campo]=valor{'|'}{'|'}[outro]=valor.",
         "TO": "Telefone do destinatário com código do país e somente números.",
         "TOKEN": "Token exclusivo gerado para o endpoint. Ele identifica a conta e o canal.",
@@ -399,6 +409,7 @@
             "RULES": {
               "STATUS": "Informe status ou pelo menos um dos campos order_status e payment_status.",
               "AUTHENTICATION": "GET aceita token como parâmetro. POST exige Authorization Bearer e aceita JSON ou texto semântico.",
+              "AUTHENTICATION_STANDARD": "Envie POST com Authorization Bearer e Content-Type text/plain. O corpo aceita somente [campo]=valor separado por {'|'}{'|'}.",
               "AUTHENTICATION_IXC": "Envie user, pw, dest e text no envelope IXC. Os campos da atualização devem ficar dentro de text no formato [campo]=valor{'|'}{'|'}[outro]=valor.",
               "ACCEPTED": "A resposta 202 indica enfileiramento. Uma atualização idêntica já aplicada retorna 200 sem novo envio."
             }

@@ -28,7 +28,7 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder do
     )
   end
 
-  it 'builds a template payload using only the snapshotted template data' do
+  it 'builds a template payload with the snapshot and the original order reference' do
     components = [
       {
         type: 'body',
@@ -42,7 +42,7 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder do
       template_components: components
     )
 
-    expect(payload).to eq(
+    expected_payload = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: update.order.recipient,
@@ -50,15 +50,59 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder do
       template: {
         name: 'atualizacao_fatura',
         language: { policy: 'deterministic', code: 'pt_BR' },
-        components: components.map(&:deep_stringify_keys)
+        components: [
+          *components,
+          {
+            type: 'order_status',
+            parameters: [
+              {
+                type: 'order_status',
+                order_status: {
+                  reference_id: update.order.reference_id,
+                  order: { status: 'processing', description: update.description }
+                }
+              }
+            ]
+          }
+        ]
       }
-    )
+    }
+
+    expect(payload.deep_stringify_keys).to eq(expected_payload.deep_stringify_keys)
   end
 
-  it 'omits components for templates without variables' do
+  it 'sends the order reference even when the template has no body variables' do
     update.update!(
       delivery_method: 'template',
       template_name: 'atualizacao_sem_variavel',
+      template_language: 'pt_BR',
+      template_components: []
+    )
+
+    expect(payload.dig(:template, :components)).to eq(
+      [
+        {
+          type: 'order_status',
+          parameters: [
+            {
+              type: 'order_status',
+              order_status: {
+                reference_id: update.order.reference_id,
+                order: { status: 'processing', description: update.description }
+              }
+            }
+          ]
+        }
+      ]
+    )
+  end
+
+  it 'keeps payment-only templates independent from order status updates' do
+    update.update!(
+      order_status: nil,
+      payment_status: 'failed',
+      delivery_method: 'template',
+      template_name: 'falha_pagamento',
       template_language: 'pt_BR',
       template_components: []
     )

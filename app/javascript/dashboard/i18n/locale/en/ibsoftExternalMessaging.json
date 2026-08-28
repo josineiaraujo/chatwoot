@@ -42,6 +42,10 @@
       "EMPTY": "Create the first instance to connect an external system to a WhatsApp Business Cloud channel."
     },
     "TYPES": {
+      "STANDARD": {
+        "NAME": "Standard",
+        "DESCRIPTION": "Primary contract using POST, Bearer Token, and a semantic plain-text body."
+      },
       "SGP_GENERIC": {
         "NAME": "Generic SGP",
         "DESCRIPTION": "Integration compatible with the generic msg, to, and token parameter contract."
@@ -251,6 +255,8 @@
       "CURL_COPIED": "Command copied.",
       "REQUEST": {
         "TITLE": "Request",
+        "STANDARD_DESCRIPTION": "Use POST with a Bearer Token and a text/plain body on the public URL.",
+        "STANDARD_METHOD": "POST",
         "DESCRIPTION": "Use the GET method on the module public URL.",
         "METHOD": "GET",
         "IXC_DESCRIPTION": "Use GET, form-encoded POST, or JSON POST on the IXC contract public URL.",
@@ -262,6 +268,10 @@
         "DESCRIPTION": "All three parameters are part of the required contract.",
         "NAME": "Parameter",
         "PURPOSE": "Purpose",
+        "AUTHORIZATION": "Bearer header with the instance's exclusive token. It identifies the account and channel.",
+        "CONTENT_TYPE": "Required header with the text/plain; charset=UTF-8 value.",
+        "TO_FIELD": "Required semantic body field containing the recipient phone number with country code.",
+        "BODY": "Plain-text body using [field]=value{'|'}{'|'}[other]=value. Do not use JSON or URL parameters.",
         "MSG": "Template and variables using [field]=value{'|'}{'|'}[other]=value.",
         "TO": "Recipient phone number with country code and digits only.",
         "TOKEN": "Exclusive token generated for the endpoint. It identifies the account and channel.",
@@ -399,6 +409,7 @@
             "RULES": {
               "STATUS": "Submit status or at least one of order_status and payment_status.",
               "AUTHENTICATION": "GET accepts token as a parameter. POST requires Authorization Bearer and accepts JSON or semantic text.",
+              "AUTHENTICATION_STANDARD": "Submit POST with Authorization Bearer and Content-Type text/plain. The body only accepts [field]=value separated by {'|'}{'|'}.",
               "AUTHENTICATION_IXC": "Submit user, pw, dest, and text in the IXC envelope. Keep update fields inside text using [field]=value{'|'}{'|'}[other]=value.",
               "ACCEPTED": "A 202 response means queued. An identical update already applied returns 200 without another message."
             }

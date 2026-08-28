@@ -19,6 +19,12 @@ const mountComponent = () =>
       inboxes: [{ id: 3, name: 'WhatsApp Cloud' }],
       instanceTypes: [
         {
+          value: 'standard',
+          icon: 'i-lucide-send',
+          label: 'Padrão',
+          description: 'Contrato padrão',
+        },
+        {
           value: 'sgp_generic',
           icon: 'i-lucide-braces',
           label: 'SGP Genérico',
@@ -89,7 +95,7 @@ describe('InstanceEditorDialog', () => {
         {
           id: null,
           payload: {
-            instance_type: 'sgp_generic',
+            instance_type: 'standard',
             name: 'Financeiro',
             inbox_id: 3,
             active: true,

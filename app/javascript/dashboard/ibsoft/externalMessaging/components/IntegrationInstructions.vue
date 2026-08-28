@@ -4,7 +4,11 @@ import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import { useAlert } from 'dashboard/composables';
-import { buildPublicCurl, isIxcContract } from '../integrationContracts';
+import {
+  buildPublicCurl,
+  isIxcContract,
+  isStandardContract,
+} from '../integrationContracts';
 
 const props = defineProps({
   publicEndpointUrl: {
@@ -29,7 +33,7 @@ const props = defineProps({
   },
   instanceType: {
     type: String,
-    default: 'sgp_generic',
+    default: 'standard',
   },
   authentication: {
     type: Object,
@@ -176,16 +180,29 @@ const field = (name, requirement, description) => ({
 });
 
 const isIxc = computed(() => isIxcContract(props.instanceType));
-const requestMethod = computed(() =>
-  isIxc.value
-    ? t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.IXC_METHOD')
-    : t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.METHOD')
-);
-const requestDescription = computed(() =>
-  isIxc.value
-    ? t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.IXC_DESCRIPTION')
-    : t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.DESCRIPTION')
-);
+const isStandard = computed(() => isStandardContract(props.instanceType));
+const requestMethod = computed(() => {
+  if (isStandard.value) {
+    return t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.STANDARD_METHOD');
+  }
+  if (isIxc.value) {
+    return t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.IXC_METHOD');
+  }
+
+  return t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.METHOD');
+});
+const requestDescription = computed(() => {
+  if (isStandard.value) {
+    return t(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.STANDARD_DESCRIPTION'
+    );
+  }
+  if (isIxc.value) {
+    return t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.IXC_DESCRIPTION');
+  }
+
+  return t('IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.REQUEST.DESCRIPTION');
+});
 const publicCurl = fields =>
   buildPublicCurl({
     instanceType: props.instanceType,
@@ -200,6 +217,23 @@ const publicCurl = fields =>
       'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.EXAMPLE.PASSWORD_PLACEHOLDER'
     ),
   });
+
+const orderUpdateAuthenticationRule = () => {
+  if (isStandard.value) {
+    return t(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION_STANDARD'
+    );
+  }
+  if (isIxc.value) {
+    return t(
+      'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION_IXC'
+    );
+  }
+
+  return t(
+    'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION'
+  );
+};
 
 const scenarios = computed(() => {
   const items = [
@@ -494,19 +528,15 @@ const scenarios = computed(() => {
             field('payment_timestamp', 'optional', 'UPDATE_PAYMENT_TIMESTAMP'),
             field('message', 'optional', 'UPDATE_MESSAGE'),
             field('description', 'optional', 'UPDATE_DESCRIPTION'),
-            field('token', 'required', 'UPDATE_TOKEN'),
+            ...(!isStandard.value
+              ? [field('token', 'required', 'UPDATE_TOKEN')]
+              : []),
           ],
       rules: [
         t(
           'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.STATUS'
         ),
-        isIxc.value
-          ? t(
-              'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION_IXC'
-            )
-          : t(
-              'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.AUTHENTICATION'
-            ),
+        orderUpdateAuthenticationRule(),
         t(
           'IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.GUIDE.SCENARIOS.ORDER_UPDATE.RULES.ACCEPTED'
         ),
