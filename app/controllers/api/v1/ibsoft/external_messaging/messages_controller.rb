@@ -6,6 +6,7 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
     accept_delivery(result.delivery, enqueue: result.created)
   rescue Ibsoft::ExternalMessaging::InvalidRequest => e
     response.set_header('Allow', 'GET, POST') if e.code == 'ixc_method_not_allowed'
+    response.set_header('Allow', 'POST') if e.code == 'standard_method_not_allowed'
     render_error(e.code, e.http_status, message: e.message)
   rescue Ibsoft::ExternalMessaging::DeliveryCreator::IdempotencyConflict
     render_error('idempotency_conflict', :conflict)
@@ -57,7 +58,9 @@ class Api::V1::Ibsoft::ExternalMessaging::MessagesController < ActionController:
       parameters: request.query_parameters,
       query_parameters: request.query_parameters,
       raw_body: request.raw_post,
-      content_type: request.content_type
+      content_type: request.content_type,
+      media_type: request.media_type,
+      authorization: request.authorization
     ).call
   end
 

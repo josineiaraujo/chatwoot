@@ -42,10 +42,14 @@ const selectedProvider = computed(() =>
   providers.value.find(provider => provider.key === form.provider)
 );
 
-const selectedAuthTypes = computed(() => selectedProvider.value?.auth_types || []);
+const selectedAuthTypes = computed(
+  () => selectedProvider.value?.auth_types || []
+);
 const credentialFields = computed(() => ERP_AUTH_FIELDS[form.auth_type] || []);
 const editingConnection = computed(() =>
-  connections.value.find(connection => connection.id === editingConnectionId.value)
+  connections.value.find(
+    connection => connection.id === editingConnectionId.value
+  )
 );
 const dialogTitle = computed(() =>
   isCreating.value
@@ -53,7 +57,11 @@ const dialogTitle = computed(() =>
     : t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.EDIT_TITLE')
 );
 const isFormInvalid = computed(
-  () => !form.name.trim() || !form.provider || !form.auth_type || !form.base_url.trim()
+  () =>
+    !form.name.trim() ||
+    !form.provider ||
+    !form.auth_type ||
+    !form.base_url.trim()
 );
 
 const providerOptions = computed(() =>
@@ -66,7 +74,9 @@ const providerOptions = computed(() =>
 const authTypeOptions = computed(() =>
   selectedAuthTypes.value.map(authType => ({
     value: authType,
-    label: t(`IBSOFT_THEME.CHATHUB_SETTINGS.ERP.AUTH_TYPES.${authType.toUpperCase()}`),
+    label: t(
+      `IBSOFT_THEME.CHATHUB_SETTINGS.ERP.AUTH_TYPES.${authType.toUpperCase()}`
+    ),
   }))
 );
 
@@ -266,7 +276,9 @@ onMounted(fetchConnections);
         :key="connection.id"
         class="rounded-xl border border-n-weak bg-n-alpha-1 p-4"
       >
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div
+          class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+        >
           <div class="min-w-0">
             <div class="mb-2 flex flex-wrap items-center gap-2">
               <span
@@ -315,9 +327,7 @@ onMounted(fetchConnections);
                 }}
               </span>
               <span v-if="connection.last_test_status" class="ps-2">
-                {{
-                  t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.TEST.LAST_STATUS')
-                }}:
+                {{ t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.TEST.LAST_STATUS') }}:
                 {{
                   t(
                     `IBSOFT_THEME.CHATHUB_SETTINGS.ERP.TEST.STATUS.${connection.last_test_status.toUpperCase()}`
@@ -391,7 +401,9 @@ onMounted(fetchConnections);
             v-model="form.name"
             type="text"
             class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm text-n-slate-12"
-            :placeholder="t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.NAME_PLACEHOLDER')"
+            :placeholder="
+              t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.NAME_PLACEHOLDER')
+            "
           />
         </label>
 
@@ -468,7 +480,11 @@ onMounted(fetchConnections);
               </span>
               <input
                 v-model="form.credentials[field]"
-                :type="field === 'password' || field === 'token' ? 'password' : 'text'"
+                :type="
+                  field === 'password' || field === 'token'
+                    ? 'password'
+                    : 'text'
+                "
                 autocomplete="new-password"
                 class="w-full rounded-lg border border-n-weak bg-n-solid-1 px-3 py-2 text-sm text-n-slate-12"
               />
@@ -495,7 +511,9 @@ onMounted(fetchConnections);
     <Dialog
       ref="deleteDialogRef"
       :title="t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.DELETE_TITLE')"
-      :confirm-button-label="t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.DELETE_CONFIRM')"
+      :confirm-button-label="
+        t('IBSOFT_THEME.CHATHUB_SETTINGS.ERP.DELETE_CONFIRM')
+      "
       :is-loading="isDeleting"
       @confirm="deleteConnection"
       @close="closeDelete"

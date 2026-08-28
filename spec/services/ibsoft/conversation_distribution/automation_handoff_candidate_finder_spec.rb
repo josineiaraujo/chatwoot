@@ -210,6 +210,68 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinde
     expect(described_class.new(account: account).perform).to be_empty
   end
 
+  it 'ignores disabled policies' do
+    policy = Ibsoft::ConversationDistribution::AutomationHandoffPolicy.find_by!(account: account, inbox: inbox)
+    policy.update!(enabled: false)
+    create_bot_message(pending_conversation, created_at: 15.minutes.ago)
+
+    expect(described_class.new(account: account).perform).to be_empty
+  end
+
+  it 'isolates candidates by account and requested channel' do
+    selected_conversation = pending_conversation
+    create_bot_message(selected_conversation, created_at: 20.minutes.ago)
+
+    other_inbox = create(:inbox, account: account)
+    create_automation_candidate(target_account: account, target_inbox: other_inbox, created_at: 30.minutes.ago)
+
+    foreign_account = create(:account)
+    foreign_inbox = create(:inbox, account: foreign_account)
+    create_automation_candidate(target_account: foreign_account, target_inbox: foreign_inbox, created_at: 40.minutes.ago)
+
+    result = described_class.new(account: account, inbox_id: inbox.id).perform
+
+    expect(result.pluck(:conversation_id)).to eq([selected_conversation.id])
+  end
+
+  it 'orders the oldest waiting conversations first and respects the requested limit' do
+    newer = pending_conversation
+    older = pending_conversation
+    create_bot_message(newer, created_at: 20.minutes.ago)
+    create_bot_message(older, created_at: 30.minutes.ago)
+
+    result = described_class.new(account: account, limit: 1).perform
+
+    expect(result.pluck(:conversation_id)).to eq([older.id])
+  end
+
+  it 'uses a safe default for invalid limits and caps excessive limits' do
+    invalid = described_class.new(account: account, limit: 0)
+    excessive = described_class.new(account: account, limit: described_class::MAX_LIMIT + 1)
+
+    expect(invalid.safe_limit).to eq(described_class::DEFAULT_LIMIT)
+    expect(excessive.safe_limit).to eq(described_class::MAX_LIMIT)
+  end
+
+  it 'does not suppress a new waiting period because of an older completed event' do
+    conversation = pending_conversation
+    create(
+      :ibsoft_distribution_event_log,
+      account: account,
+      inbox: inbox,
+      conversation: conversation,
+      event_type: 'automation_handoff_completed',
+      reason: 'automation_stalled',
+      created_at: 30.minutes.ago
+    )
+    bot_message = create_bot_message(conversation, created_at: 20.minutes.ago)
+
+    expect(described_class.new(account: account).perform.first).to include(
+      conversation_id: conversation.id,
+      last_bot_message_id: bot_message.id
+    )
+  end
+
   private
 
   def pending_conversation(attributes = {})
@@ -231,6 +293,46 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffCandidateFinde
       inbox: inbox,
       conversation: conversation,
       sender: agent_bot,
+      message_type: :outgoing,
+      created_at: created_at
+    )
+  end
+
+  def create_automation_candidate(target_account:, target_inbox:, created_at:)
+    bot = create(:agent_bot, account: target_account)
+    create(:agent_bot_inbox, inbox: target_inbox, agent_bot: bot)
+    create_automation_policy(target_account, target_inbox)
+    conversation = create_pending_bot_conversation(target_account, target_inbox, bot)
+    create_automation_message(target_account, target_inbox, conversation, bot, created_at)
+  end
+
+  def create_automation_policy(target_account, target_inbox)
+    create(
+      :ibsoft_automation_handoff_policy,
+      account: target_account,
+      inbox: target_inbox,
+      target_team: create(:team, account: target_account),
+      stale_after_minutes: 10
+    )
+  end
+
+  def create_pending_bot_conversation(target_account, target_inbox, bot)
+    create(
+      :conversation,
+      account: target_account,
+      inbox: target_inbox,
+      status: :pending,
+      assignee_agent_bot: bot
+    )
+  end
+
+  def create_automation_message(target_account, target_inbox, conversation, bot, created_at)
+    create(
+      :message,
+      account: target_account,
+      inbox: target_inbox,
+      conversation: conversation,
+      sender: bot,
       message_type: :outgoing,
       created_at: created_at
     )

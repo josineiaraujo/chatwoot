@@ -21,6 +21,12 @@ RSpec.describe Ibsoft::AfterHours::WaitReconciler do
     expect(wait.reload).to be_active
   end
 
+  it 'does nothing when the conversation has no wait' do
+    wait.destroy!
+
+    expect(described_class.new(conversation: conversation).perform).to be_nil
+  end
+
   it 'cancels the wait when an agent assumes the conversation' do
     conversation.update!(assignee: create(:user, account: account))
 

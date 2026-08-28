@@ -11,6 +11,15 @@ class Ibsoft::ExternalMessaging::InstanceTypeRegistry
   )
 
   TYPES = {
+    'standard' => Definition.new(
+      family: 'standard',
+      public_path: '/chathub-sender/',
+      order_update_path: '/chathub-sender/pedido/',
+      authentication_strategy: 'token',
+      username_prefix: nil,
+      request_parser_class: Ibsoft::ExternalMessaging::StandardInboundRequestParser,
+      request_contract_class: Ibsoft::ExternalMessaging::RequestContract
+    ),
     'sgp_generic' => Definition.new(
       family: 'sgp',
       public_path: '/chathub-sender/sgp/generico/',

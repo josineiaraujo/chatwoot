@@ -58,8 +58,8 @@ class ConversationDistributionAPI extends ApiClient {
     });
   }
 
-  getSupervisorAlerts(params = {}) {
-    return axios.get(`${this.url}/supervisor_alerts`, { params });
+  getSupervisorAlerts(params = {}, config = {}) {
+    return axios.get(`${this.url}/supervisor_alerts`, { ...config, params });
   }
 
   getEventLogs(params = {}) {

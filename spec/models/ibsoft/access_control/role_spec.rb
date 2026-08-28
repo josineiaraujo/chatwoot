@@ -7,7 +7,11 @@ RSpec.describe Ibsoft::AccessControl::Role do
     role = build(
       :ibsoft_access_control_role,
       account: account,
-      permissions: %w[conversation_manage ibsoft_chathub_settings_manage]
+      permissions: %w[
+        conversation_manage
+        ibsoft_chathub_settings_manage
+        ibsoft_message_broadcast_manage
+      ]
     )
 
     expect(role).to be_valid

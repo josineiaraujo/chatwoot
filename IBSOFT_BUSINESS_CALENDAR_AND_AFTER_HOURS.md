@@ -160,6 +160,9 @@ Controllers:
 
 - `app/javascript/dashboard/ibsoft/businessCalendar/`
 - `app/javascript/dashboard/ibsoft/afterHours/`
+- `app/javascript/dashboard/ibsoft/components/IbsoftDialogHeader.vue`: cabecalho
+  compartilhado pelos modais privados, com titulo, descricao opcional e acao
+  de fechamento sem alterar o `Dialog` nativo do Chatwoot.
 - `app/javascript/dashboard/ibsoft/chathubSettings/views/Index.vue`
 - `app/javascript/dashboard/ibsoft/chathubSettings/components/DistributionPolicyCatalog.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/components/DistributionPolicyForm.vue`
@@ -284,10 +287,30 @@ Ao sincronizar com o Chatwoot:
 
 ## Testes e lint
 
+### Matriz de cobertura
+
+| Area | Cenarios protegidos | Specs principais |
+| --- | --- | --- |
+| Calendario | nome obrigatorio e unico por conta, payload ordenado e exclusao em cascata somente dos registros privados | `calendar_spec.rb` |
+| Feriado | tipos/fontes/abrangencias, UF, data e nome, duplicidade por calendario, mesma data em outra conta e invalidacao de cache | `holiday_spec.rb` |
+| Vinculos | um calendario por departamento, conta consistente, criar, substituir, remover, selecao vazia, IDs invalidos e transacao sem atualizacao parcial | `team_link_spec.rb`, `team_link_updater_spec.rb`, `calendar_team_links_updater_spec.rb` |
+| Resolucao | calendario ausente, data encontrada, conta isolada e invalidacao ao criar, mover ou excluir uma data | `holiday_resolver_spec.rb` |
+| Invertexto | token somente no servidor, Bearer, consulta nacional/estadual, resposta de erro controlada e ausencia de chamadas reais nos testes | `invertexto_client_spec.rb` |
+| Importacao | nacional, estadual, ponto facultativo opcional, selecao parcial, data desconhecida, UF invalida, preservacao manual e ausencia de feriados municipais | `holiday_importer_spec.rb` e requests de `holiday_import` |
+| Politica extra expediente | mensagens obrigatorias somente quando ativa, nome por conta, comando normalizado, multiline/limite e bloqueio de exclusao com espera ativa | `policy_spec.rb`, `policy_destroyer_spec.rb` |
+| Espera | snapshot do comando/mensagem, associacoes por conta, estados, unicidade, mensagem normal/feriado, idempotencia e falhas de entrega | `wait_spec.rb`, `wait_starter_spec.rb` |
+| Comando de saida | igualdade exata sem diferenciar caixa, texto parcial, mensagem anterior, privada/de saida, mudanca de agente/departamento/status, entrega da confirmacao e execucao unica | `exit_command_handler_spec.rb` |
+| Reconciliacao | espera preservada, atribuicao, transferencia, encerramento e espera ja concluida | `wait_reconciler_spec.rb` |
+| Interface | abas, modais, selecao e importacao, datas `dd/mm/aaaa`, busca de departamento, CRUD, estados vazios e erros de API/salvamento | `BusinessCalendarCatalog.spec.js`, `AfterHoursPolicyCatalog.spec.js`, `IbsoftDialogHeader.spec.js` |
+
+As chamadas da Invertexto sao simuladas nos testes. A suite nunca importa nem
+modifica dados externos reais.
+
 Backend:
 
 ```bash
-bundle exec rspec \
+RAILS_ENV=test RACK_ENV=test bundle exec rspec \
+  spec/models/ibsoft/business_calendar \
   spec/models/ibsoft/after_hours \
   spec/services/ibsoft/after_hours \
   spec/requests/api/v1/accounts/ibsoft/after_hours \

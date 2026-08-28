@@ -44,8 +44,20 @@ const mountComponent = () =>
       stubs: {
         Button: true,
         Dialog: {
+          emits: ['close'],
           template: '<div><slot /></div>',
-          methods: { open: vi.fn(), close: vi.fn() },
+          methods: {
+            open: vi.fn(),
+            close() {
+              this.$emit('close');
+            },
+          },
+        },
+        IbsoftDialogHeader: {
+          props: ['title', 'closeLabel'],
+          emits: ['close'],
+          template:
+            '<button class="ibsoft-dialog-close" @click="$emit(\'close\')" />',
         },
         Spinner: true,
         ToggleSwitch: true,
@@ -70,6 +82,18 @@ describe('AfterHoursPolicyCatalog', () => {
 
     expect(afterHoursAPI.getPolicies).toHaveBeenCalledOnce();
     expect(wrapper.vm.policies).toEqual([policy]);
+  });
+
+  it('closes the editor from its header action', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+    wrapper.vm.editingId = policy.id;
+    wrapper.vm.form = { ...policy };
+
+    await wrapper.get('.ibsoft-dialog-close').trigger('click');
+
+    expect(wrapper.vm.editingId).toBeNull();
+    expect(wrapper.vm.form.name).toBe('');
   });
 
   it('creates a policy with all customer-facing messages', async () => {
@@ -114,5 +138,61 @@ describe('AfterHoursPolicyCatalog', () => {
 
     expect(afterHoursAPI.deletePolicy).toHaveBeenCalledWith(policy.id);
     expect(afterHoursAPI.getPolicies).toHaveBeenCalledTimes(2);
+  });
+
+  it('requires customer messages only when the policy is enabled', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    wrapper.vm.form = {
+      name: 'Plantao',
+      enabled: false,
+      exit_command: 'sair',
+      regular_message: '',
+      holiday_message: '',
+      exit_confirmation_message: '',
+    };
+    expect(wrapper.vm.invalidForm).toBe(false);
+
+    wrapper.vm.form.enabled = true;
+    expect(wrapper.vm.invalidForm).toBe(true);
+
+    wrapper.vm.form.regular_message = 'Estamos fora do horario.';
+    wrapper.vm.form.holiday_message = 'Hoje e feriado.';
+    wrapper.vm.form.exit_confirmation_message = 'Atendimento encerrado.';
+    expect(wrapper.vm.invalidForm).toBe(false);
+  });
+
+  it('reports load failures and releases the loading state', async () => {
+    afterHoursAPI.getPolicies.mockRejectedValue(new Error('request failed'));
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(mocks.alert).toHaveBeenCalledWith('IBSOFT_AFTER_HOURS.ERRORS.LOAD');
+    expect(wrapper.vm.isFetching).toBe(false);
+  });
+
+  it('keeps the editor state available when saving fails', async () => {
+    afterHoursAPI.createPolicy.mockRejectedValue(new Error('request failed'));
+    const wrapper = mountComponent();
+    await flushPromises();
+    wrapper.vm.form = { ...policy, id: undefined };
+
+    await wrapper.vm.savePolicy();
+
+    expect(afterHoursAPI.getPolicies).toHaveBeenCalledOnce();
+    expect(wrapper.vm.form.name).toBe('Plantao');
+    expect(wrapper.vm.isSaving).toBe(false);
+    expect(mocks.alert).toHaveBeenCalledWith('IBSOFT_AFTER_HOURS.ERRORS.SAVE');
+  });
+
+  it('does not issue a delete request without a selected policy', async () => {
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    await wrapper.vm.deletePolicy();
+
+    expect(afterHoursAPI.deletePolicy).not.toHaveBeenCalled();
   });
 });

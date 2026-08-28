@@ -31,15 +31,15 @@ class Ibsoft::ExternalMessaging::OrderStatusContract
     'falhou' => 'failed',
     'falha' => 'failed'
   }.freeze
-  SHORTCUT_PAYMENT_STATUSES = {
-    'pago' => 'captured',
-    'paid' => 'captured',
-    'captured' => 'captured',
-    'pagamento_pendente' => 'pending',
-    'payment_pending' => 'pending',
-    'pagamento_falhou' => 'failed',
-    'payment_failed' => 'failed',
-    'failed' => 'failed'
+  SHORTCUT_STATUSES = {
+    'pago' => %w[completed captured],
+    'paid' => %w[completed captured],
+    'captured' => [nil, 'captured'],
+    'pagamento_pendente' => [nil, 'pending'],
+    'payment_pending' => [nil, 'pending'],
+    'pagamento_falhou' => [nil, 'failed'],
+    'payment_failed' => [nil, 'failed'],
+    'failed' => [nil, 'failed']
   }.freeze
 
   def initialize(endpoint:, fields:)
@@ -112,8 +112,8 @@ class Ibsoft::ExternalMessaging::OrderStatusContract
 
   def shortcut_status(value)
     normalized = normalize_status_text(value)
-    payment_status = SHORTCUT_PAYMENT_STATUSES[normalized]
-    return [nil, payment_status] if payment_status
+    statuses = SHORTCUT_STATUSES[normalized]
+    return statuses if statuses
 
     [normalize_order_status(normalized), nil]
   end

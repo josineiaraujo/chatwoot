@@ -74,6 +74,27 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::ExternalMessaging::Endpoints', type: 
     expect(Ibsoft::ExternalMessaging::Endpoint.authenticate(token)).to eq(created_endpoint)
   end
 
+  it 'creates the standard contract with isolated paths and bearer authentication' do
+    post base_url,
+         params: {
+           name: 'API padrão',
+           inbox_id: channel.inbox.id,
+           instance_type: 'standard'
+         },
+         headers: admin_headers,
+         as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(response.parsed_body).to include(
+      'instance_type' => 'standard',
+      'integration_family' => 'standard',
+      'public_path' => '/chathub-sender/',
+      'order_update_path' => '/chathub-sender/pedido/'
+    )
+    expect(response.parsed_body.fetch('token')).to start_with('ibext_')
+    expect(response.parsed_body.fetch('authentication')).to include('type' => 'token')
+  end
+
   it 'allows administrators to disable order resends for an instance' do
     endpoint = create(
       :ibsoft_external_message_endpoint,

@@ -16,6 +16,19 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Groups', type: :req
     expect(response).to have_http_status(:unauthorized)
   end
 
+  it 'allows agents with the message broadcast permission' do
+    role = create(
+      :ibsoft_access_control_role,
+      account: account,
+      permissions: [Ibsoft::MessageBroadcast::Permission::PERMISSION]
+    )
+    create(:ibsoft_access_control_role_assignment, account: account, role: role, user: agent)
+
+    get base_url, headers: agent_headers, as: :json
+
+    expect(response).to have_http_status(:success)
+  end
+
   it 'creates fixed groups with selected members' do
     post base_url,
          params: {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -10,12 +10,16 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
 import conversationDistributionAPI from '../api';
+import { notifyNewSupervisorAlerts } from '../helpers/supervisorAlertAudioNotifications';
+import { createSupervisorAlertRefreshController } from '../helpers/supervisorAlertRefresh';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
 const isLoading = ref(false);
+const isRefreshing = ref(false);
+const hasLoaded = ref(false);
 const hasError = ref(false);
 const payload = ref({
   summary: { scanned: 0, alerts: 0, by_reason: {}, by_severity: {} },
@@ -188,21 +192,44 @@ const formatDateTime = value => {
   }).format(new Date(value));
 };
 
-const fetchAlerts = async () => {
-  isLoading.value = true;
-  hasError.value = false;
+const loadAlerts = async ({ signal }) => {
+  const initialLoad = !hasLoaded.value;
+  if (initialLoad) {
+    isLoading.value = true;
+  } else {
+    isRefreshing.value = true;
+  }
 
   try {
-    const { data } = await conversationDistributionAPI.getSupervisorAlerts({
-      limit: 100,
-    });
-    payload.value = data;
-  } catch {
-    hasError.value = true;
+    const { data } = await conversationDistributionAPI.getSupervisorAlerts(
+      { limit: 100 },
+      { signal }
+    );
+    return data;
   } finally {
     isLoading.value = false;
+    isRefreshing.value = false;
   }
 };
+
+const applyAlerts = data => {
+  payload.value = data;
+  hasLoaded.value = true;
+  hasError.value = false;
+};
+
+const handleAlertsError = () => {
+  if (!hasLoaded.value) hasError.value = true;
+};
+
+const alertRefreshController = createSupervisorAlertRefreshController({
+  load: loadAlerts,
+  apply: applyAlerts,
+  notify: notifyNewSupervisorAlerts,
+  onError: handleAlertsError,
+});
+
+const refreshAlerts = () => alertRefreshController.refresh();
 
 const openConversation = alert => {
   router.push({
@@ -228,7 +255,8 @@ const openChathubHome = () => {
   });
 };
 
-onMounted(fetchAlerts);
+onMounted(() => alertRefreshController.start());
+onBeforeUnmount(() => alertRefreshController.stop());
 </script>
 
 <template>
@@ -286,8 +314,8 @@ onMounted(fetchAlerts);
           icon="i-lucide-refresh-cw"
           faded
           size="sm"
-          :is-loading="isLoading"
-          @click="fetchAlerts"
+          :is-loading="isLoading || isRefreshing"
+          @click="refreshAlerts"
         />
       </div>
     </header>

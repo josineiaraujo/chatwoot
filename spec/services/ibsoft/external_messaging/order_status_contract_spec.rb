@@ -36,6 +36,22 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderStatusContract do
     )
   end
 
+  it 'completes the order and captures payment for paid shortcuts' do
+    %w[pago paid].each do |status|
+      expect(contract(fatura_id: '1', status: status)).to include(
+        order_status: 'completed',
+        payment_status: 'captured'
+      )
+    end
+  end
+
+  it 'keeps explicit payment status updates independent' do
+    expect(contract(fatura_id: '1', payment_status: 'captured')).to include(
+      order_status: nil,
+      payment_status: 'captured'
+    )
+  end
+
   it 'preserves custom message and description values' do
     result = contract(
       reference_id: 'invoice_1',

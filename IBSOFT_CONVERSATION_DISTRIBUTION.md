@@ -125,6 +125,8 @@ Frontend isolado:
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/SupervisorDashboard.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/views/EventLogsDashboard.vue`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/assignmentAudioNotifications.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/supervisorAlertAudioNotifications.js`
+- `app/javascript/dashboard/ibsoft/conversationDistribution/helpers/supervisorAlertRefresh.js`
 - `app/javascript/dashboard/ibsoft/conversationDistribution/routes.js`
 - `app/javascript/dashboard/ibsoft/chathubSettings/components/AutomationHandoffPolicyModal.vue`
 - `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`
@@ -961,6 +963,23 @@ A interface separa filtros e lista de alertas em areas distintas. A lista usa
 rolagem propria para manter o contexto da pagina estavel mesmo com muitos
 alertas.
 
+Enquanto a rota de supervisao estiver montada, o frontend atualiza os dados a
+cada 60 segundos. A atualizacao em segundo plano preserva a tabela atual, sem
+substitui-la por loading, impede requisicoes concorrentes e cancela o ciclo e a
+requisicao ativa quando o usuario sai da tela. Falhas temporarias mantem o
+ultimo resultado valido e sao tentadas novamente no ciclo seguinte.
+
+A primeira resposta bem-sucedida estabelece uma base silenciosa. Nos ciclos
+seguintes, um alerta e considerado novo pela combinacao de conversa e motivo.
+Uma mudanca apenas de severidade nao repete o som; se o alerta desaparecer e
+surgir novamente, volta a ser notificado. Um unico som e reproduzido por ciclo,
+mesmo quando varios alertas surgem juntos, respeitando o som e as condicoes de
+audio configuradas no perfil do usuario.
+
+Para manter a atualizacao periodica leve, `SupervisorAlertFinder` carrega o
+ultimo evento de distribuicao de todos os candidatos em uma unica consulta,
+evitando uma consulta adicional por conversa.
+
 O acesso de supervisao e configurado em `Perfis e permissoes`, nao por uma tela
 propria de supervisores. A tabela legada
 `ibsoft_conversation_distribution_supervisors` foi removida por migration de
@@ -1170,6 +1189,70 @@ iniciada pelo endpoint administrativo `POST /executions`, pelo watchdog ou por
 uma rodada escopada apos transferencia manual; todos dependem das flags globais
 de job e atribuicao real.
 
+## Matriz de cobertura automatizada
+
+A matriz abaixo registra os contratos operacionais que precisam permanecer
+verdes antes de publicar o modulo. Ela cobre os ramos semanticos de cada regra;
+nao depende de chamadas a ERPs, Meta, Invertexto ou outros servicos externos.
+
+| Area | Cenarios protegidos | Specs principais |
+| --- | --- | --- |
+| Politica efetiva | ausencia de vinculo, politica de canal, override global e especifico de departamento, supressao do override e isolamento por conta | `effective_policy_resolver_spec.rb` |
+| Elegibilidade | fila humana real, conversa do bot, status, agente, departamento, primeira resposta, retorno a fila, `waiting_since`, politica e todas as combinacoes de origem permitida | `candidate_evaluator_spec.rb`, `candidate_finder_spec.rb` |
+| Expediente | sempre disponivel, horario herdado e personalizado, timezone invalido, abertura/fechamento, dia fechado, dia inteiro e multiplos intervalos | `business_hours_evaluator_spec.rb`, `decision_resolver_spec.rb` |
+| Feriados | calendario vinculado, precedencia sobre expediente aberto, isolamento por conta e preservacao do responsavel na redistribuicao | `holiday_resolver_spec.rb`, `redistribution_executor_spec.rb`, `manual_assignment_service_spec.rb` |
+| Ordem da fila | maior espera, criacao mais antiga, empates deterministas, timestamps ausentes e lista de 100 candidatos | `candidate_prioritizer_spec.rb` |
+| Escolha do agente | rodizio, balanceamento, desempate, online/offline/ocupado, membro do canal e departamento, capacidade simultanea e janela de atribuicoes | `assignment_agent_selector_spec.rb` |
+| Capacidade e limites | abaixo/no limite, etiquetas excluidas, espera do cliente, conta isolada, Redis sem varredura de chaves, limite por rodada habilitado/desabilitado e lote maior | `agent_capacity_evaluator_spec.rb`, `assignment_rate_limiter_spec.rb`, `assignment_round_limiter_spec.rb`, `assignment_executor_spec.rb` |
+| Estabilizacao pos-login | desativada, periodo offline, janela expirada, limite atingido, tipos de evento contados, minimo de agentes online e isolamento por conta | `agent_stabilization_filter_spec.rb` |
+| Indisponibilidade | espera, aviso ao cliente, fallback, ciclo de fallback, departamento ausente/igual, extra expediente normal e feriado, idempotencia e falha de entrega | `decision_action_executor_spec.rb`, `wait_starter_spec.rb` |
+| Atribuicao e fila | conversa pendente/adiada/encerrada, agente direto, transferencia de departamento, mesmo departamento, bot, fila, IDs invalidos, permissao, conta e limpeza do responsavel anterior | `manual_assignment_service_spec.rb`, `queue_return_service_spec.rb` |
+| Redistribuicao | timeout, primeira resposta, reatribuicao manual, politica desativada, horario/feriado, outro agente, capacidade concorrente, evento mais recente e conversa alterada durante a rodada | `redistribution_candidate_finder_spec.rb`, `redistribution_executor_spec.rb` |
+| Automacao parada | ultima mensagem publica do bot, resposta do cliente, mensagem humana, notas privadas, encaminhar, encerrar, aviso, cancelamentos, idempotencia, exclusao concorrente e limite do lote | `automation_waiting_signal_spec.rb`, `automation_handoff_candidate_finder_spec.rb`, `automation_handoff_executor_spec.rb`, `automation_close_executor_spec.rb` |
+| Watchdog | flags, lock distribuido, conta/canal/departamento, lote, fases de encaminhamento, encerramento, atribuicao e redistribuicao | `watchdog_runner_spec.rb`, `watchdog_job_spec.rb` |
+| API e autorizacao | CRUD, validacoes, conta, permissao administrativa/supervisao, filtros, paginacao e operacoes de fila | `spec/requests/api/v1/accounts/ibsoft/conversation_distribution/` |
+| Interface | campos condicionais, switches, limites, agenda e intervalos, extra expediente, erros de carga/salvamento e fechamento de modal | `DistributionPolicyForm.spec.js`, specs de `afterHours`, `businessCalendar` e `conversationDistribution` |
+
+Os testes de volume sao intencionalmente limitados aos contratos de lote,
+ordenacao e teto tecnico. Testes de carga de infraestrutura devem ser executados
+separadamente em homologacao, pois RSpec nao representa concorrencia, latencia e
+capacidade reais de PostgreSQL, Redis e Sidekiq em producao.
+
+### Comando integrado seguro
+
+Dentro de um container usado para desenvolvimento, sempre force o ambiente de
+teste. Omitir essas variaveis pode fazer o Rails herdar `development` do
+container e consultar dados locais reais.
+
+```bash
+docker exec \
+  -e RAILS_ENV=test \
+  -e RACK_ENV=test \
+  chatwoot-josineiaraujo-rails-1 \
+  bundle exec rspec \
+    spec/models/ibsoft/conversation_distribution \
+    spec/models/ibsoft/after_hours \
+    spec/models/ibsoft/business_calendar \
+    spec/services/ibsoft/conversation_distribution \
+    spec/services/ibsoft/after_hours \
+    spec/services/ibsoft/business_calendar \
+    spec/jobs/ibsoft/conversation_distribution \
+    spec/requests/api/v1/accounts/ibsoft/conversation_distribution \
+    spec/requests/api/v1/accounts/ibsoft/after_hours \
+    spec/requests/api/v1/accounts/ibsoft/business_calendar
+```
+
+```bash
+docker exec chatwoot-josineiaraujo-rails-1 pnpm test \
+  app/javascript/dashboard/ibsoft/conversationDistribution/specs \
+  app/javascript/dashboard/ibsoft/afterHours/specs \
+  app/javascript/dashboard/ibsoft/businessCalendar/specs \
+  app/javascript/dashboard/ibsoft/components/specs
+```
+
+Baseline verificada em 23/08/2026: 570 exemplos backend e 78 testes frontend,
+sem falhas.
+
 ## Proximas fases planejadas
 
 1. Avaliar filtros server-side no dashboard de supervisor caso o volume de
@@ -1187,6 +1270,7 @@ de job e atribuicao real.
 - `RAILS_ENV=test bundle exec rspec spec/models/ibsoft/conversation_distribution/automation_handoff_policy_spec.rb spec/models/ibsoft/conversation_distribution/automation_close_schedule_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_candidate_finder_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_spec.rb spec/services/ibsoft/conversation_distribution/automation_handoff_executor_automation_close_flow_spec.rb spec/services/ibsoft/conversation_distribution/automation_close_executor_spec.rb spec/services/ibsoft/conversation_distribution/automation_customer_message_notifier_spec.rb spec/services/ibsoft/conversation_distribution/automation_waiting_signal_spec.rb spec/jobs/ibsoft/conversation_distribution/automation_close_job_spec.rb`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/chathubSettings/specs/AutomationHandoffPolicyModal.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/assignmentAudioNotifications.spec.js app/javascript/dashboard/helper/specs/actionCable.spec.js`
+- `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/supervisorAlertRefresh.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/supervisorAlertAudioNotifications.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/SupervisorDashboard.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferConversationContextMenuAction.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/TransferToAgentDialog.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/QueueReturnDialog.spec.js`
 - `pnpm exec vitest run app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentAvailability.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentControls.spec.js app/javascript/dashboard/ibsoft/conversationDistribution/specs/manualAssignmentStateSync.spec.js app/javascript/dashboard/store/modules/specs/conversations/actions.spec.js`

@@ -4,10 +4,28 @@ import {
   buildOrderUpdateCurl,
   buildPublicCurl,
   isIxcContract,
+  isStandardContract,
   issuedCredentialsFrom,
 } from '../integrationContracts';
 
 describe('external messaging integration contracts', () => {
+  it('builds the exact standard POST and Bearer envelope', () => {
+    const command = buildPublicCurl({
+      instanceType: 'standard',
+      endpointUrl: 'https://example.test/chathub-sender/',
+      messagePayload: '[template_name]=aviso||[body.nome]=Maria',
+      recipient: '5575982479788',
+      token: 'ibext_secret',
+    });
+
+    expect(isStandardContract('standard')).toBe(true);
+    expect(command)
+      .toBe(`curl --request POST 'https://example.test/chathub-sender/' \\
+  --header 'Authorization: Bearer ibext_secret' \\
+  --header 'Content-Type: text/plain; charset=UTF-8' \\
+  --data-raw '[template_name]=aviso||[body.nome]=Maria||[to]=5575982479788'`);
+  });
+
   it('builds the existing SGP contract without changing its envelope', () => {
     const command = buildPublicCurl({
       instanceType: 'sgp_generic',
@@ -65,6 +83,13 @@ describe('external messaging integration contracts', () => {
   });
 
   it('builds family-specific order update authentication without changing its fields', () => {
+    const standard = buildOrderUpdateCurl({
+      instanceType: 'standard',
+      endpointUrl: 'https://example.test/chathub-sender/pedido/',
+      reference: '9388',
+      status: 'pago',
+      token: 'standard-secret',
+    });
     const sgp = buildOrderUpdateCurl({
       instanceType: 'sgp_generic',
       endpointUrl: 'https://example.test/chathub-sender/sgp/pedido/',
@@ -82,6 +107,12 @@ describe('external messaging integration contracts', () => {
       password: 'ixc-secret',
     });
 
+    expect(standard).toContain('--request POST');
+    expect(standard).toContain(
+      "--header 'Authorization: Bearer standard-secret'"
+    );
+    expect(standard).toContain("--data-raw '[fatura_id]=9388||[status]=pago'");
+    expect(standard).not.toContain('--data-urlencode');
     expect(sgp).toContain("--data-urlencode 'fatura_id=9388'");
     expect(sgp).toContain("--data-urlencode 'token=sgp-secret'");
     expect(ixc).toContain("--data-urlencode 'user=ixc_42'");

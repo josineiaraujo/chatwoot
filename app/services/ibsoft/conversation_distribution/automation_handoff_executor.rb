@@ -43,7 +43,9 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
   end
 
   def process_candidate(candidate)
-    conversation = account.conversations.find(candidate[:conversation_id])
+    conversation = account.conversations.find_by(id: candidate[:conversation_id])
+    return result_payload(candidate, 'skipped', REASON_CHANGED) if conversation.blank?
+
     policy = automation_policy(candidate)
 
     return skipped_result(conversation, candidate, policy, REASON_CHANGED) if policy.blank?

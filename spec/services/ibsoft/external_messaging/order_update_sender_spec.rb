@@ -66,7 +66,12 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateSender do
         body.dig('template', 'language', 'code') == 'pt_BR' &&
         body.dig('template', 'components', 0, 'parameters', 0, 'parameter_name') == 'mensagem_status' &&
         body.dig('template', 'components', 0, 'parameters', 0, 'text') ==
-          'Sua fatura está em processamento.'
+          'Sua fatura está em processamento.' &&
+        body.dig('template', 'components', 1, 'type') == 'order_status' &&
+        body.dig('template', 'components', 1, 'parameters', 0, 'order_status', 'reference_id') ==
+          update.order.reference_id &&
+        body.dig('template', 'components', 1, 'parameters', 0, 'order_status', 'order', 'status') ==
+          'processing'
     end.to_return(
       status: 200,
       body: { messages: [{ id: 'wamid.template-update-1' }] }.to_json,
@@ -84,7 +89,7 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateSender do
     )
   end
 
-  it 'omits components when the selected template has no variables' do
+  it 'sends the original order reference when the selected template has no variables' do
     update.update!(
       delivery_method: 'template',
       template_name: 'atualizacao_sem_variavel',
@@ -95,7 +100,9 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateSender do
       body = JSON.parse(meta_request.body)
       body['type'] == 'template' &&
         body.dig('template', 'name') == 'atualizacao_sem_variavel' &&
-        !body.fetch('template').key?('components')
+        body.dig('template', 'components', 0, 'type') == 'order_status' &&
+        body.dig('template', 'components', 0, 'parameters', 0, 'order_status', 'reference_id') ==
+          update.order.reference_id
     end.to_return(
       status: 200,
       body: { messages: [{ id: 'wamid.template-without-variable' }] }.to_json,
@@ -106,6 +113,41 @@ RSpec.describe Ibsoft::ExternalMessaging::OrderUpdateSender do
 
     expect(request).to have_been_requested.once
     expect(update.reload.status).to eq('accepted')
+  end
+
+  it 'updates order and payment together after Meta accepts a paid template' do
+    update.update!(
+      order_status: 'completed',
+      payment_status: 'captured',
+      delivery_method: 'template',
+      template_name: 'pagamento_confirmado',
+      template_language: 'pt_BR',
+      template_components: []
+    )
+    request = stub_request(:post, messages_url).with do |meta_request|
+      body = JSON.parse(meta_request.body)
+      body.dig('template', 'components', 0, 'parameters', 0, 'order_status') == {
+        'reference_id' => update.order.reference_id,
+        'order' => {
+          'status' => 'completed',
+          'description' => update.description
+        }
+      }
+    end.to_return(
+      status: 200,
+      body: { messages: [{ id: 'wamid.paid-order-update' }] }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    expect do
+      described_class.new(update: update).call
+    end.to not_change(Conversation, :count).and not_change(Message, :count)
+
+    expect(request).to have_been_requested.once
+    expect(update.order.reload).to have_attributes(
+      order_status: 'completed',
+      payment_status: 'captured'
+    )
   end
 
   it 'does not fall back to an interactive update when Meta rejects the template' do

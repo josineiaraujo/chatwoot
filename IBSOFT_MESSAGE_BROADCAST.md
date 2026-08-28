@@ -766,12 +766,16 @@ Variaveis operacionais opcionais:
 
 ## Permissao
 
-Nesta etapa, as rotas aceitam apenas administradores da conta:
+O modulo usa a permissao privada:
 
-- `Current.account_user&.administrator?`
+- `ibsoft_message_broadcast_manage`
 
-Quando a UI completa for criada, a permissao pode ser refinada para um papel
-Ibsoft proprio de disparo.
+Administradores continuam autorizados implicitamente. Agentes precisam receber
+a permissao por um perfil em `Perfis e permissoes`. O mesmo contrato protege o
+item do menu, a rota do dashboard e todas as APIs do modulo, incluindo pesquisa
+de destinatarios, grupos, templates, disparos, historico e exclusoes. A
+atribuicao e isolada por conta; um perfil associado ao agente em outra conta nao
+concede acesso nesta conta.
 
 ## Pontos de acoplamento no Chatwoot original
 
@@ -780,7 +784,7 @@ Ibsoft proprio de disparo.
 - `app/javascript/dashboard/routes/dashboard/dashboard.routes.js`: registra a
   rota frontend privada `ibsoft_message_broadcast`.
 - `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`: adiciona o
-  item de menu `Disparo de mensagens` para administradores.
+  item de menu `Disparo de mensagens` para administradores e perfis autorizados.
 - `app/javascript/dashboard/i18n/locale/*/ibsoftTheme.json`: textos da tela.
 - `config/schedule.yml`: registra o job privado de recuperacao a cada minuto.
 - `config/initializers/ibsoft_message_broadcast.rb`: aplica via `prepend` o

@@ -10,6 +10,16 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     create(:ibsoft_distribution_channel_policy, account: account, inbox: inbox, enabled: true)
   end
 
+  it 'returns non-actionable decisions without changing the conversation' do
+    decision = { action: 'wait', reason: 'no_available_agent' }
+
+    expect do
+      result = described_class.new(conversation: conversation, decision: decision).perform
+
+      expect(result).to eq(decision)
+    end.not_to(change { conversation.reload.updated_at })
+  end
+
   it 'sends a customer notification only once for the same decision' do
     Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
                                                    .distribution_policy
@@ -104,6 +114,72 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     described_class.new(conversation: conversation, decision: decision).perform
   end
 
+  it 'records a blank notification without creating a message' do
+    decision = {
+      action: 'notify_customer',
+      reason: 'outside_business_hours',
+      policy_id: nil,
+      fallback_team_id: nil
+    }
+
+    expect do
+      result = described_class.new(conversation: conversation, decision: decision).perform
+
+      expect(result).to include(action_applied: false)
+      expect(result.dig(:action_result, :status)).to eq('blank_message')
+    end.not_to(change { conversation.messages.count })
+  end
+
+  it 'removes a failed notification reservation so a later attempt can succeed' do
+    policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).distribution_policy
+    policy.update!(config: { unavailable: { action: 'notify_customer', message: 'Tente novamente.' } })
+    decision = {
+      action: 'notify_customer',
+      reason: 'outside_business_hours',
+      policy_id: nil,
+      fallback_team_id: nil
+    }
+    failing_builder = instance_double(Messages::MessageBuilder)
+    allow(failing_builder).to receive(:perform).and_raise(StandardError, 'delivery failed')
+    allow(Messages::MessageBuilder).to receive(:new).and_return(failing_builder)
+
+    expect do
+      described_class.new(conversation: conversation, decision: decision).perform
+    end.to raise_error(StandardError, 'delivery failed')
+
+    records = conversation.reload.additional_attributes.fetch('ibsoft_distribution_action_records', {})
+    expect(records).to be_empty
+
+    allow(Messages::MessageBuilder).to receive(:new).and_call_original
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(action_applied: true)
+    expect(conversation.reload.messages.outgoing.where(content: 'Tente novamente.').count).to eq(1)
+  end
+
+  it 'preserves attributes written while a customer notification is being delivered' do
+    policy = Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox).distribution_policy
+    policy.update!(config: { unavailable: { action: 'notify_customer', message: 'Aguarde.' } })
+    decision = {
+      action: 'notify_customer',
+      reason: 'outside_business_hours',
+      policy_id: nil,
+      fallback_team_id: nil
+    }
+
+    allow(Messages::MessageBuilder).to receive(:new).and_wrap_original do |method, *args|
+      concurrent_copy = Conversation.find(conversation.id)
+      concurrent_copy.update!(
+        additional_attributes: concurrent_copy.additional_attributes.merge('external_change' => 'preserved')
+      )
+      method.call(*args)
+    end
+
+    described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(conversation.reload.additional_attributes).to include('external_change' => 'preserved')
+  end
+
   it 'moves the conversation to the fallback team and marks it as system transfer' do
     fallback_team = create(:team, account: account)
     decision = {
@@ -142,6 +218,37 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     expect(result).to include(action_applied: false)
     expect(result.dig(:action_result, :status)).to eq('already_applied')
     expect(conversation.reload.team).to eq(fallback_team)
+  end
+
+  it 'does not move the conversation when the fallback team does not exist in the account' do
+    foreign_team = create(:team)
+    decision = {
+      action: 'fallback_team',
+      reason: 'no_available_agent',
+      policy_id: nil,
+      fallback_team_id: foreign_team.id
+    }
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(action_applied: false)
+    expect(result.dig(:action_result, :status)).to eq('fallback_team_not_found')
+    expect(conversation.reload.team).to eq(team)
+  end
+
+  it 'does not move the conversation to its current team' do
+    decision = {
+      action: 'fallback_team',
+      reason: 'no_available_agent',
+      policy_id: nil,
+      fallback_team_id: team.id
+    }
+
+    result = described_class.new(conversation: conversation, decision: decision).perform
+
+    expect(result).to include(action_applied: false)
+    expect(result.dig(:action_result, :status)).to eq('fallback_team_same_as_current')
+    expect(conversation.reload.team).to eq(team)
   end
 
   it 'starts an after-hours wait once and sends the policy message once' do

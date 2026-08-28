@@ -35,7 +35,7 @@ RSpec.describe 'Ibsoft external order update endpoint', type: :request do
     expect do
       get url, params: {
         fatura_id: '9388',
-        status: 'processando',
+        status: 'pago',
         token: raw_token
       }
     end.to(
@@ -53,8 +53,13 @@ RSpec.describe 'Ibsoft external order update endpoint', type: :request do
       'status' => 'accepted',
       'message_id' => nil,
       'reference_id' => '9388',
-      'order_status' => 'processing',
+      'order_status' => 'completed',
+      'payment_status' => 'captured',
       'visible_message' => true
+    )
+    expect(Ibsoft::ExternalMessaging::OrderUpdate.last).to have_attributes(
+      order_status: 'completed',
+      payment_status: 'captured'
     )
     expect(response.headers['Cache-Control']).to include('no-store')
   end
@@ -159,6 +164,72 @@ RSpec.describe 'Ibsoft external order update endpoint', type: :request do
     )
   end
 
+  context 'when the order belongs to the standard family' do
+    let(:endpoint) do
+      create(
+        :ibsoft_external_message_endpoint,
+        instance_type: 'standard',
+        token_digest: Ibsoft::ExternalMessaging::Endpoint.digest_token(raw_token)
+      )
+    end
+    let(:url) { '/chathub-sender/pedido/' }
+
+    it 'accepts the standard text POST and only queues the update' do
+      expect do
+        post url,
+             params: '[fatura_id]=9388||[status]=pago',
+             headers: {
+               'Authorization' => "Bearer #{raw_token}",
+               'Content-Type' => 'text/plain; charset=UTF-8'
+             }
+      end.to change(Ibsoft::ExternalMessaging::OrderUpdate, :count).by(1)
+                                                                   .and have_enqueued_job(
+                                                                     Ibsoft::ExternalMessaging::SendOrderUpdateJob
+                                                                   )
+        .and not_change(Conversation, :count)
+        .and not_change(Message, :count)
+
+      expect(response).to have_http_status(:accepted)
+      expect(response.parsed_body).to include(
+        'reference_id' => '9388',
+        'order_status' => 'completed',
+        'payment_status' => 'captured',
+        'visible_message' => true
+      )
+    end
+
+    it 'does not accept GET or a token issued for another contract' do
+      get url, params: { fatura_id: '9388', status: 'processing', token: raw_token }
+      expect(response).to have_http_status(:not_found)
+
+      sgp_token = "ibext_#{SecureRandom.urlsafe_base64(32)}"
+      create(
+        :ibsoft_external_message_endpoint,
+        token_digest: Ibsoft::ExternalMessaging::Endpoint.digest_token(sgp_token)
+      )
+      post url,
+           params: '[fatura_id]=9388||[status]=processando',
+           headers: {
+             'Authorization' => "Bearer #{sgp_token}",
+             'Content-Type' => 'text/plain'
+           }
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'rejects JSON instead of silently widening the standard contract' do
+      post url,
+           params: { fatura_id: '9388', status: 'processando' }.to_json,
+           headers: {
+             'Authorization' => "Bearer #{raw_token}",
+             'Content-Type' => 'application/json'
+           }
+
+      expect(response).to have_http_status(:unsupported_media_type)
+      expect(response.parsed_body.dig('error', 'code')).to eq('standard_content_type_invalid')
+    end
+  end
+
   context 'when the order belongs to the IXC family' do
     let(:endpoint) do
       create(
@@ -176,7 +247,7 @@ RSpec.describe 'Ibsoft external order update endpoint', type: :request do
         user: username,
         pw: raw_token,
         dest: opening_delivery.recipient,
-        text: '[fatura_id]=9388||[status]=processando'
+        text: '[fatura_id]=9388||[status]=pago'
       }
     end
 
@@ -193,7 +264,8 @@ RSpec.describe 'Ibsoft external order update endpoint', type: :request do
       expect(response).to have_http_status(:accepted)
       expect(response.parsed_body).to include(
         'reference_id' => '9388',
-        'order_status' => 'processing',
+        'order_status' => 'completed',
+        'payment_status' => 'captured',
         'visible_message' => true
       )
     end

@@ -37,11 +37,15 @@ defineProps({
         >
           <div
             class="w-full rounded-t-md bg-n-brand"
-            :style="{ height: `${Math.min(Math.max(item.percent || 0, 4), 100)}%` }"
+            :style="{
+              height: `${Math.min(Math.max(item.percent || 0, 4), 100)}%`,
+            }"
             :title="item.valueLabel"
           />
         </div>
-        <span class="w-full truncate text-center text-label-small text-n-slate-11">
+        <span
+          class="w-full truncate text-center text-label-small text-n-slate-11"
+        >
           {{ item.label }}
         </span>
       </div>

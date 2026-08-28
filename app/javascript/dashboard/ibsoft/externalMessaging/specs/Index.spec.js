@@ -180,6 +180,10 @@ describe('ExternalMessagingIndex', () => {
     expect(wrapper.text()).toContain('ERP principal');
     expect(wrapper.vm.instanceTypes).toEqual([
       expect.objectContaining({
+        value: 'standard',
+        label: 'IBSOFT_EXTERNAL_MESSAGING.TYPES.STANDARD.NAME',
+      }),
+      expect.objectContaining({
         value: 'sgp_generic',
         label: 'IBSOFT_EXTERNAL_MESSAGING.TYPES.SGP_GENERIC.NAME',
       }),
@@ -381,6 +385,53 @@ describe('ExternalMessagingIndex', () => {
     );
     expect(wrapper.vm.orderUpdateCurlExample).toContain(
       "--data-urlencode 'text=[fatura_id]=IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.EXAMPLE.ORDER_REFERENCE||[status]=pago'"
+    );
+  });
+
+  it('documents the standard endpoint with POST, Bearer, and text/plain only', async () => {
+    const standardEndpoint = {
+      ...endpoint,
+      id: 9,
+      name: 'Integração padrão',
+      instance_type: 'standard',
+      integration_family: 'standard',
+      public_path: '/chathub-sender/',
+      order_update_path: '/chathub-sender/pedido/',
+    };
+    externalMessagingAPI.getEndpoints.mockResolvedValue({
+      data: {
+        endpoints: [standardEndpoint],
+        inboxes: endpointsResponse.data.inboxes,
+      },
+    });
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    wrapper.vm.openInstance(standardEndpoint);
+
+    expect(wrapper.vm.integrationParameters.map(item => item.name)).toEqual([
+      'Authorization',
+      'Content-Type',
+      '[to]',
+      'body',
+    ]);
+    expect(wrapper.vm.publicEndpointUrl).toBe(
+      'http://localhost:3000/chathub-sender/'
+    );
+    expect(wrapper.vm.publicCurlExample).toContain('curl --request POST');
+    expect(wrapper.vm.publicCurlExample).toContain(
+      "--header 'Authorization: Bearer IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.EXAMPLE.TOKEN_PLACEHOLDER'"
+    );
+    expect(wrapper.vm.publicCurlExample).toContain(
+      "--header 'Content-Type: text/plain; charset=UTF-8'"
+    );
+    expect(wrapper.vm.publicCurlExample).toContain('||[to]=');
+    expect(wrapper.vm.publicCurlExample).not.toContain('--data-urlencode');
+    expect(wrapper.vm.orderUpdateEndpointUrl).toBe(
+      'http://localhost:3000/chathub-sender/pedido/'
+    );
+    expect(wrapper.vm.orderUpdateCurlExample).toContain(
+      "--data-raw '[fatura_id]=IBSOFT_EXTERNAL_MESSAGING.INTEGRATION.EXAMPLE.ORDER_REFERENCE||[status]=pago'"
     );
   });
 

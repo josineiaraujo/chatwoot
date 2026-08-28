@@ -7,6 +7,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import { useAlert } from 'dashboard/composables';
+import IbsoftDialogHeader from 'dashboard/ibsoft/components/IbsoftDialogHeader.vue';
 import afterHoursAPI from '../api';
 
 const { t } = useI18n();
@@ -31,13 +32,13 @@ const emptyForm = () => ({
 });
 
 const isEditing = computed(() => editingId.value !== null);
-const dialogTitle = computed(() =>
-  t(
-    isEditing.value
-      ? 'IBSOFT_AFTER_HOURS.EDITOR.EDIT_TITLE'
-      : 'IBSOFT_AFTER_HOURS.EDITOR.CREATE_TITLE'
-  )
-);
+const dialogTitle = computed(() => {
+  if (isEditing.value) {
+    return t('IBSOFT_AFTER_HOURS.EDITOR.EDIT_TITLE');
+  }
+
+  return t('IBSOFT_AFTER_HOURS.EDITOR.CREATE_TITLE');
+});
 const invalidForm = computed(
   () =>
     !form.value.name?.trim() ||
@@ -74,6 +75,14 @@ const closeEditor = () => {
 const resetEditor = () => {
   editingId.value = null;
   form.value = emptyForm();
+};
+
+const policyStatusLabel = policy => {
+  if (policy.enabled) {
+    return t('IBSOFT_AFTER_HOURS.STATUS.ENABLED');
+  }
+
+  return t('IBSOFT_AFTER_HOURS.STATUS.DISABLED');
 };
 
 const savePolicy = async () => {
@@ -163,13 +172,7 @@ onMounted(fetchPolicies);
                   : 'bg-n-alpha-2 text-n-slate-11'
               "
             >
-              {{
-                t(
-                  policy.enabled
-                    ? 'IBSOFT_AFTER_HOURS.STATUS.ENABLED'
-                    : 'IBSOFT_AFTER_HOURS.STATUS.DISABLED'
-                )
-              }}
+              {{ policyStatusLabel(policy) }}
             </span>
           </div>
           <p class="mb-0 text-body-small text-n-slate-11">
@@ -213,13 +216,18 @@ onMounted(fetchPolicies);
       width="2xl"
       position="top"
       overflow-y-auto
-      :title="dialogTitle"
       :confirm-button-label="t('IBSOFT_AFTER_HOURS.ACTIONS.SAVE')"
       :disable-confirm-button="invalidForm"
       :is-loading="isSaving"
       @confirm="savePolicy"
       @close="resetEditor"
     >
+      <IbsoftDialogHeader
+        :title="dialogTitle"
+        :close-label="t('IBSOFT_AFTER_HOURS.ACTIONS.CLOSE')"
+        @close="closeEditor"
+      />
+
       <div class="grid gap-4">
         <label class="grid gap-1">
           <span class="text-label-small text-n-slate-11">
@@ -228,7 +236,7 @@ onMounted(fetchPolicies);
           <input
             v-model="form.name"
             type="text"
-            class="min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
         </label>
 
@@ -254,7 +262,7 @@ onMounted(fetchPolicies);
             v-model="form.exit_command"
             type="text"
             maxlength="50"
-            class="min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
+            class="!mb-0 min-h-10 rounded-lg border border-n-weak bg-n-solid-1 px-3 text-sm text-n-slate-12"
           />
           <span class="text-body-mini text-n-slate-10">
             {{ t('IBSOFT_AFTER_HOURS.FIELDS.EXIT_COMMAND_HELP') }}
@@ -268,7 +276,7 @@ onMounted(fetchPolicies);
           <textarea
             v-model="form.regular_message"
             rows="4"
-            class="resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
+            class="!mb-0 resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
           />
         </label>
 
@@ -279,7 +287,7 @@ onMounted(fetchPolicies);
           <textarea
             v-model="form.holiday_message"
             rows="4"
-            class="resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
+            class="!mb-0 resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
           />
         </label>
 
@@ -290,7 +298,7 @@ onMounted(fetchPolicies);
           <textarea
             v-model="form.exit_confirmation_message"
             rows="3"
-            class="resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
+            class="!mb-0 resize-y rounded-lg border border-n-weak bg-n-solid-1 p-3 text-sm text-n-slate-12"
           />
         </label>
       </div>

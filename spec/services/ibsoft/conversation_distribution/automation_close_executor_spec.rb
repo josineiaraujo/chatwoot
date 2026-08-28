@@ -236,4 +236,81 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationCloseExecutor do
       :count
     )
   end
+
+  it 'cancels the closure when the assigned bot changes during the warning interval' do
+    replacement_bot = create(:agent_bot, account: account)
+    conversation.update!(assignee_agent_bot: replacement_bot)
+
+    result = described_class.new(account: account).perform
+
+    expect(result[:results].first).to include(status: 'cancelled', reason: 'conversation_changed')
+    expect(conversation.reload).to have_attributes(status: 'pending', assignee_agent_bot_id: replacement_bot.id)
+  end
+
+  it 'filters due schedules by channel' do
+    other_inbox = create(:inbox, account: account)
+    other_policy = create(
+      :ibsoft_automation_handoff_policy,
+      account: account,
+      inbox: other_inbox,
+      timeout_action: 'close_conversation',
+      target_team: nil,
+      close_warning_enabled: true
+    )
+    other_conversation = create(:conversation, account: account, inbox: other_inbox, status: :pending)
+    other_warning = create(
+      :message,
+      account: account,
+      inbox: other_inbox,
+      conversation: other_conversation,
+      message_type: :template,
+      content_attributes: {
+        ibsoft_conversation_distribution: { action: 'close_warning' }
+      }
+    )
+    other_schedule = Ibsoft::ConversationDistribution::AutomationCloseSchedule.create!(
+      account: account,
+      conversation: other_conversation,
+      automation_handoff_policy: other_policy,
+      trigger_message_id: other_warning.id,
+      warning_message_id: other_warning.id,
+      expected_policy_updated_at: other_policy.updated_at,
+      close_at: 1.minute.ago
+    )
+
+    result = described_class.new(account: account, inbox_id: other_inbox.id).perform
+
+    expect(result[:results].pluck(:schedule_id)).to eq([other_schedule.id])
+    expect(schedule.reload).to be_present
+    expect(conversation.reload).to be_pending
+  end
+
+  it 'processes due schedules oldest first and respects the batch limit' do
+    second_conversation = create(:conversation, account: account, inbox: inbox, status: :pending)
+    second_warning = create(
+      :message,
+      account: account,
+      inbox: inbox,
+      conversation: second_conversation,
+      message_type: :template,
+      content_attributes: {
+        ibsoft_conversation_distribution: { action: 'close_warning' }
+      }
+    )
+    second_schedule = Ibsoft::ConversationDistribution::AutomationCloseSchedule.create!(
+      account: account,
+      conversation: second_conversation,
+      automation_handoff_policy: policy,
+      trigger_message_id: second_warning.id,
+      warning_message_id: second_warning.id,
+      expected_policy_updated_at: policy.updated_at,
+      close_at: 2.minutes.ago
+    )
+    schedule.update!(close_at: 1.minute.ago)
+
+    result = described_class.new(account: account, limit: 1).perform
+
+    expect(result[:results].pluck(:schedule_id)).to eq([second_schedule.id])
+    expect(schedule.reload).to be_present
+  end
 end

@@ -1230,7 +1230,8 @@
           "REPORT_MANAGE": "Acessar relatórios",
           "KNOWLEDGE_BASE_MANAGE": "Gerenciar base de conhecimento",
           "IBSOFT_CONVERSATION_DISTRIBUTION_SUPERVISE": "Acessar supervisão de atendimentos",
-          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Gerenciar configurações do ChatHub"
+          "IBSOFT_CHATHUB_SETTINGS_MANAGE": "Gerenciar configurações do ChatHub",
+          "IBSOFT_MESSAGE_BROADCAST_MANAGE": "Gerenciar disparos de mensagens"
         }
       },
       "ERRORS": {

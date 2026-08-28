@@ -17,7 +17,8 @@
     "ACTIONS": {
       "EDIT": "Edit",
       "DELETE": "Delete",
-      "SAVE": "Save policy"
+      "SAVE": "Save policy",
+      "CLOSE": "Close"
     },
     "EDITOR": {
       "EDIT_TITLE": "Edit after-hours policy",

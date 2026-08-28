@@ -63,7 +63,7 @@ class Ibsoft::AfterHours::Policy < ApplicationRecord
   private
 
   def normalize_exit_command
-    self.exit_command = exit_command.to_s.squish.downcase
+    self.exit_command = exit_command.to_s.gsub(/[[:blank:]]+/, ' ').strip.downcase
   end
 
   def required_messages_when_enabled

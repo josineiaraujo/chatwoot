@@ -34,8 +34,30 @@ class Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder
         code: update.template_language
       }
     }.tap do |template|
-      template[:components] = update.template_components if update.template_components.present?
+      components = template_components
+      template[:components] = components if components.present?
     end
+  end
+
+  def template_components
+    Array(update.template_components).deep_dup.tap do |components|
+      components << order_status_component if update.order_status.present?
+    end
+  end
+
+  def order_status_component
+    {
+      type: 'order_status',
+      parameters: [
+        {
+          type: 'order_status',
+          order_status: {
+            reference_id: update.order.reference_id,
+            order: order_parameters
+          }
+        }
+      ]
+    }
   end
 
   def interactive_payload

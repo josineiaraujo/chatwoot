@@ -59,4 +59,34 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationCustomerMessageNotifi
       expect(result).to include(applied: false, status: 'disabled')
     end.not_to change(conversation.messages, :count)
   end
+
+  it 'does not create a forwarding message when the enabled content is blank' do
+    policy.update!(
+      timeout_action: 'forward_to_team',
+      target_team: create(:team, account: account),
+      customer_message_enabled: true,
+      customer_message: nil
+    )
+
+    expect do
+      result = described_class.new(conversation: conversation, policy: policy, phase: :forward).perform
+      expect(result).to include(applied: false, status: 'blank_message')
+    end.not_to change(conversation.messages, :count)
+  end
+
+  it 'returns a controlled error for an unsupported phase' do
+    result = described_class.new(conversation: conversation, policy: policy, phase: :unsupported).perform
+
+    expect(result).to include(applied: false, status: 'error', error: 'ArgumentError')
+  end
+
+  it 'contains builder failures without interrupting the automation flow' do
+    builder = instance_double(Messages::MessageBuilder)
+    allow(Messages::MessageBuilder).to receive(:new).and_return(builder)
+    allow(builder).to receive(:perform).and_raise(StandardError, 'channel unavailable')
+
+    result = described_class.new(conversation: conversation, policy: policy, phase: :close_warning).perform
+
+    expect(result).to include(applied: false, status: 'error', error: 'StandardError')
+  end
 end

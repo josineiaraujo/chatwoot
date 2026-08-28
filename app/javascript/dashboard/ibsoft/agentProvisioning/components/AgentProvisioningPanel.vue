@@ -696,7 +696,7 @@ onMounted(fetchAgents);
         <div
           v-for="agent in sortedAgents"
           :key="agent.id"
-          class="flex flex-col justify-between gap-2 p-3 md:flex-row md:items-center"
+          class="grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center xl:grid-cols-[minmax(16rem,1fr)_9rem_minmax(12rem,auto)_auto]"
         >
           <div class="flex min-w-0 items-center gap-3">
             <Avatar
@@ -717,66 +717,67 @@ onMounted(fetchAgents);
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <IbsoftSelect
-              :model-value="availabilityValueForAgent(agent)"
-              class="!w-28 flex-none"
-              data-testid="agent-availability-select"
-              :disabled="updatingAvailabilityAgentId === agent.id"
-              @update:model-value="
-                value => updateAgentAvailability(agent, value)
+          <IbsoftSelect
+            :model-value="availabilityValueForAgent(agent)"
+            :clearable="false"
+            class="!w-36 justify-self-start md:justify-self-end xl:!w-full xl:justify-self-stretch"
+            data-testid="agent-availability-select"
+            :disabled="updatingAvailabilityAgentId === agent.id"
+            @update:model-value="value => updateAgentAvailability(agent, value)"
+          >
+            <option
+              v-for="option in availabilityOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </IbsoftSelect>
+
+          <div
+            class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-n-slate-11"
+          >
+            <span
+              class="max-w-full truncate rounded-full bg-n-alpha-2 px-2 py-1"
+            >
+              {{ profileLabel(agent) }}
+            </span>
+            <span class="rounded-full bg-n-alpha-2 px-2 py-1">
+              {{
+                agent.confirmed
+                  ? t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.CONFIRMED'
+                    )
+                  : t(
+                      'IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.PENDING'
+                    )
+              }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1 md:justify-end">
+            <Button
+              ghost
+              slate
+              size="xs"
+              icon="i-lucide-pencil"
+              :label="
+                t('IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.EDIT')
               "
-            >
-              <option
-                v-for="option in availabilityOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </IbsoftSelect>
-            <div
-              class="flex flex-wrap items-center gap-2 text-xs text-n-slate-11"
-            >
-              <span class="rounded-full bg-n-alpha-2 px-2 py-1">
-                {{ profileLabel(agent) }}
-              </span>
-              <span class="rounded-full bg-n-alpha-2 px-2 py-1">
-                {{
-                  agent.confirmed
-                    ? t(
-                        'IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.CONFIRMED'
-                      )
-                    : t(
-                        'IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.PENDING'
-                      )
-                }}
-              </span>
-            </div>
-            <div class="flex items-center gap-1">
-              <Button
-                ghost
-                slate
-                size="xs"
-                icon="i-lucide-pencil"
-                :label="
-                  t('IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.EDIT')
-                "
-                data-testid="agent-edit-button"
-                @click="openEditAgent(agent)"
-              />
-              <Button
-                ghost
-                ruby
-                size="xs"
-                icon="i-lucide-trash-2"
-                :label="
-                  t('IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.DELETE')
-                "
-                data-testid="agent-delete-button"
-                @click="openDeleteAgent(agent)"
-              />
-            </div>
+              data-testid="agent-edit-button"
+              @click="openEditAgent(agent)"
+            />
+            <Button
+              ghost
+              ruby
+              size="xs"
+              icon="i-lucide-trash-2"
+              :label="
+                t('IBSOFT_THEME.CHATHUB_SETTINGS.AGENT_PROVISIONING.DELETE')
+              "
+              data-testid="agent-delete-button"
+              @click="openDeleteAgent(agent)"
+            />
           </div>
         </div>
       </div>
@@ -861,6 +862,7 @@ onMounted(fetchAgents);
           </span>
           <IbsoftSelect
             v-model="form.profileValue"
+            :clearable="false"
             data-testid="agent-create-profile"
           >
             <option
@@ -1023,6 +1025,7 @@ onMounted(fetchAgents);
             </span>
             <IbsoftSelect
               v-model="editForm.profileValue"
+              :clearable="false"
               data-testid="agent-edit-profile"
             >
               <option
@@ -1045,6 +1048,7 @@ onMounted(fetchAgents);
             </span>
             <IbsoftSelect
               v-model="editForm.availability"
+              :clearable="false"
               data-testid="agent-edit-availability"
             >
               <option

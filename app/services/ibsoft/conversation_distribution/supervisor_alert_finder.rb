@@ -106,13 +106,19 @@ class Ibsoft::ConversationDistribution::SupervisorAlertFinder
     'unassigned_waiting'
   end
 
-  def last_distribution_event_for(conversation)
-    @last_distribution_events ||= {}
-    @last_distribution_events[conversation.id] ||=
-      Ibsoft::ConversationDistribution::EventLog
-      .where(conversation_id: conversation.id)
-      .order(created_at: :desc, id: :desc)
-      .first
+  def last_distribution_event_for(conversation) = latest_distribution_events[conversation.id]
+
+  def latest_distribution_events
+    @latest_distribution_events ||= begin
+      event_log_class = Ibsoft::ConversationDistribution::EventLog
+      table_name = event_log_class.table_name
+      order = "#{table_name}.conversation_id ASC, #{table_name}.created_at DESC, #{table_name}.id DESC"
+      event_log_class
+        .where(account: account, conversation_id: conversations.map(&:id))
+        .select("DISTINCT ON (#{table_name}.conversation_id) #{table_name}.*")
+        .order(Arel.sql(order))
+        .index_by(&:conversation_id)
+    end
   end
 
   def timing_payload(conversation, threshold_minutes, wait_started_at, minutes_waiting)

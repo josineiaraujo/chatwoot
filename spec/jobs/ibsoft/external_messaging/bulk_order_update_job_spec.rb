@@ -49,6 +49,49 @@ RSpec.describe Ibsoft::ExternalMessaging::BulkOrderUpdateJob, type: :job do
     )
   end
 
+  it 'preserves the original order reference in template updates created manually' do
+    endpoint.update!(
+      order_update_delivery_mode: 'template',
+      order_update_template_settings: {
+        'default' => {
+          'id' => 'template-order-update',
+          'name' => 'atualizacao_de_ordem',
+          'language' => 'pt_BR',
+          'parameter_format' => 'POSITIONAL',
+          'body_parameter' => nil
+        },
+        'overrides' => {}
+      }
+    )
+    order = create_order(1)
+
+    described_class.perform_now(
+      {
+        account_id: account.id,
+        endpoint_id: endpoint.id,
+        requested_by_id: admin.id,
+        selection: { mode: 'ids', ids: [order.id] },
+        filters: {},
+        attributes: { order_status: 'completed', payment_status: 'captured' },
+        selected_before: Time.current.iso8601(6)
+      }
+    )
+
+    update = order.updates.sole
+    payload = Ibsoft::ExternalMessaging::OrderUpdatePayloadBuilder.new(update: update).call
+
+    expect(update).to have_attributes(
+      source: 'manual',
+      delivery_method: 'template',
+      order_status: 'completed',
+      payment_status: 'captured'
+    )
+    expect(payload.dig(:template, :components, 0, :parameters, 0, :order_status)).to include(
+      reference_id: order.reference_id,
+      order: include(status: 'completed')
+    )
+  end
+
   it 'continues large selections in bounded batches' do
     stub_const("#{described_class}::BATCH_SIZE", 2)
     orders = [create_order(1), create_order(2), create_order(3)]
