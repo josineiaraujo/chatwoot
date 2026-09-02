@@ -180,6 +180,22 @@ const contains = (filterValue, conversationValue) => {
   return false;
 };
 
+const coerceFilterDate = value => {
+  if (typeof value !== 'string') return coerceToDate(value);
+
+  const dateParts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateParts) return coerceToDate(value);
+
+  const [, year, month, day] = dateParts.map(Number);
+  const date = new Date(year, month - 1, day);
+  const isValidDate =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
+
+  return isValidDate ? date : null;
+};
+
 /**
  * Compares two date values using a comparison function
  * @param {*} conversationValue - The conversation value to compare
@@ -195,7 +211,7 @@ const compareDates = (conversationValue, filterValue, compareFn) => {
   const valueToCompare = Array.isArray(filterValue)
     ? filterValue[0]
     : filterValue;
-  const filterDate = coerceToDate(valueToCompare);
+  const filterDate = coerceFilterDate(valueToCompare);
 
   if (conversationDate === null || filterDate === null) return false;
   return compareFn(conversationDate, filterDate);
