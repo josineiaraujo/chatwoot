@@ -31,8 +31,7 @@ class Ibsoft::ConversationDistribution::TeamTransferPreparer
   end
 
   def clear_assignees
-    conversation.assignee = nil
-    conversation.assignee_agent_bot = nil
+    Ibsoft::ConversationOwnership::Clearer.perform(conversation)
   end
 
   def enqueue_for_ibsoft_distribution?

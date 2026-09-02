@@ -33,6 +33,12 @@ humana. O escopo `Conversation.assigned` inclui tanto agentes humanos quanto
 atribuicao devem usar esses escopos em vez de inferir propriedade somente por
 `assignee_id`.
 
+A remocao de propriedade e centralizada em
+`Ibsoft::ConversationOwnership::Clearer`. O contrato limpa agente humano,
+`AgentBot` legado e, quando disponivel, o proprietario polimorfico
+`ai_assignee`. Retorno para fila, atribuicao manual, fallback e automacoes nao
+devem limpar essas associacoes diretamente.
+
 Quando a entrega de um webhook ao bot falha de forma definitiva, o Chatwoot usa
 `conversation.bot_handoff!`: a conversa e aberta, a propriedade do bot e limpa
 e ela passa a ser uma candidata real da fila humana. Se a configuracao
@@ -54,6 +60,7 @@ Backend isolado:
 - `app/models/ibsoft/conversation_distribution/automation_close_schedule.rb`
 - `app/models/ibsoft/conversation_distribution/event_log.rb`
 - `app/models/ibsoft/conversation_distribution/configuration.rb`
+- `app/services/ibsoft/conversation_ownership/clearer.rb`
 - `app/services/ibsoft/conversation_distribution/configuration_validator.rb`
 - `app/services/ibsoft/conversation_distribution/business_hours_break_validator.rb`
 - `app/services/ibsoft/conversation_distribution/unavailability_config_validator.rb`

@@ -28,6 +28,18 @@ RSpec.describe Ibsoft::ConversationDistribution::TeamTransferPreparer do
     expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
   end
 
+  it 'clears the complete AI owner before an eligible manual team transfer' do
+    agent_bot = create(:agent_bot, account: account)
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!({ :assignee => nil, owner_attribute => agent_bot })
+
+    described_class.new(conversation: conversation, team: target_team).prepare
+
+    expect(conversation.assignee_agent_bot).to be_nil
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
+  end
+
   it 'preserves the assignee when the effective policy is disabled' do
     Ibsoft::ConversationDistribution::ChannelPolicy.find_by!(account: account, inbox: inbox)
                                                    .distribution_policy

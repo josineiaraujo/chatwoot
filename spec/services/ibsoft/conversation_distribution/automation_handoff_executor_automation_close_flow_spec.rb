@@ -6,15 +6,17 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffExecutor do
   let(:team) { create(:team, account: account) }
   let(:agent_bot) { create(:agent_bot, account: account) }
   let(:conversation) do
-    create(
+    conversation = create(
       :conversation,
       account: account,
       inbox: inbox,
       team: team,
       status: :pending,
-      assignee_agent_bot: agent_bot,
       waiting_since: 20.minutes.ago
     )
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!(owner_attribute => agent_bot)
+    conversation
   end
   let(:policy) do
     create(
@@ -57,6 +59,8 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationHandoffExecutor do
 
     expect(result[:summary]).to include(scanned: 1, closed: 1, cancelled: 0)
     expect(conversation.reload).to have_attributes(status: 'resolved', assignee_agent_bot_id: nil)
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
     expect(conversation.messages.template.pluck(:content)).to include(
       warning.content,
       'Atendimento encerrado.'

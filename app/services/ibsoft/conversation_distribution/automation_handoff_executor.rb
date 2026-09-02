@@ -171,6 +171,7 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
       next if already_processed_after_last_bot_message?(locked_conversation, candidate)
 
       previous_team = locked_conversation.team
+      Ibsoft::ConversationOwnership::Clearer.perform(locked_conversation)
       locked_conversation.update!(action_attributes(locked_conversation, policy, previous_team, candidate))
 
       { conversation: locked_conversation, previous_team: previous_team }
@@ -207,8 +208,6 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
     {
       status: :open,
       team: policy.target_team,
-      assignee: nil,
-      assignee_agent_bot: nil,
       waiting_since: conversation.waiting_since || parsed_last_bot_message_at(candidate) || Time.current,
       additional_attributes: handoff_marked_attributes(conversation, policy, previous_team, candidate)
     }
@@ -217,7 +216,6 @@ class Ibsoft::ConversationDistribution::AutomationHandoffExecutor
   def close_attributes(conversation, policy, candidate)
     {
       status: :resolved,
-      assignee_agent_bot: nil,
       additional_attributes: close_marked_attributes(conversation, policy, candidate)
     }
   end

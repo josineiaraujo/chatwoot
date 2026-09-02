@@ -112,7 +112,10 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
   it 'transfers a pending bot conversation to a team queue when requested by another agent' do
     another_agent = create(:user, account: account, role: :agent, name: 'Supervisor')
     agent_bot = create(:agent_bot, account: account)
-    conversation.update!(status: :pending, assignee: nil, assignee_agent_bot: agent_bot)
+    attributes = { status: :pending, assignee: nil }
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    attributes[owner_attribute] = agent_bot
+    conversation.update!(attributes)
 
     described_class.new(
       conversation: conversation,
@@ -127,6 +130,8 @@ RSpec.describe Ibsoft::ConversationDistribution::QueueReturnService do
       assignee_id: nil,
       assignee_agent_bot_id: nil
     )
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
   end
 
   it 'rejects transferring a resolved conversation to a queue' do

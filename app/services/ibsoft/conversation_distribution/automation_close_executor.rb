@@ -75,6 +75,7 @@ class Ibsoft::ConversationDistribution::AutomationCloseExecutor
         next snapshot.merge(status: 'cancelled')
       end
 
+      Ibsoft::ConversationOwnership::Clearer.perform(conversation)
       conversation.update!(close_attributes(conversation, policy, schedule))
       snapshot = transition_payload(schedule, conversation, policy, REASON_STALLED)
       schedule.destroy!
@@ -168,7 +169,6 @@ class Ibsoft::ConversationDistribution::AutomationCloseExecutor
   def close_attributes(conversation, policy, schedule)
     {
       status: :resolved,
-      assignee_agent_bot: nil,
       additional_attributes: close_marked_attributes(conversation, policy, schedule)
     }
   end

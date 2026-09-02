@@ -99,13 +99,14 @@ class Ibsoft::ConversationDistribution::DecisionActionExecutor
 
     previous_team_id = conversation.team_id
     attributes = marked_attributes_for_fallback(previous_team_id, fallback_team.id)
-    conversation.update!(
-      team: fallback_team,
-      assignee: nil,
-      additional_attributes: attributes
-    )
+    assign_fallback_team(fallback_team, attributes)
 
     action_result(true, 'fallback_team_assigned', previous_team_id: previous_team_id, new_team_id: fallback_team.id)
+  end
+
+  def assign_fallback_team(fallback_team, attributes)
+    Ibsoft::ConversationOwnership::Clearer.perform(conversation)
+    conversation.update!(team: fallback_team, additional_attributes: attributes)
   end
 
   def marked_attributes_for_fallback(previous_team_id, fallback_team_id)
