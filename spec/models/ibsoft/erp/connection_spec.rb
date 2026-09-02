@@ -17,6 +17,27 @@ RSpec.describe Ibsoft::Erp::Connection do
     expect(connection.payload[:credentials_configured]).to be(true)
   end
 
+  it 'round-trips encrypted credentials without storing their plaintext' do
+    skip('encryption keys missing; configure the release-test environment') unless Chatwoot.encryption_configured?
+
+    connection = create(
+      :ibsoft_erp_connection,
+      account: account,
+      credentials: { username: 'integration-user', password: 'private-password' }
+    )
+    raw_credentials = described_class.connection.select_value(
+      described_class.sanitize_sql_array(
+        ['SELECT credentials FROM ibsoft_erp_connections WHERE id = ?', connection.id]
+      )
+    )
+
+    expect(raw_credentials).not_to include('private-password')
+    expect(connection.reload.credentials).to eq(
+      'username' => 'integration-user',
+      'password' => 'private-password'
+    )
+  end
+
   it 'allows only one active ERP connection per account' do
     first_connection = create(:ibsoft_erp_connection, account: account, active: true)
     second_connection = create(:ibsoft_erp_connection, account: account, active: true)

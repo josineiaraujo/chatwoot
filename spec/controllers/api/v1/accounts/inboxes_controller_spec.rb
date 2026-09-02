@@ -112,6 +112,33 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(JSON.parse(response.body, symbolize_names: true)[:id]).to eq(inbox.id)
       end
 
+      it 'returns private working-hour breaks in the inbox payload' do
+        create(
+          :ibsoft_working_hour_break,
+          inbox: inbox,
+          day_of_week: 2,
+          start_hour: 12,
+          start_minutes: 15,
+          end_hour: 13,
+          end_minutes: 45
+        )
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body.fetch('ibsoft_working_hour_breaks')).to contain_exactly(
+          {
+            'day_of_week' => 2,
+            'start_hour' => 12,
+            'start_minutes' => 15,
+            'end_hour' => 13,
+            'end_minutes' => 45
+          }
+        )
+      end
+
       it 'returns reauthorization_required for embedded signup whatsapp channel when reauth required' do
         whatsapp_channel = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', sync_templates: false,
                                                      validate_provider_config: false)

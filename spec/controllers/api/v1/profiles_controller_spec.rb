@@ -30,6 +30,31 @@ RSpec.describe 'Profile API', type: :request do
         expect(json_response['message_signature']).to be_nil
       end
 
+      it 'returns private permissions only for the account where they were assigned' do
+        other_account = create(:account)
+        create(:account_user, account: other_account, user: agent, role: :agent)
+        private_role = create(
+          :ibsoft_access_control_role,
+          account: account,
+          permissions: ['ibsoft_message_broadcast_manage']
+        )
+        create(
+          :ibsoft_access_control_role_assignment,
+          account: account,
+          role: private_role,
+          user: agent
+        )
+
+        get '/api/v1/profile',
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        accounts = response.parsed_body.fetch('accounts').index_by { |item| item.fetch('id') }
+        expect(accounts.fetch(account.id).fetch('permissions')).to include('ibsoft_message_broadcast_manage')
+        expect(accounts.fetch(other_account.id).fetch('permissions')).not_to include('ibsoft_message_broadcast_manage')
+      end
+
       it 'returns an empty access token when all accounts have API and webhook access disabled' do
         account.disable_features!('api_and_webhooks')
         allow(account).to receive(:api_and_webhooks_enabled?).and_return(false)

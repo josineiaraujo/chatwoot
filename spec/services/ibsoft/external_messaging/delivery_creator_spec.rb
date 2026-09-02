@@ -56,6 +56,20 @@ RSpec.describe Ibsoft::ExternalMessaging::DeliveryCreator do
     expect(result.delivery.external_order.opening_delivery).to eq(result.delivery)
   end
 
+  it 'round-trips an encrypted delivery PIX key without storing its plaintext' do
+    skip('encryption keys missing; configure the release-test environment') unless Chatwoot.encryption_configured?
+
+    result = create_delivery(order_attributes.merge(order_pix_key: 'delivery-private-pix-key'))
+    raw_pix_key = Ibsoft::ExternalMessaging::Delivery.connection.select_value(
+      Ibsoft::ExternalMessaging::Delivery.sanitize_sql_array(
+        ['SELECT order_pix_key FROM ibsoft_external_message_deliveries WHERE id = ?', result.delivery.id]
+      )
+    )
+
+    expect(raw_pix_key).not_to include('delivery-private-pix-key')
+    expect(result.delivery.reload.order_pix_key).to eq('delivery-private-pix-key')
+  end
+
   it 'creates a new delivery for a repeated reference in the same instance' do
     first = create_delivery(order_attributes)
     second = create_delivery(

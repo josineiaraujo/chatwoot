@@ -11,6 +11,8 @@ registrado aqui no mesmo commit da mudanca.
 
 Documento operacional de variaveis de ambiente:
 
+- `IBSOFT_UPSTREAM_V4_17_1.md`: registra a auditoria, os conflitos, a matriz de
+  regressao e os gates obrigatorios para integrar o Chatwoot `v4.17.1`.
 - `IBSOFT_ENVIRONMENT_VARIABLES.md`: lista variaveis nativas e Ibsoft usadas
   em producao, motivo de existencia, valores recomendados e comandos de
   verificacao.
@@ -1493,6 +1495,9 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/App.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
+- `app/javascript/dashboard/store/modules/conversations/helpers/filterHelpers.js`:
+  interpreta filtros `YYYY-MM-DD` como datas locais sem recuar um dia em fusos
+  negativos, preservando a comparacao usada na lista de conversas.
 - `app/javascript/dashboard/routes/dashboard/settings/inbox/components/WeeklyAvailability.vue`:
   usa helper Ibsoft para o fuso padrao de horario de atendimento e traduz os
   nomes dos dias; tambem envia pausas de atendimento.
@@ -1853,6 +1858,7 @@ quando o upstream alterar a mesma area.
 - `app/javascript/dashboard/routes/dashboard/settings/inbox/components/BusinessDay.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/profile/UserLanguageSelect.vue`
 - `app/javascript/dashboard/routes/dashboard/settings/account/Index.vue`
+- `app/javascript/dashboard/store/modules/conversations/helpers/filterHelpers.js`
 
 ### Frontend: perfil
 
