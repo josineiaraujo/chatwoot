@@ -180,20 +180,33 @@ const contains = (filterValue, conversationValue) => {
   return false;
 };
 
-const coerceFilterDate = value => {
-  if (typeof value !== 'string') return coerceToDate(value);
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-  const dateParts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!dateParts) return coerceToDate(value);
+/**
+ * Checks whether a value is a calendar date without a time, as emitted by the
+ * date pickers and required by the backend (Date.iso8601)
+ * @param {*} value - The value to check
+ * @returns {Boolean} - Returns true for `YYYY-MM-DD` strings
+ */
+const isDateOnly = value =>
+  typeof value === 'string' && DATE_ONLY_PATTERN.test(value);
 
-  const [, year, month, day] = dateParts.map(Number);
-  const date = new Date(year, month - 1, day);
-  const isValidDate =
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day;
+/**
+ * Reduces a value to the UTC calendar day it falls on
+ * @param {*} value - An epoch timestamp, an ISO string or a `YYYY-MM-DD` string
+ * @returns {Number|null} - Milliseconds at UTC midnight, or null when unparseable
+ *
+ * `coerceToDate` reads a `YYYY-MM-DD` string as midnight in the browser
+ * timezone, which lands on the previous day for browsers behind UTC.
+ */
+const toUtcDay = value => {
+  const date = isDateOnly(value)
+    ? new Date(`${value}T00:00:00.000Z`)
+    : coerceToDate(value);
 
-  return isValidDate ? date : null;
+  if (date === null) return null;
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 };
 
 /**
@@ -204,14 +217,25 @@ const coerceFilterDate = value => {
  * @returns {Boolean} - Returns true if the comparison succeeds, false otherwise
  */
 const compareDates = (conversationValue, filterValue, compareFn) => {
-  const conversationDate = coerceToDate(conversationValue);
-
   // In saved views, the filterValue might be returned as an Array
   // In conversation list, when filtering, the filterValue will be returned as a string
   const valueToCompare = Array.isArray(filterValue)
     ? filterValue[0]
     : filterValue;
-  const filterDate = coerceFilterDate(valueToCompare);
+
+  // A date filter compares whole days. The backend casts both sides with
+  // `::date` (Filters::FilterHelper#date_filter), so the time of day never
+  // takes part and the day is the one in UTC.
+  if (isDateOnly(valueToCompare)) {
+    const conversationDay = toUtcDay(conversationValue);
+    const filterDay = toUtcDay(valueToCompare);
+
+    if (conversationDay === null || filterDay === null) return false;
+    return compareFn(conversationDay, filterDay);
+  }
+
+  const conversationDate = coerceToDate(conversationValue);
+  const filterDate = coerceToDate(valueToCompare);
 
   if (conversationDate === null || filterDate === null) return false;
   return compareFn(conversationDate, filterDate);
@@ -228,6 +252,11 @@ const matchesCondition = (conversationValue, filter) => {
 
   const isNullish =
     conversationValue === null || conversationValue === undefined;
+  const isEmptyLabels =
+    filter.attribute_key === 'labels' &&
+    Array.isArray(conversationValue) &&
+    conversationValue.length === 0;
+  const isAbsent = isNullish || isEmptyLabels;
 
   const filterValue = Array.isArray(values)
     ? values.map(resolveValue)
@@ -247,10 +276,10 @@ const matchesCondition = (conversationValue, filter) => {
       return !contains(filterValue, conversationValue);
 
     case 'is_present':
-      return !isNullish;
+      return !isAbsent;
 
     case 'is_not_present':
-      return isNullish;
+      return isAbsent;
 
     case 'is_greater_than':
       return compareDates(conversationValue, filterValue, (a, b) => a > b);

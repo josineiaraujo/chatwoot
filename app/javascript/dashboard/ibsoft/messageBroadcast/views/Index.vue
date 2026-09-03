@@ -10,7 +10,6 @@ import PaginationFooter from 'dashboard/components-next/pagination/PaginationFoo
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { useAlert } from 'dashboard/composables';
 import IbsoftSelect from 'dashboard/ibsoft/components/IbsoftSelect.vue';
-import erpAPI from 'dashboard/ibsoft/erp/api';
 import LookupMultiSelect from '../components/LookupMultiSelect.vue';
 import LookupSingleSelect from '../components/LookupSingleSelect.vue';
 import HistoryPaginationFooter from '../components/HistoryPaginationFooter.vue';
@@ -681,30 +680,22 @@ const boot = async () => {
   try {
     await Promise.all([
       store.dispatch('inboxes/get'),
-      fetchErpStatus(),
+      fetchCapabilities(),
       fetchGroups(),
       fetchBroadcasts(),
     ]);
-    if (activeConnection.value) {
-      await fetchCapabilities();
-    }
   } finally {
     isBooting.value = false;
   }
 };
 
-async function fetchErpStatus() {
-  const { data } = await erpAPI.getConnections();
-  activeConnection.value =
-    data.connections?.find(connection => connection.active) || null;
-}
-
 async function fetchCapabilities() {
+  activeConnection.value = null;
   providerCapabilities.value = defaultProviderCapabilities();
-  if (!activeConnection.value) return;
 
   try {
     const { data } = await messageBroadcastAPI.getCapabilities();
+    activeConnection.value = data.connection || null;
     providerCapabilities.value = {
       ...defaultProviderCapabilities(),
       ...(data.capabilities || {}),
@@ -724,7 +715,10 @@ async function fetchCapabilities() {
     if (!providerCapabilities.value.search_modes.includes(searchMode.value)) {
       searchMode.value = providerCapabilities.value.search_modes[0] || 'direct';
     }
-  } catch {
+  } catch (error) {
+    if (error?.response?.data?.error === 'active_erp_connection_missing') {
+      return;
+    }
     useAlert(t('IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.LOAD_ERROR'));
   }
 }

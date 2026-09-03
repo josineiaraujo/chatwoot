@@ -30,6 +30,8 @@ class Ibsoft::AccessControl::Role < ApplicationRecord
   validates :name, presence: true, uniqueness: { scope: :account_id }
   validate :permissions_are_known
 
+  after_commit :invalidate_permission_cache
+
   def payload
     {
       id: id,
@@ -44,6 +46,12 @@ class Ibsoft::AccessControl::Role < ApplicationRecord
   end
 
   private
+
+  def invalidate_permission_cache
+    role_assignments.pluck(:user_id).each do |user_id|
+      Ibsoft::AccessControl::PermissionRequestCache.invalidate(user_id)
+    end
+  end
 
   def permissions_are_known
     unknown_permissions = permissions - Ibsoft::AccessControl::PermissionCatalog.keys

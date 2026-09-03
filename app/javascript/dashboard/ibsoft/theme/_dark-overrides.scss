@@ -251,6 +251,19 @@ body.dark #app .ibsoft-inbox-empty-state::before {
   display: none !important;
 }
 
+// @chatwoot/viz 0.1.5 fixes heatmap rows at 32px while inheriting the
+// dashboard line-height. Keep the former 10px labels until upstream provides
+// row typography that fits translated weekday names without overflowing.
+#app .cw-viz-heatmap {
+  --cw-viz-heatmap-row-title-font-size: 10px;
+  --cw-viz-heatmap-row-description-font-size: 10px;
+}
+
+#app .cw-viz-heatmap__row-label > strong,
+#app .cw-viz-heatmap__row-label > span {
+  line-height: 1.2;
+}
+
 body.dark #app .ibsoft-conversation-empty-state > span,
 body.dark #app .ibsoft-select-conversation-empty-state > span,
 body.dark #app .ibsoft-internal-chat-empty-state > span,

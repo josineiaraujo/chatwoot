@@ -1,9 +1,13 @@
 import { mount } from '@vue/test-utils';
 
+import enTheme from 'dashboard/i18n/locale/en/ibsoftTheme.json';
 import ptBrTheme from 'dashboard/i18n/locale/pt_BR/ibsoftTheme.json';
 import ptBrSettings from 'dashboard/i18n/locale/pt_BR/settings.json';
 import { mergeLocaleWithOverrides } from 'dashboard/ibsoft/i18n/mergeLocale';
 import ChangePassword from '../ChangePassword.vue';
+
+const translateFromEnglishTheme = key =>
+  key.split('.').reduce((value, segment) => value?.[segment], enTheme) ?? key;
 
 const WootInputStub = {
   name: 'WootInput',
@@ -31,6 +35,9 @@ const mountComponent = () =>
     global: {
       components: {
         WootInput: WootInputStub,
+      },
+      mocks: {
+        $t: translateFromEnglishTheme,
       },
     },
   });
@@ -72,12 +79,16 @@ describe('ChangePassword', () => {
     const wrapper = mountComponent();
     const toggle = wrapper.get('[data-testid="toggle-current-password"]');
 
-    expect(toggle.attributes('aria-label')).toBe('Show password');
+    expect(toggle.attributes('aria-label')).toBe(
+      enTheme.PROFILE_SETTINGS.FORM.PASSWORD_SECTION.SHOW_PASSWORD
+    );
     expect(toggle.attributes('aria-pressed')).toBe('false');
 
     await toggle.trigger('click');
 
-    expect(toggle.attributes('aria-label')).toBe('Hide password');
+    expect(toggle.attributes('aria-label')).toBe(
+      enTheme.PROFILE_SETTINGS.FORM.PASSWORD_SECTION.HIDE_PASSWORD
+    );
     expect(toggle.attributes('aria-pressed')).toBe('true');
   });
 

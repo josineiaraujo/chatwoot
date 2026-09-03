@@ -22,7 +22,9 @@ espalhar constantes pelo core do Chatwoot.
   valores legados (`UTC`, `America/Los_Angeles`, vazio) para Brasilia.
 - `app/services/ibsoft/localization/default_timezone.rb`: valor padrao backend.
 - `app/models/concerns/ibsoft/localization/account_default_timezone.rb`: define
-  `account.reporting_timezone` quando a conta ainda nao possui valor.
+  `account.reporting_timezone` quando uma conta e criada sem valor. O default
+  nao e reaplicado em atualizacoes, preservando a semantica nativa de um valor
+  posteriormente removido.
 - `app/models/ibsoft/localization/working_hour_break.rb`: modelo das pausas por
   caixa/dia.
 - `app/models/concerns/ibsoft/localization/inbox_working_hour_breaks.rb`:
@@ -33,8 +35,11 @@ espalhar constantes pelo core do Chatwoot.
 - `app/controllers/concerns/ibsoft/localization/inboxes_controller_working_hour_breaks.rb`:
   salva `ibsoft_working_hour_breaks` na atualizacao da inbox.
 - `config/locales/zz_ibsoft_localization.*.yml`: mensagens backend do patch.
-- `config/initializers/ibsoft_localization_defaults.rb`: conecta o concern
-  privado em `Account`, `Inbox`, `WorkingHour` e `InboxesController`.
+- `config/initializers/ibsoft_localization_defaults.rb`: registra callbacks
+  `Rails.autoloaders.main.on_load` para conectar os concerns privados em
+  `Account`, `Inbox`, `WorkingHour` e `InboxesController` somente quando cada
+  constante for carregada. Isso preserva reloads e evita antecipar o
+  carregamento de models nativos antes da inicializacao do i18n.
 - `db/migrate/20260630090000_set_ibsoft_default_timezone.rb`: atualiza default
   de `inboxes.timezone` e dados existentes que ainda usam `UTC`,
   `America/Los_Angeles` ou valores vazios.

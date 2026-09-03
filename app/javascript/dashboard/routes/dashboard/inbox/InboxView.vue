@@ -185,7 +185,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full w-full flex-1">
+  <div class="h-full w-full min-w-0 flex-1">
     <div v-if="showEmptyState" class="flex w-full h-full">
       <InboxEmptyState />
     </div>

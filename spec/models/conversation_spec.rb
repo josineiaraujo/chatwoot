@@ -16,6 +16,7 @@ RSpec.describe Conversation do
     it { is_expected.to belong_to(:contact) }
     it { is_expected.to belong_to(:contact_inbox) }
     it { is_expected.to belong_to(:assignee).optional }
+    it { is_expected.to belong_to(:ai_assignee).optional }
     it { is_expected.to belong_to(:team).optional }
     it { is_expected.to belong_to(:campaign).optional }
   end
@@ -317,7 +318,7 @@ RSpec.describe Conversation do
       expect(Conversations::ActivityMessageJob)
         .to(have_been_enqueued.at_least(:once)
         .with(conversation, { account_id: conversation.account_id, inbox_id: conversation.inbox_id, message_type: :activity,
-                              content: "Conversation was marked resolved by #{old_assignee.name}",
+                              content: I18n.t('conversations.activity.status.resolved', user_name: old_assignee.name),
                               content_attributes: { activity: { type: 'conversation_status_changed', status: 'resolved' } } }))
       expect(Conversations::ActivityMessageJob)
         .to(have_been_enqueued.at_least(:once)
@@ -337,7 +338,7 @@ RSpec.describe Conversation do
                      else
                        { key: 'auto_resolved_minutes', count: account.auto_resolve_after }
                      end
-      system_resolved_message = "Conversation was marked resolved by system due to #{message_data[:count]} days of inactivity"
+      system_resolved_message = I18n.t("conversations.activity.status.#{message_data[:key]}", count: message_data[:count])
       expect { conversation2.update(status: :resolved) }
         .to have_enqueued_job(Conversations::ActivityMessageJob)
         .with(conversation2, { account_id: conversation2.account_id, inbox_id: conversation2.inbox_id, message_type: :activity,
@@ -1332,6 +1333,30 @@ RSpec.describe Conversation do
         # Reply time should be 1 hour (from customer message 2 to agent reply)
         expect(reply_events.first.value).to be_within(60).of(3600)
       end
+    end
+  end
+
+  describe '#status_changed_at' do
+    let(:conversation) { create(:conversation) }
+
+    it 'is set on create' do
+      expect(conversation.status_changed_at).to be_present
+    end
+
+    it 'is updated on every status transition' do
+      original = conversation.status_changed_at
+
+      travel_to(1.hour.from_now) { conversation.update!(status: :resolved) }
+
+      expect(conversation.reload.status_changed_at).to be > original
+    end
+
+    it 'is untouched by non-status saves' do
+      original = conversation.status_changed_at
+
+      travel_to(1.hour.from_now) { conversation.update!(priority: :high) }
+
+      expect(conversation.reload.status_changed_at).to be_within(1.second).of(original)
     end
   end
 end

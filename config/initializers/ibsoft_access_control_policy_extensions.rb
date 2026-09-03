@@ -15,3 +15,8 @@ Rails.application.config.to_prepare do
     policy.prepend(extension)
   end
 end
+
+Rails.autoloaders.main.on_load('AccountUser') do |account_user|
+  extension = Ibsoft::AccessControl::AccountUserPermissions
+  account_user.prepend(extension) unless account_user.ancestors.include?(extension)
+end

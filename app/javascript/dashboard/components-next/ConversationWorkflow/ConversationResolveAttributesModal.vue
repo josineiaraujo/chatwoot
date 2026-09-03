@@ -11,7 +11,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import ChoiceToggle from 'dashboard/components-next/input/ChoiceToggle.vue';
 import { ATTRIBUTE_TYPES } from './constants';
 
-const emit = defineEmits(['submit']);
+const emit = defineEmits(['submit', 'close']);
 
 const { t } = useI18n();
 
@@ -105,8 +105,6 @@ const comboBoxOptions = computed(() => {
 
 const close = () => {
   dialogRef.value?.close();
-  conversationContext.value = null;
-  v$.value.$reset();
 };
 
 const open = (attributes = [], initialValues = {}, context = null) => {
@@ -135,6 +133,12 @@ const open = (attributes = [], initialValues = {}, context = null) => {
   dialogRef.value?.open();
 };
 
+const handleClose = () => {
+  conversationContext.value = null;
+  v$.value.$reset();
+  emit('close');
+};
+
 const handleConfirm = async () => {
   v$.value.$touch();
   if (v$.value.$invalid) {
@@ -157,18 +161,15 @@ defineExpose({ open, close });
     width="lg"
     :title="t('IBSOFT_THEME.CONVERSATION_ACTIONS.REQUIRED_ATTRIBUTES_TITLE')"
     :description="
-      t(
-        'IBSOFT_THEME.CONVERSATION_ACTIONS.REQUIRED_ATTRIBUTES_DESCRIPTION'
-      )
+      t('IBSOFT_THEME.CONVERSATION_ACTIONS.REQUIRED_ATTRIBUTES_DESCRIPTION')
     "
-    :confirm-button-label="
-      t('IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE')
-    "
+    :confirm-button-label="t('IBSOFT_THEME.CONVERSATION_ACTIONS.CLOSE_SERVICE')"
     :cancel-button-label="
       t('CONVERSATION_WORKFLOW.REQUIRED_ATTRIBUTES.MODAL.ACTIONS.CANCEL')
     "
     :disable-confirm-button="!isFormComplete"
     @confirm="handleConfirm"
+    @close="handleClose"
   >
     <div class="flex flex-col gap-4">
       <div

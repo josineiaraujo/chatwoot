@@ -67,6 +67,44 @@ RSpec.describe 'Ibsoft manual team transfer distribution', type: :request do
     )
   end
 
+  it 'clears the complete AI owner when a manual team transfer enters private distribution' do
+    agent_bot = create(:agent_bot, account: account)
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!({ :status => :pending, :assignee => nil, owner_attribute => agent_bot })
+
+    transfer_to_target_team
+
+    expect(response).to have_http_status(:success)
+    conversation.reload
+    expect(conversation).to have_attributes(
+      team: target_team,
+      assignee: nil,
+      assignee_agent_bot: nil
+    )
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
+    expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
+  end
+
+  it 'marks a team transfer requested by an agent bot as a system transfer' do
+    agent_bot = create(:agent_bot, account: account)
+    create(:agent_bot_inbox, inbox: inbox, agent_bot: agent_bot)
+
+    post(
+      api_v1_account_conversation_assignments_url(
+        account_id: account.id,
+        conversation_id: conversation.display_id
+      ),
+      params: { team_id: target_team.id },
+      headers: { api_access_token: agent_bot.access_token.token },
+      as: :json
+    )
+
+    expect(response).to have_http_status(:success)
+    expect(conversation.reload).to have_attributes(team: target_team)
+    expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('system_team_transfer')
+  end
+
   private
 
   def transfer_to_target_team

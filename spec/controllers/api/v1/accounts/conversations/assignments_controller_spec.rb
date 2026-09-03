@@ -89,34 +89,6 @@ RSpec.describe 'Conversation Assignment API', type: :request do
         expect(conversation.reload.team).to eq(team)
         # assignee will be from team
         expect(conversation.reload.assignee).to eq(team_member)
-        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
-      end
-
-      it 'clears the complete AI owner when a manual team transfer enters private distribution' do
-        manual_team = create(:team, account: account, allow_auto_assign: false)
-        create(:ibsoft_distribution_channel_policy, account: account, inbox: conversation.inbox, enabled: true)
-        allow(Ibsoft::ConversationDistribution::ExecutionConfig).to receive_messages(
-          job_enabled?: true,
-          real_assignment_enabled?: true
-        )
-        owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
-        conversation.update!({ :status => :pending, :assignee => nil, owner_attribute => agent_bot })
-
-        post api_v1_account_conversation_assignments_url(account_id: account.id, conversation_id: conversation.display_id),
-             params: { team_id: manual_team.id },
-             headers: agent.create_new_auth_token,
-             as: :json
-
-        expect(response).to have_http_status(:success)
-        conversation.reload
-        expect(conversation).to have_attributes(
-          team: manual_team,
-          assignee: nil,
-          assignee_agent_bot: nil
-        )
-        expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
-        expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
-        expect(conversation.additional_attributes['ibsoft_distribution_source']).to eq('manual_team_transfer')
       end
     end
 
@@ -161,7 +133,6 @@ RSpec.describe 'Conversation Assignment API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(conversation.reload.team).to eq(team)
-        expect(conversation.reload.additional_attributes['ibsoft_distribution_source']).to eq('system_team_transfer')
       end
     end
 

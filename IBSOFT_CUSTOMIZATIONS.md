@@ -141,8 +141,9 @@ Pontos de acoplamento no Chatwoot original:
   `Agente`, `Times` (exibido como `Departamentos`), `Canais de comunicacao`,
   `Robos` e `Integracoes` do menu padrao. As rotas nativas continuam existindo
   e sao acessadas pela tela privada ChatHub quando o usuario possui permissao.
-- `app/views/api/v1/models/_user.json.jbuilder`: expande permissoes via
-  `Ibsoft::PermissionRegistry`.
+- `config/initializers/ibsoft_access_control_policy_extensions.rb`: conecta o
+  concern privado de permissoes ao `AccountUser`; o partial nativo de usuario
+  permanece inalterado.
 - `app/javascript/dashboard/ibsoft/chathubSettings/settingsSections.js`:
   declara imports assincronos para as secoes integradas de conta, canais,
   departamentos, robos e integracoes. O id tecnico continua `teams`, seguindo o
@@ -568,6 +569,12 @@ Comportamento:
 - O resolver de permissoes fica em
   `Ibsoft::AccessControl::PermissionResolver` e injeta as permissoes do perfil
   via `Ibsoft::PermissionRegistry`.
+- `Ibsoft::AccessControl::AccountUserPermissions` combina as permissoes nativas
+  e privadas no proprio contrato `AccountUser#permissions`.
+- `Ibsoft::AccessControl::PermissionRequestCache` carrega as atribuicoes uma
+  unica vez por usuario no contexto da requisicao, indexadas por conta. Os
+  callbacks de `Role` e `RoleAssignment` invalidam o cache quando a configuracao
+  muda.
 - Um agente com perfil Ibsoft recebe os marcadores `ibsoft_access_role` e
   `custom_role` no payload de permissoes para manter compatibilidade com
   filtros e rotas do dashboard que ja reconhecem perfis customizados.
@@ -586,7 +593,12 @@ Pontos de acoplamento no Chatwoot original:
   `Conversations::PermissionFilterService` e
   `Conversations::UnreadCounts::Counter`.
 - `app/services/ibsoft/permission_registry.rb`: adiciona
-  `Ibsoft::AccessControl::PermissionResolver` como provider.
+  `Ibsoft::AccessControl::PermissionResolver` como provider e centraliza os
+  contratos `permissions_for`.
+- `config/initializers/ibsoft_access_control_policy_extensions.rb`: conecta
+  `Ibsoft::AccessControl::AccountUserPermissions` por callback do autoloader.
+  Assim o serializer nativo continua usando `account_user.permissions` sem
+  conhecer a camada privada e sem consultas por membership.
 - `app/services/ibsoft/conversation_distribution/supervisor_permission.rb`:
   aceita a permissao `ibsoft_conversation_distribution_supervise` quando vier
   de perfil Ibsoft.
@@ -827,9 +839,9 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
   `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: registram
   textos da UI do modulo.
-- `app/views/api/v1/models/_user.json.jbuilder`: adiciona a permissao privada
-  `ibsoft_conversation_distribution_supervise` ao payload de contas do usuario
-  quando ele estiver registrado como supervisor Ibsoft.
+- `app/models/concerns/ibsoft/access_control/account_user_permissions.rb`:
+  adiciona ao contrato nativo de permissoes, entre outras, a permissao privada
+  `ibsoft_conversation_distribution_supervise` quando aplicavel.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
   marca origem Ibsoft quando uma conversa e atribuida a time via API/UI.
 - `app/javascript/dashboard/store/modules/conversations/actions.js`: delega as
@@ -850,8 +862,13 @@ Pontos de acoplamento no Chatwoot original:
 - `app/javascript/dashboard/composables/chatlist/useBulkActions.js`: usa o
   fluxo privado apenas quando a acao veio do menu contextual de uma conversa;
   atribuicoes realmente em massa continuam nativas.
-- `app/services/action_service.rb`: marca origem Ibsoft quando uma acao,
-  automacao ou macro atribui a conversa a um time.
+- `app/services/ibsoft/conversation_distribution/action_service_extension.rb`:
+  abre um contexto privado durante a atribuicao oficial de time.
+  `TeamAssignmentSourceMarker` usa esse contexto em `before_validation` para
+  incluir a origem Ibsoft somente quando a equipe realmente muda. Equipe e
+  marcador sao persistidos pelo unico `update!` oficial, dentro do lock nativo;
+  o initializer privado conecta as extensoes e o core permanece igual ao
+  upstream.
 
 Estado atual:
 
@@ -1772,7 +1789,6 @@ quando o upstream alterar a mesma area.
 - `config/routes.rb`
 - `config/schedule.yml`
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`
-- `app/views/api/v1/models/_user.json.jbuilder`
 - `app/finders/conversation_finder.rb`
 - `app/helpers/filters/filter_helper.rb`
 - `app/models/conversation.rb`
@@ -1783,7 +1799,6 @@ quando o upstream alterar a mesma area.
 - `app/services/automation_rules/conditions_filter_service.rb`
 - `app/services/conversations/unread_counts/builder.rb`
 - `app/services/conversations/unread_counts/refresher.rb`
-- `app/services/action_service.rb`
 - `app/services/search_service.rb`
 - `app/services/conversations/filter_service.rb`
 - `db/schema.rb`

@@ -653,6 +653,10 @@ usando o canal WhatsApp Cloud selecionado e devolve uma resposta normalizada
 com `name`, `language`, `status`, `category`, `components` e `variables`. O
 payload bruto da Meta nao e salvo nas tabelas do modulo; o modulo apenas usa o
 cache nativo `channel_whatsapp.message_templates` mantido pelo Chatwoot.
+O catalogo delega a sincronizacao ao contrato publico `sync_templates` do
+provider oficial. Dessa forma, usa o token de gerenciamento de templates,
+percorre todas as paginas retornadas pela Meta e preserva o cache anterior se
+a consulta remota falhar.
 Modelos de ordem (`ORDER_DETAILS` e `ORDER_STATUS`) nao fazem parte do catalogo
 de disparos, pois exigem uma estrutura transacional propria e nao sao
 compativeis com o mapeamento generico de destinatarios e variaveis desta tela.

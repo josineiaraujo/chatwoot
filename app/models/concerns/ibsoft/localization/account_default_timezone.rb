@@ -4,7 +4,7 @@ module Ibsoft::Localization::AccountDefaultTimezone
   extend ActiveSupport::Concern
 
   included do
-    before_validation :set_ibsoft_default_reporting_timezone
+    before_validation :set_ibsoft_default_reporting_timezone, on: :create
   end
 
   private

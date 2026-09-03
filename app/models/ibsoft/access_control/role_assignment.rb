@@ -38,6 +38,8 @@ class Ibsoft::AccessControl::RoleAssignment < ApplicationRecord
   validate :user_belongs_to_account
   validate :creator_belongs_to_account
 
+  after_commit :invalidate_permission_cache
+
   def payload
     {
       id: id,
@@ -51,6 +53,10 @@ class Ibsoft::AccessControl::RoleAssignment < ApplicationRecord
   end
 
   private
+
+  def invalidate_permission_cache
+    Ibsoft::AccessControl::PermissionRequestCache.invalidate(user_id)
+  end
 
   def role_belongs_to_account
     return if role.blank? || account_id.blank?

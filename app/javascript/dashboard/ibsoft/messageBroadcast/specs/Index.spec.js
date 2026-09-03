@@ -2,7 +2,6 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import MessageBroadcastIndex from '../views/Index.vue';
-import erpAPI from 'dashboard/ibsoft/erp/api';
 import messageBroadcastAPI from '../api';
 
 const alertMock = vi.fn();
@@ -48,12 +47,6 @@ vi.mock('vuex', () => ({
 
 vi.mock('dashboard/composables', () => ({
   useAlert: message => alertMock(message),
-}));
-
-vi.mock('dashboard/ibsoft/erp/api', () => ({
-  default: {
-    getConnections: vi.fn(),
-  },
 }));
 
 vi.mock('../api', () => ({
@@ -266,18 +259,6 @@ describe('MessageBroadcastIndex', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     dispatchMock.mockResolvedValue();
-    erpAPI.getConnections.mockResolvedValue({
-      data: {
-        connections: [
-          {
-            id: 1,
-            name: 'IXC produção',
-            provider: 'ixc',
-            active: true,
-          },
-        ],
-      },
-    });
     messageBroadcastAPI.getGroups.mockResolvedValue({
       data: {
         groups: [
@@ -292,6 +273,11 @@ describe('MessageBroadcastIndex', () => {
     messageBroadcastAPI.getCapabilities.mockResolvedValue({
       data: {
         provider: 'ixc',
+        connection: {
+          id: 1,
+          name: 'IXC produção',
+          provider: 'ixc',
+        },
         capabilities: {
           search_modes: ['direct', 'contracts', 'concentrators'],
           location_filters: { city: 'lookup' },
@@ -447,24 +433,25 @@ describe('MessageBroadcastIndex', () => {
   });
 
   it('does not load the ERP state catalog while only viewing history', async () => {
-    erpAPI.getConnections.mockResolvedValue({
-      data: {
-        connections: [
-          {
-            id: 2,
-            name: 'SGP produção',
-            provider: 'sgp',
-            active: true,
-          },
-        ],
-      },
-    });
-
     mountComponent();
     await flushPromises();
 
     expect(messageBroadcastAPI.getCapabilities).toHaveBeenCalledTimes(1);
     expect(messageBroadcastAPI.getStates).not.toHaveBeenCalled();
+    expect(alertMock).not.toHaveBeenCalledWith(
+      'IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.LOAD_ERROR'
+    );
+  });
+
+  it('keeps the empty ERP state without an alert when no active connection exists', async () => {
+    messageBroadcastAPI.getCapabilities.mockRejectedValueOnce({
+      response: { data: { error: 'active_erp_connection_missing' } },
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(wrapper.vm.activeConnection).toBeNull();
     expect(alertMock).not.toHaveBeenCalledWith(
       'IBSOFT_THEME.MESSAGE_BROADCAST.LOOKUPS.LOAD_ERROR'
     );
@@ -648,7 +635,7 @@ describe('MessageBroadcastIndex', () => {
     const wrapper = mountComponent();
     await flushPromises();
 
-    expect(erpAPI.getConnections).toHaveBeenCalled();
+    expect(messageBroadcastAPI.getCapabilities).toHaveBeenCalled();
     expect(messageBroadcastAPI.getGroups).toHaveBeenCalled();
     expect(messageBroadcastAPI.getBroadcasts).toHaveBeenCalled();
     expect(wrapper.text()).toContain('IXC produção');
@@ -656,21 +643,14 @@ describe('MessageBroadcastIndex', () => {
   });
 
   it('adapts recipient filters to SGP capabilities without changing the shared flow', async () => {
-    erpAPI.getConnections.mockResolvedValueOnce({
-      data: {
-        connections: [
-          {
-            id: 2,
-            name: 'SGP produção',
-            provider: 'sgp',
-            active: true,
-          },
-        ],
-      },
-    });
     messageBroadcastAPI.getCapabilities.mockResolvedValueOnce({
       data: {
         provider: 'sgp',
+        connection: {
+          id: 2,
+          name: 'SGP produção',
+          provider: 'sgp',
+        },
         capabilities: {
           search_modes: ['direct', 'contracts', 'concentrators'],
           location_filters: { city: 'text' },

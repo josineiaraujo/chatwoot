@@ -1,13 +1,21 @@
 # frozen_string_literal: true
 
-Rails.application.config.to_prepare do
-  Account.include Ibsoft::Localization::AccountDefaultTimezone unless Account.included_modules.include?(Ibsoft::Localization::AccountDefaultTimezone)
+Rails.autoloaders.main.on_load('Account') do |account|
+  extension = Ibsoft::Localization::AccountDefaultTimezone
+  account.include(extension) unless account.ancestors.include?(extension)
+end
 
-  Inbox.include Ibsoft::Localization::InboxWorkingHourBreaks unless Inbox.included_modules.include?(Ibsoft::Localization::InboxWorkingHourBreaks)
+Rails.autoloaders.main.on_load('Inbox') do |inbox|
+  extension = Ibsoft::Localization::InboxWorkingHourBreaks
+  inbox.include(extension) unless inbox.ancestors.include?(extension)
+end
 
-  WorkingHour.prepend Ibsoft::Localization::WorkingHourBreakAware unless Ibsoft::Localization::WorkingHourBreakAware <= WorkingHour
+Rails.autoloaders.main.on_load('WorkingHour') do |working_hour|
+  extension = Ibsoft::Localization::WorkingHourBreakAware
+  working_hour.prepend(extension) unless working_hour.ancestors.include?(extension)
+end
 
-  return if Ibsoft::Localization::InboxesControllerWorkingHourBreaks <= Api::V1::Accounts::InboxesController
-
-  Api::V1::Accounts::InboxesController.prepend Ibsoft::Localization::InboxesControllerWorkingHourBreaks
+Rails.autoloaders.main.on_load('Api::V1::Accounts::InboxesController') do |controller|
+  extension = Ibsoft::Localization::InboxesControllerWorkingHourBreaks
+  controller.prepend(extension) unless controller.ancestors.include?(extension)
 end

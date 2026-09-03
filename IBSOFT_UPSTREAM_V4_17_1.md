@@ -8,12 +8,13 @@ integrado final.
 ## Escopo auditado
 
 - Base privada auditada: `9fa78c1c702b`.
-- Tag oficial: `v4.17.1`, commit `e194a693e2db`.
+- Tag oficial anotada: `v4.17.1`, objeto `e194a693e2db`, apontando para o
+  commit `b354a9550e1f`.
 - Base oficial atual da camada privada: `v4.16.2`.
 - Commits oficiais no intervalo: 201.
 - Arquivos alterados pelo upstream: 2.049.
 - Commits existentes sobre `v4.16.2` na camada privada: 101.
-- Arquivos modificados pelos dois lados: 79.
+- Arquivos modificados pelos dois lados: 81.
 - Conflitos de conteudo previstos por `git merge-tree`: 15.
 
 O trabalho de preparacao foi feito na branch
@@ -42,7 +43,7 @@ automaticamente um dos lados:
 15. `spec/services/auto_assignment/agent_assignment_service_spec.rb`
 
 Arquivos que o Git consegue mesclar automaticamente ainda exigem revisao
-semantica quando estiverem entre os 79 arquivos compartilhados. Merge limpo
+semantica quando estiverem entre os 81 arquivos compartilhados. Merge limpo
 nao significa comportamento preservado.
 
 ## Mudancas oficiais com impacto privado
@@ -100,9 +101,9 @@ deve manter:
 - filtros frontend alinhados ao backend para conversas humanas e de robo;
 - datas `YYYY-MM-DD` interpretadas no calendario local.
 
-O pacote oficial `@chatwoot/utils` `0.0.57` ainda converte uma data simples de
-forma incorreta em fusos negativos. A protecao privada em `filterHelpers.js`
-deve permanecer ate existir correcao oficial equivalente.
+O v4.17.1 ja trata datas simples no calendario local antes de delegar ao pacote
+`@chatwoot/utils`. A duplicacao do backport privado foi removida; a unica
+diferenca restante em `filterHelpers.js` e o protocolo privado de conversa.
 
 ### WhatsApp e templates
 
@@ -135,6 +136,19 @@ O `v4.17.1` ja contem a normalizacao de locale usada pelo `AccountHealth`.
 Durante o merge, remover duplicacao do backport privado somente depois de o
 teste com `pt_BR` permanecer verde.
 
+### Licenca e plano da instalacao
+
+O intervalo oficial nao altera `ChatwootHub`, `ChatwootApp`, a gravacao de
+`INSTALLATION_PRICING_PLAN`, o limite de agentes nem o reconciliador de
+features da instalacao. As mudancas de plano encontradas pertencem a recursos
+cloud e Captain. Portanto, o v4.17.1 nao muda o criterio pelo qual esta
+instalacao self-hosted entende uma licenca como valida.
+
+O comportamento privado que fixa `enterprise` e a quantidade `9.999.999`
+continua vindo do trigger PostgreSQL presente na base anterior. Ele foi
+preservado no schema e no caminho real de upgrade e possui teste de regressao;
+nao e uma nova regra do upstream.
+
 ### Dependencias frontend
 
 O upstream substitui `@scmmishra/pico-search` por
@@ -142,6 +156,19 @@ O upstream substitui `@scmmishra/pico-search` por
 ponto conhecido e
 `app/javascript/dashboard/ibsoft/chathubSettings/components/ChannelCardsPanel.vue`.
 Uma busca global e um build de producao sao obrigatorios antes da promocao.
+
+Os pacotes removidos `chart.js`, `vue-chartjs` e `md5`, assim como o cliente
+Azure substituido, nao possuem consumidores na camada privada. Os imports
+privados restantes de `@chatwoot/utils` e `@chatwoot/pico-search` tiveram seus
+exports verificados na instalacao final e foram exercitados pelo build.
+
+### Rails 7.2
+
+O upgrade oficial para Rails `7.2.3.1` passou pela suite completa e pelo
+eager-load. Models privados do chat interno ainda usam a forma keyword de
+`enum`, aceita no Rails 7.2 mas anunciada como obsoleta para Rails 8. Essa
+mensagem nao afeta a integracao atual; deve virar uma tarefa isolada antes de
+um futuro upgrade para Rails 8, sem misturar a alteracao neste merge.
 
 ## Matriz de cobertura
 
@@ -181,6 +208,151 @@ Executada em 2 de setembro de 2026, antes do merge:
 Avisos de dependencias e deprecacoes nao foram tratados como falha funcional,
 mas devem ser reavaliados com Rails 7.2 no candidato integrado.
 
+## Resultado do candidato integrado
+
+Executado em 2 de setembro de 2026 na branch isolada
+`private/upstream-v4-17-1-regression`. O merge ainda nao foi promovido nem
+publicado.
+
+### Compatibilidades corrigidas
+
+- O catalogo privado de disparos passou a delegar a sincronizacao ao contrato
+  publico `sync_templates` do provider oficial. Isso preserva a paginacao e o
+  token de gerenciamento da v4.17.1, evita uma segunda validacao remota e nao
+  apaga o cache quando a Meta falha.
+- A atribuicao de equipe usa
+  `Ibsoft::ConversationDistribution::ActionServiceExtension`, conectada por
+  initializer privado. Um contexto limitado a chamada permite que o concern
+  privado da conversa inclua o marcador no mesmo `update!` oficial. Ela nao
+  grava o marcador nem atualiza a conversa quando outro processo ja aplicou a
+  mesma equipe, preserva `TEAM_CHANGED` e mantem a marcacao na mesma transacao;
+  `app/services/action_service.rb` ficou identico ao upstream.
+- Os specs de atividade de conversa passaram a validar a traducao carregada,
+  preservando a terminologia privada `closed` sem alterar o core de producao.
+- O unico import privado de `@scmmishra/pico-search` foi migrado para
+  `@chatwoot/pico-search`.
+- O perfil do usuario passou a combinar permissoes pelo concern privado
+  `AccountUserPermissions`. Um cache limitado ao contexto da requisicao carrega
+  as atribuicoes uma vez por usuario, sem vazar permissoes entre contas;
+  `app/views/api/v1/models/_user.json.jbuilder` ficou identico ao upstream.
+- Os defaults privados de localizacao agora sao conectados por callbacks do
+  autoloader. Isso evita carregar `Account` e, por consequencia, `Team` antes
+  da inicializacao das traducoes, sem perder os hooks apos reload de codigo. O
+  fuso de relatorios e aplicado apenas na criacao e pode ser removido depois,
+  como previsto pelo contrato oficial.
+- A comparacao final com a base privada anterior nao encontrou novo arquivo de
+  runtime nativo divergente do upstream. As novas conexoes de backend ficaram
+  em namespaces, concerns, services e initializers `Ibsoft`.
+- Na comparacao dos arquivos rastreados, 35 divergencias historicas deixaram de
+  existir e somente 19 arquivos passaram a divergir. O unico arquivo de
+  runtime desse segundo grupo e o service privado
+  `Ibsoft::ConversationOwnership::Clearer`; os demais sao documentacao e
+  testes. Todos os arquivos novos ainda nao rastreados tambem estao em
+  namespaces privados ou em diretorios de teste.
+
+### Banco e migrations
+
+- `db:prepare`, `db:migrate:status` e `db:abort_if_pending_migrations` passaram
+  em PostgreSQL 16 isolado, com as tres chaves de Active Record Encryption.
+- A verificacao final nao encontrou indices invalidos em `pg_index`; o banco
+  de testes terminou com zero contas, conversas, respostas prontas e
+  configuracoes de instalacao, confirmando ausencia de contaminacao por seeds.
+- Uma copia criada a partir do `db/schema.rb` da base privada v4.16.2 recebeu
+  com sucesso as 19 migrations oficiais novas.
+- Foram confirmados `ai_assignee_type`, tabelas de automacoes pendentes,
+  recipients de campanhas, foreign keys e estruturas privadas de disparos,
+  cobranca, feriados e politicas extra expediente.
+- A reproducao de todo o historico desde um banco totalmente vazio para na
+  migration antiga `20231211010807_add_cached_labels_list.rb`, que referencia
+  `ActsAsTaggableOn::Taggable::Cache`. A migration e identica na base anterior
+  e no upstream; o caminho real de upgrade v4.16.2 -> v4.17.1 passou.
+- O schema privado contem o trigger `trg_force_enterprise_configs`, mas nao foi
+  localizada uma migration correspondente no historico atual. O trigger foi
+  preservado no upgrade e em bancos carregados pelo schema; incorporar a camada
+  privada sobre um banco oficial que nunca a recebeu exige um gate especifico.
+  Este risco ja existia na v4.16.2 e nao foi introduzido pelo v4.17.1.
+- A migration `AddAiAssigneeTypeToConversations` adiciona uma coluna opcional,
+  percorre `conversations` em faixas de 100.000 registros e atualiza as
+  conversas atribuidas a bot em lotes de 1.000. Ela e retomavel porque ignora
+  linhas ja preenchidas, mas o tempo, WAL e uso de I/O devem ser medidos em uma
+  copia representativa da producao.
+- A migration `EnqueueCopyCaptainAutoResolveModeToAssistantsJob` agenda um job
+  na fila `async_database_migration` quando a instalacao e Enterprise. O
+  Sidekiq antigo deve estar parado durante a migration para nao tentar executar
+  uma classe que existe apenas na imagem nova. A fila ja esta registrada em
+  `config/sidekiq.yml`.
+- Os indices maiores sobre `conversations`, `audits` e `agent_sessions` usam
+  `algorithm: :concurrently`. Isso reduz bloqueio de escrita, mas continua
+  consumindo I/O e pode deixar indice invalido se o processo for interrompido;
+  o gate de banco deve verificar `pg_index.indisvalid` depois da migration.
+- A alteracao retroativa em
+  `20230515051424_update_article_image_keys.rb` troca o acesso legado a
+  `Rails.application.secrets.secret_key_base` pela API do Rails 7.2. Ela afeta
+  apenas instalacoes que ainda nao registraram essa migration; em um upgrade
+  normal ela nao e executada novamente.
+
+### Testes automatizados
+
+- Backend privado: 204 arquivos, 1.231 exemplos, 0 falhas.
+- Nucleo compartilhado: 600 exemplos, 0 falhas.
+- Enterprise compartilhado: 117 exemplos, 0 falhas.
+- Automacoes e autoatribuicao ampliadas: 292 exemplos, 0 falhas.
+- WhatsApp alterado pela v4.17.1: 168 exemplos, 0 falhas.
+- Backend completo, em banco carregado pelo schema sem seeds e com as tres
+  chaves de Active Record Encryption: 10.052 exemplos, 0 falhas, em 11 minutos
+  e 4 segundos. Esta foi a execucao integral definitiva, feita depois dos
+  testes adicionais de localizacao, sincronizacao de templates, controle de
+  acesso e integracao privada com `ActionService`.
+- Frontend privado: 76 arquivos, 352 testes, 0 falhas.
+- Frontend dos pontos nativos compartilhados: 8 arquivos, 288 testes, 0
+  falhas.
+- Frontend completo: 501 arquivos, 4.642 testes, 0 falhas.
+- RuboCop: 37 arquivos Ruby resolvidos, adaptados ou adicionados, sem offenses.
+- ESLint: sem erros; permanece um warning preexistente de chave i18n dinamica
+  em `ResolveAction.vue`.
+- O eager-load integral em `RAILS_ENV=production` confirmou os quatro hooks
+  privados de localizacao, a mensagem traduzida do validador de `Team` e os
+  tres novos adapters privados de controle de acesso e distribuicao, sem
+  carregamento prematuro de traducoes.
+
+Os lotes de backend acima possuem arquivos em comum e nao devem ser somados
+como se fossem exemplos unicos.
+
+Uma primeira repeticao integral do backend foi invalidada porque `db:prepare`
+executou seeds ao criar o banco de teste. A suite iniciou com contas,
+conversas e configuracoes globais persistidas, produzindo 421 falsos
+positivos. Depois de recriar o banco com `db:schema:load`, sem seeds, foram
+identificados dois vazamentos de contexto dependentes da ordem dos specs. O
+suporte privado agora limpa `Current` e o cache privado antes de cada exemplo,
+sem alterar specs ou runtime nativos. A repeticao definitiva passou e terminou
+com zero contas, conversas, respostas prontas, configuracoes de instalacao e
+chaves no Redis.
+
+### Build
+
+- O `assets:precompile` final de producao concluiu SDK, Sprockets e dashboard
+  Vite sobre a arvore definitiva, com Node 24, Ruby 3.4.4 e 5.657 modulos
+  frontend transformados.
+- `extractFilenameFromUrl` foi confirmado entre os exports instalados de
+  `@chatwoot/utils`.
+- O smoke final respondeu HTTP 200 em `http://localhost:3100/`, e
+  `bundle check`, `git diff --check` e a verificacao de conflitos pendentes
+  passaram.
+- Nao houve erro de import ou export. Permanecem warnings nao bloqueantes de
+  Browserslist, sintaxe legada `::v-deep`, tamanho de chunks e imports
+  simultaneamente estaticos e dinamicos. O `husky install` tambem informou que
+  o caminho Git do worktree nao existe dentro do container isolado; o comando
+  e o build terminaram com codigo zero e isso nao ocorre por falha da
+  aplicacao.
+
+### Pendencias antes de producao
+
+- Executar a homologacao operacional completa do Gate 4 em navegador.
+- Validar Meta, IXC e SGP reais em uma conta controlada.
+- Aplicar as migrations em copia sanitizada e representativa da producao.
+- Gerar e testar a imagem final identificada pelo commit integrado.
+- Concluir backup, rollback, canary e monitoramento do Gate 5.
+
 ## Gates obrigatorios depois do merge
 
 ### Gate 1: arvore e dependencias
@@ -191,15 +363,24 @@ mas devem ser reavaliados com Rails 7.2 no candidato integrado.
   enquanto `postcss-import` nao for dependencia direta do projeto.
 - Nenhum import restante de `@scmmishra/pico-search`.
 - `bundle check` com Ruby 3.4.4.
-- Revisao manual dos 79 arquivos compartilhados, nao apenas dos 15 conflitos.
+- Revisao manual dos 81 arquivos compartilhados, nao apenas dos 15 conflitos.
 
 ### Gate 2: banco
 
-- Preparar banco vazio com `RAILS_ENV=test bundle exec rails db:prepare`.
+- Validar separadamente uma primeira instalacao com `db:prepare`, incluindo os
+  seeds esperados pelo produto.
+- Para a suite automatizada, purgar o banco de teste e carregar apenas o schema
+  com `RAILS_ENV=test bundle exec rails db:schema:load`; nao executar seeds.
 - Aplicar migrations em copia sanitizada do banco de producao.
+- Antes do ensaio, medir o total de conversas, as conversas atribuidas a bot e
+  o tamanho de `conversations`, `audits` e `agent_sessions`; registrar duracao,
+  crescimento de WAL e pico de I/O do backfill.
 - Conferir `db:migrate:status` e `db:abort_if_pending_migrations`.
 - Verificar colunas privadas recentes, `ai_assignee_type`, indices e foreign
   keys.
+- Confirmar que nao restou indice invalido em `pg_index` e que o job
+  `Migration::CopyCaptainAutoResolveModeToAssistantsJob` foi processado pela
+  imagem nova.
 - Fazer round-trip de todos os campos criptografados com as chaves reais do
   ambiente de homologacao.
 
@@ -233,7 +414,9 @@ mas devem ser reavaliados com Rails 7.2 no candidato integrado.
 
 - Backup testado e rollback documentado.
 - Imagem identificada por commit imutavel, nunca apenas por tag mutavel.
-- Migrations executadas antes da troca dos processos Rails e Sidekiq.
+- Parar o Sidekiq antigo, executar migrations com a imagem nova e somente
+  entao iniciar os novos processos Rails e Sidekiq. Essa ordem impede que o job
+  de migration do Captain seja consumido por codigo antigo.
 - Canary em uma conta controlada antes da liberacao geral.
 - Monitorar erros 5xx, jobs mortos, latencia, Redis, conexoes PostgreSQL e
   rejeicoes Meta durante a janela de publicacao.
