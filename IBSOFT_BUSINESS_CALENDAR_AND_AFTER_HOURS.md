@@ -42,7 +42,8 @@ Quando a politica extra expediente esta habilitada:
 - o sistema envia a mensagem normal ou a mensagem de feriado;
 - cria uma espera ativa e registra o comando comunicado ao cliente;
 - uma mensagem recebida, publica e exatamente igual ao comando encerra a
-  conversa por completo e envia a confirmacao configurada;
+  conversa por completo, limpa qualquer proprietario humano ou de IA e envia a
+  confirmacao configurada;
 - mensagens privadas, mensagens de saida e textos que apenas contem o comando
   nao encerram o atendimento;
 - atribuicao a um agente, mudanca de departamento ou encerramento externo
@@ -142,6 +143,7 @@ Services extra expediente:
 - `app/services/ibsoft/after_hours/wait_reconciler.rb`
 - `app/services/ibsoft/after_hours/policy_destroyer.rb`
 - `app/services/ibsoft/after_hours/agent_bot_listener_extension.rb`
+- `app/services/ibsoft/conversation_ownership/clearer.rb`
 
 Integracao com a distribuicao:
 
@@ -299,7 +301,7 @@ Ao sincronizar com o Chatwoot:
 | Importacao | nacional, estadual, ponto facultativo opcional, selecao parcial, data desconhecida, UF invalida, preservacao manual e ausencia de feriados municipais | `holiday_importer_spec.rb` e requests de `holiday_import` |
 | Politica extra expediente | mensagens obrigatorias somente quando ativa, nome por conta, comando normalizado, multiline/limite e bloqueio de exclusao com espera ativa | `policy_spec.rb`, `policy_destroyer_spec.rb` |
 | Espera | snapshot do comando/mensagem, associacoes por conta, estados, unicidade, mensagem normal/feriado, idempotencia e falhas de entrega | `wait_spec.rb`, `wait_starter_spec.rb` |
-| Comando de saida | igualdade exata sem diferenciar caixa, texto parcial, mensagem anterior, privada/de saida, mudanca de agente/departamento/status, entrega da confirmacao e execucao unica | `exit_command_handler_spec.rb` |
+| Comando de saida | igualdade exata sem diferenciar caixa, texto parcial, mensagem anterior, privada/de saida, mudanca de agente/departamento/status, limpeza de proprietario humano/IA, entrega da confirmacao e execucao unica | `exit_command_handler_spec.rb`, `conversation_ownership/clearer_spec.rb` |
 | Reconciliacao | espera preservada, atribuicao, transferencia, encerramento e espera ja concluida | `wait_reconciler_spec.rb` |
 | Interface | abas, modais, selecao e importacao, datas `dd/mm/aaaa`, busca de departamento, CRUD, estados vazios e erros de API/salvamento | `BusinessCalendarCatalog.spec.js`, `AfterHoursPolicyCatalog.spec.js`, `IbsoftDialogHeader.spec.js` |
 

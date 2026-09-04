@@ -5,6 +5,7 @@ class Api::V1::Accounts::Ibsoft::MessageBroadcast::LookupsController < Api::V1::
   def capabilities
     render json: {
       provider: active_erp_connection.provider,
+      connection: active_erp_connection.slice(:id, :name, :provider),
       capabilities: Ibsoft::Erp::Adapters::Registry.capabilities(active_erp_connection.provider)
     }
   end

@@ -111,7 +111,8 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Templates', type: :
   end
 
   it 'syncs templates from Meta and returns normalized components and variables' do
-    request = stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key')
+    request = stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates')
+              .with(headers: { 'Authorization' => 'Bearer test_key' })
               .to_return(
                 status: 200,
                 body: {
@@ -133,6 +134,55 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Templates', type: :
     end
   end
 
+  it 'uses the provider pagination contract when Meta returns more than one page' do
+    first_page = stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates')
+                 .with(headers: { 'Authorization' => 'Bearer test_key' })
+                 .to_return(
+                   status: 200,
+                   body: {
+                     data: [standard_template],
+                     paging: { cursors: { after: 'next-page' } }
+                   }.to_json,
+                   headers: { 'Content-Type' => 'application/json' }
+                 )
+    second_page = stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates?after=next-page')
+                  .with(headers: { 'Authorization' => 'Bearer test_key' })
+                  .to_return(
+                    status: 200,
+                    body: { data: [media_template] }.to_json,
+                    headers: { 'Content-Type' => 'application/json' }
+                  )
+
+    get base_url, params: { inbox_id: inbox.id }, headers: headers, as: :json
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['templates'].pluck('id')).to eq(%w[template_1 template_media])
+      expect(first_page).to have_been_requested.once
+      expect(second_page).to have_been_requested.once
+    end
+  end
+
+  it 'keeps the cached templates when Meta rejects the synchronization request' do
+    channel.update!(message_templates: [standard_template.deep_stringify_keys])
+    request = stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates')
+              .with(headers: { 'Authorization' => 'Bearer test_key' })
+              .to_return(
+                status: 500,
+                body: { error: { message: 'temporary failure' } }.to_json,
+                headers: { 'Content-Type' => 'application/json' }
+              )
+
+    get base_url, params: { inbox_id: inbox.id }, headers: headers, as: :json
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['templates'].pluck('id')).to eq(['template_1'])
+      expect(channel.reload.message_templates.pluck('id')).to eq(['template_1'])
+      expect(request).to have_been_requested.once
+    end
+  end
+
   it 'does not request runtime values for static template buttons' do
     static_template = standard_template.deep_dup
     static_template[:components].last[:buttons] = [
@@ -140,7 +190,8 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Templates', type: :
       { type: 'URL', text: 'Abrir site', url: 'https://example.com' },
       { type: 'PHONE_NUMBER', text: 'Ligar', phone_number: '+5511999999999' }
     ]
-    stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key')
+    stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates')
+      .with(headers: { 'Authorization' => 'Bearer test_key' })
       .to_return(status: 200, body: { data: [static_template] }.to_json, headers: { 'Content-Type' => 'application/json' })
 
     get base_url, params: { inbox_id: inbox.id }, headers: headers, as: :json

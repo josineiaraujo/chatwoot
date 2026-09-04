@@ -29,7 +29,10 @@ RSpec.describe Ibsoft::AfterHours::ExitCommandHandler do
     )
   end
 
-  it 'resolves the conversation for an exact command ignoring case and outer whitespace' do
+  it 'resolves the conversation for an exact command ignoring case and outer whitespace', :aggregate_failures do
+    agent_bot = create(:agent_bot, account: account)
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!(owner_attribute => agent_bot)
     message = incoming_message(content: '  SAIR  ')
     wait = active_wait
 
@@ -43,6 +46,9 @@ RSpec.describe Ibsoft::AfterHours::ExitCommandHandler do
     )
     expect(conversation.reload).to be_resolved
     expect(conversation.assignee).to be_nil
+    expect(conversation.assignee_agent_bot).to be_nil
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
   end
 
   it 'does not consume a different customer message' do

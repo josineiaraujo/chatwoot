@@ -107,6 +107,26 @@ RSpec.describe Ibsoft::ExternalMessaging::Endpoint do
     expect(endpoint.payload.to_json).not_to include('12345678000199')
   end
 
+  it 'round-trips an encrypted PIX key without storing its plaintext' do
+    skip('encryption keys missing; configure the release-test environment') unless Chatwoot.encryption_configured?
+
+    endpoint = create(
+      :ibsoft_external_message_endpoint,
+      account: account,
+      created_by: admin,
+      whatsapp_channel: channel,
+      order_pix_key: 'private-pix-key'
+    )
+    raw_pix_key = described_class.connection.select_value(
+      described_class.sanitize_sql_array(
+        ['SELECT order_pix_key FROM ibsoft_external_message_endpoints WHERE id = ?', endpoint.id]
+      )
+    )
+
+    expect(raw_pix_key).not_to include('private-pix-key')
+    expect(endpoint.reload.order_pix_key).to eq('private-pix-key')
+  end
+
   it 'normalizes and validates configurable order update messages' do
     endpoint = create(
       :ibsoft_external_message_endpoint,

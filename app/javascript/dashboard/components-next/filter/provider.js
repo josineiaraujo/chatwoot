@@ -4,12 +4,14 @@ import { useOperators } from './operators';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import { useChannelIcon } from 'next/icon/provider';
 import { createContactSearcher } from 'dashboard/components-next/NewConversation/helpers/composeConversationHelper';
+import EmojiIcon from 'dashboard/components-next/emoji-icon-picker/EmojiIcon.vue';
 import {
   buildAttributesFilterTypes,
   CONVERSATION_ATTRIBUTES,
 } from './helper/filterHelper';
 import { getConversationStatusLabel } from 'dashboard/ibsoft/conversation/statusPresentation';
 import { IBSOFT_CONVERSATION_PROTOCOL_ATTRIBUTE } from 'dashboard/ibsoft/conversation/protocol';
+import { groupFilterTypes } from './helper/filterAttributeIcons';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
 
 /**
@@ -184,7 +186,17 @@ export function useConversationFilterContext() {
       attributeName: t('FILTER.ATTRIBUTES.TEAM_NAME'),
       label: t('FILTER.ATTRIBUTES.TEAM_NAME'),
       inputType: 'searchSelect',
-      options: teams.value,
+      options: teams.value.map(team => ({
+        id: team.id,
+        name: team.name,
+        icon: team.icon
+          ? h(EmojiIcon, {
+              value: team.icon,
+              color: team.icon_color,
+              class: 'size-4',
+            })
+          : undefined,
+      })),
       dataType: 'number',
       filterOperators: presenceOperators.value,
       attributeModel: 'standard',
@@ -303,5 +315,10 @@ export function useConversationFilterContext() {
     ...customFilterTypes.value,
   ]);
 
-  return { filterTypes };
+  // The same attributes, grouped into sections with a leading icon, for the attribute picker.
+  const attributeFilterTypes = computed(() =>
+    groupFilterTypes(filterTypes.value, t)
+  );
+
+  return { filterTypes, attributeFilterTypes };
 }

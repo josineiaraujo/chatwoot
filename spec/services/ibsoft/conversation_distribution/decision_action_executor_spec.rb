@@ -180,8 +180,11 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     expect(conversation.reload.additional_attributes).to include('external_change' => 'preserved')
   end
 
-  it 'moves the conversation to the fallback team and marks it as system transfer' do
+  it 'moves the conversation to the fallback team and marks it as system transfer', :aggregate_failures do
     fallback_team = create(:team, account: account)
+    agent_bot = create(:agent_bot, account: account)
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!(owner_attribute => agent_bot)
     decision = {
       action: 'fallback_team',
       reason: 'no_available_agent',
@@ -196,6 +199,9 @@ RSpec.describe Ibsoft::ConversationDistribution::DecisionActionExecutor do
     expect(result.dig(:action_result, :status)).to eq('fallback_team_assigned')
     expect(conversation.team).to eq(fallback_team)
     expect(conversation.assignee).to be_nil
+    expect(conversation.assignee_agent_bot).to be_nil
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
     expect(conversation.additional_attributes).to include(
       'ibsoft_distribution_source' => 'system_team_transfer',
       'ibsoft_distribution_source_reason' => 'fallback_team'

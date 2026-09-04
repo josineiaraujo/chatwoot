@@ -85,10 +85,9 @@ class Ibsoft::ConversationDistribution::QueueReturnService
     queue_entered_at = Time.current
 
     mark_source
+    Ibsoft::ConversationOwnership::Clearer.perform(conversation)
     conversation.assign_attributes(
       team: team,
-      assignee: nil,
-      assignee_agent_bot: nil,
       status: :open,
       waiting_since: queue_entered_at
     )

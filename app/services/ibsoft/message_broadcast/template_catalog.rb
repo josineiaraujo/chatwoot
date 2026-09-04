@@ -28,8 +28,7 @@ class Ibsoft::MessageBroadcast::TemplateCatalog
   end
 
   def sync_templates_from_provider
-    templates = channel.provider_service.fetch_whatsapp_templates(meta_templates_url)
-    channel.update!(message_templates: templates, message_templates_last_updated: Time.current)
+    channel.provider_service.sync_templates
   end
 
   def normalize_templates
@@ -186,16 +185,5 @@ class Ibsoft::MessageBroadcast::TemplateCatalog
 
   def natural_sort_value(key)
     key.to_s.match?(/\A\d+\z/) ? [0, key.to_i] : [1, key.to_s]
-  end
-
-  def meta_templates_url
-    business_account_id = channel.provider_config['business_account_id']
-    api_key = channel.provider_config['api_key']
-
-    "#{api_base_path}/v14.0/#{business_account_id}/message_templates?access_token=#{api_key}"
-  end
-
-  def api_base_path
-    ENV.fetch('WHATSAPP_CLOUD_BASE_URL', 'https://graph.facebook.com')
   end
 end

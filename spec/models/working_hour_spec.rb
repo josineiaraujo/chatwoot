@@ -3,10 +3,12 @@
 require 'rails_helper'
 
 RSpec.describe WorkingHour do
+  let(:utc_inbox) { create(:inbox, timezone: 'UTC') }
+
   context 'when on monday 10am' do
     before do
       Time.zone = 'UTC'
-      create(:working_hour)
+      create(:working_hour, inbox: utc_inbox)
       travel_to '26.10.2020 10:00'.to_datetime
     end
 
@@ -18,7 +20,7 @@ RSpec.describe WorkingHour do
   context 'when on sunday 1pm' do
     before do
       Time.zone = 'UTC'
-      create(:working_hour, day_of_week: 0, closed_all_day: true)
+      create(:working_hour, inbox: utc_inbox, day_of_week: 0, closed_all_day: true)
       travel_to '01.11.2020 13:00'.to_datetime
     end
 
@@ -30,7 +32,7 @@ RSpec.describe WorkingHour do
   context 'when on friday 12:30pm' do
     before do
       Time.zone = 'UTC'
-      create(:working_hour)
+      create(:working_hour, inbox: utc_inbox)
       travel_to '10.09.2021 12:30'.to_datetime
     end
 
@@ -42,7 +44,7 @@ RSpec.describe WorkingHour do
   context 'when on friday 17:30pm' do
     before do
       Time.zone = 'UTC'
-      create(:working_hour)
+      create(:working_hour, inbox: utc_inbox)
       travel_to '10.09.2021 17:30'.to_datetime
     end
 

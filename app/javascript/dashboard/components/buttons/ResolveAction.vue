@@ -11,9 +11,7 @@ import { useConversationRequiredAttributes } from 'dashboard/composables/useConv
 import WootDropdownItem from 'shared/components/ui/dropdown/DropdownItem.vue';
 import WootDropdownMenu from 'shared/components/ui/dropdown/DropdownMenu.vue';
 import wootConstants from 'dashboard/constants/globals';
-import {
-  canManuallyMarkConversationPending,
-} from 'dashboard/ibsoft/conversation/statusPresentation';
+import { canManuallyMarkConversationPending } from 'dashboard/ibsoft/conversation/statusPresentation';
 import { refreshConversationStatsAfterStatusChange } from 'dashboard/ibsoft/conversation/statusStatsRefresh';
 import {
   CMD_REOPEN_CONVERSATION,
@@ -157,7 +155,12 @@ const keyboardEvents = {
     allowOnFocusedInput: true,
   },
   'Alt+KeyE': {
-    action: async () => {
+    action: async event => {
+      // Chrome on Windows treats Alt+E as a legacy shortcut for its own
+      // menu (Alt+E / Alt+F both open "Customize and control Google
+      // Chrome"). Without preventDefault, our resolve action still runs,
+      // but Chrome's menu also opens on top of it.
+      event.preventDefault();
       onCmdResolveConversation();
     },
   },

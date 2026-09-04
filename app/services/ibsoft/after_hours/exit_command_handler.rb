@@ -43,7 +43,8 @@ class Ibsoft::AfterHours::ExitCommandHandler
   def finish_wait(wait)
     confirmation = Messages::MessageBuilder.new(nil, message.conversation, confirmation_message_params(wait)).perform
     wait.update!(status: 'exited', exit_message: confirmation, finished_at: Time.current)
-    message.conversation.update!(status: :resolved, assignee: nil)
+    Ibsoft::ConversationOwnership::Clearer.perform(message.conversation)
+    message.conversation.update!(status: :resolved)
   end
 
   def command_matches?(wait)

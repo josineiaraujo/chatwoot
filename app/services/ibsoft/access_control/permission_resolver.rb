@@ -6,7 +6,7 @@ class Ibsoft::AccessControl::PermissionResolver
     role = role_for(account_user)
     return [] if role.blank?
 
-    (role.permissions + [ROLE_MARKER_PERMISSION, DASHBOARD_CUSTOM_ROLE_MARKER]).uniq
+    permissions_for_role(role)
   end
 
   def self.role_for(account_user)
@@ -14,11 +14,7 @@ class Ibsoft::AccessControl::PermissionResolver
   end
 
   def self.assignment_for(account_user)
-    return if account_user.blank?
-
-    Ibsoft::AccessControl::RoleAssignment
-      .includes(:role)
-      .find_by(account_id: account_user.account_id, user_id: account_user.user_id)
+    Ibsoft::AccessControl::PermissionRequestCache.assignment_for(account_user)
   end
 
   def self.role_assigned?(account_user)
@@ -30,4 +26,12 @@ class Ibsoft::AccessControl::PermissionResolver
 
     permissions_for(account_user).include?(permission)
   end
+
+  def self.permissions_for_role(role)
+    return [] if role.blank?
+
+    (role.permissions + [ROLE_MARKER_PERMISSION, DASHBOARD_CUSTOM_ROLE_MARKER]).uniq
+  end
+
+  private_class_method :permissions_for_role
 end

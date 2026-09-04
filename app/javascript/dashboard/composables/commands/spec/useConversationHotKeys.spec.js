@@ -29,6 +29,8 @@ describe('useConversationHotKeys', () => {
       dispatch: vi.fn(),
       getters: {
         getSelectedChat: mockCurrentChat,
+        getCurrentRole: 'administrator',
+        getCurrentUser: { id: 1 },
         'draftMessages/getReplyEditorMode': REPLY_EDITOR_MODES.REPLY,
         getContextMenuChatId: null,
         'teams/getTeams': mockTeamsList,
@@ -51,7 +53,7 @@ describe('useConversationHotKeys', () => {
     });
     useCaptain.mockReturnValue({ captainTasksEnabled: { value: true } });
     useAgentsList.mockReturnValue({
-      agentsList: { value: [] },
+      agentsList: { value: mockAssignableAgents },
       assignableAgents: { value: mockAssignableAgents },
     });
   });
@@ -98,7 +100,7 @@ describe('useConversationHotKeys', () => {
       if (childAction && childAction.handler) {
         childAction.handler({ agentInfo: { id: 2 } });
         expect(store.dispatch).toHaveBeenCalledWith('assignAgent', {
-          conversationId: 1,
+          conversationId: mockCurrentChat.id,
           agentId: 2,
         });
       }
@@ -160,6 +162,20 @@ describe('useConversationHotKeys', () => {
 
     expect(assignTeamAction).toBeDefined();
     expect(assignTeamAction.children.length).toBe(mockTeamsList.length);
+  });
+
+  it('should hide manual assignment actions from an agent when another human owns the conversation', () => {
+    store.getters.getCurrentRole = 'agent';
+    store.getters.getCurrentUser = { id: 2 };
+
+    const { conversationHotKeys } = useConversationHotKeys();
+
+    expect(
+      conversationHotKeys.value.find(action => action.id === 'assign_an_agent')
+    ).toBeUndefined();
+    expect(
+      conversationHotKeys.value.find(action => action.id === 'assign_a_team')
+    ).toBeUndefined();
   });
 
   it('should return the correct priority assignment actions', () => {

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 shared_examples_for 'out_of_offisable' do
-  let(:obj) { create(described_class.to_s.underscore, working_hours_enabled: true, out_of_office_message: 'Message') }
+  let(:obj) { create(described_class.to_s.underscore, working_hours_enabled: true, out_of_office_message: 'Message', timezone: 'UTC') }
 
   it 'has after create callback' do
     expect(obj.working_hours.count).to eq(7)

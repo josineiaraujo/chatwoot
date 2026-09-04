@@ -6,15 +6,17 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationCloseExecutor do
   let(:team) { create(:team, account: account) }
   let(:agent_bot) { create(:agent_bot, account: account) }
   let(:conversation) do
-    create(
+    conversation = create(
       :conversation,
       account: account,
       inbox: inbox,
       team: team,
       status: :pending,
-      assignee_agent_bot: agent_bot,
       waiting_since: 20.minutes.ago
     )
+    owner_attribute = conversation.respond_to?(:ai_assignee=) ? :ai_assignee : :assignee_agent_bot
+    conversation.update!(owner_attribute => agent_bot)
+    conversation
   end
   let(:policy) do
     create(
@@ -82,6 +84,8 @@ RSpec.describe Ibsoft::ConversationDistribution::AutomationCloseExecutor do
 
     expect(result[:summary]).to include(scanned: 1, closed: 1, cancelled: 0, skipped: 0)
     expect(conversation.reload).to have_attributes(status: 'resolved', assignee_agent_bot_id: nil)
+    expect(conversation.ai_assignee).to be_nil if conversation.respond_to?(:ai_assignee)
+    expect(conversation.ai_assignee_type).to be_nil if conversation.has_attribute?(:ai_assignee_type)
     expect(conversation.additional_attributes).to include(
       'ibsoft_automation_close_policy_id' => policy.id,
       'ibsoft_automation_last_bot_message_id' => trigger_message.id

@@ -4,10 +4,12 @@ require 'base64'
 RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :request do
   let(:account) { create(:account) }
   let(:admin) { create(:user, :administrator, account: account) }
+  let(:agent) { create(:user, account: account) }
   let(:headers) { { api_access_token: admin.access_token.token } }
+  let(:agent_headers) { { api_access_token: agent.access_token.token } }
   let(:auth_header) { "Basic #{Base64.strict_encode64('ixc_user:ixc_password')}" }
 
-  before do
+  let!(:active_connection) do
     create(
       :ibsoft_erp_connection,
       account: account,
@@ -25,9 +27,49 @@ RSpec.describe 'Api::V1::Accounts::Ibsoft::MessageBroadcast::Lookups', type: :re
         as: :json
 
     expect(response).to have_http_status(:success)
+    expect(response.parsed_body['connection']).to eq(
+      'id' => active_connection.id,
+      'name' => active_connection.name,
+      'provider' => 'ixc'
+    )
     expect(response.parsed_body.dig('capabilities', 'location_filters')).to include(
       'city' => 'lookup'
     )
+  end
+
+  it 'allows an agent with the broadcast permission to read only the active ERP identity' do
+    role = create(
+      :ibsoft_access_control_role,
+      account: account,
+      permissions: [Ibsoft::MessageBroadcast::Permission::PERMISSION]
+    )
+    create(:ibsoft_access_control_role_assignment, account: account, role: role, user: agent)
+
+    get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/capabilities",
+        headers: agent_headers,
+        as: :json
+
+    expect(response).to have_http_status(:success)
+    expect(response.parsed_body['connection'].keys).to contain_exactly('id', 'name', 'provider')
+  end
+
+  it 'blocks a regular agent from reading broadcast capabilities' do
+    get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/capabilities",
+        headers: agent_headers,
+        as: :json
+
+    expect(response).to have_http_status(:unauthorized)
+  end
+
+  it 'reports a missing active ERP connection without exposing another connection' do
+    active_connection.update!(active: false)
+
+    get "/api/v1/accounts/#{account.id}/ibsoft/message_broadcast/capabilities",
+        headers: headers,
+        as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body).to eq('error' => 'active_erp_connection_missing')
   end
 
   it 'lists IXC states using the Brazilian country id' do

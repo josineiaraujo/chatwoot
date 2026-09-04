@@ -39,10 +39,10 @@ class Ibsoft::ConversationDistribution::ManualAssignmentService
       raise Error, 'manual_assignment_agent_not_found' if agent.blank?
 
       previous_assignee = conversation.assignee
+      Ibsoft::ConversationOwnership::Clearer.perform(conversation)
       conversation.assign_attributes(
         status: :open,
-        assignee: agent,
-        assignee_agent_bot: nil
+        assignee: agent
       )
     end
     cleanup_previous_assignee(previous_assignee, agent)
@@ -62,7 +62,7 @@ class Ibsoft::ConversationDistribution::ManualAssignmentService
     return result_payload(queue_returned: true) if queue_result[:queued]
 
     update_locked_conversation do
-      conversation.assign_attributes(assignee: nil, assignee_agent_bot: nil)
+      Ibsoft::ConversationOwnership::Clearer.perform(conversation)
     end
 
     result_payload

@@ -3,7 +3,7 @@ import { mapGetters } from 'vuex';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useAlert } from 'dashboard/composables';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
-import { picoSearch } from '@scmmishra/pico-search';
+import { picoSearch } from '@chatwoot/pico-search';
 import MenuItem from './menuItem.vue';
 import MenuItemWithSubmenu from './menuItemWithSubmenu.vue';
 import wootConstants from 'dashboard/constants/globals';

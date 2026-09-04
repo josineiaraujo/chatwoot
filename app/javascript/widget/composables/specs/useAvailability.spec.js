@@ -72,10 +72,12 @@ describe('useAvailability', () => {
 
   describe('working hours', () => {
     const workingHours = [{ dayOfWeek: 1, openHour: 9, closeHour: 17 }];
+    const workingHourBreaks = [{ dayOfWeek: 1, startHour: 12, endHour: 13 }];
 
     beforeEach(() => {
       window.chatwootWebChannel = {
         workingHours,
+        ibsoftWorkingHourBreaks: workingHourBreaks,
         workingHoursEnabled: true,
         utcOffset: '+05:30',
       };
@@ -90,7 +92,8 @@ describe('useAvailability', () => {
       expect(mockIsInWorkingHours).toHaveBeenCalledWith(
         expect.any(Date),
         '+05:30',
-        workingHours
+        workingHours,
+        workingHourBreaks
       );
     });
 
@@ -105,7 +108,8 @@ describe('useAvailability', () => {
         expect.any(Date),
         '+05:30',
         workingHours,
-        true
+        true,
+        workingHourBreaks
       );
     });
   });

@@ -57,50 +57,44 @@ class Whatsapp::TemplateProcessorService
   end
 
   def build_header_params(header_data, template)
-    header_data.filter_map do |key, value|
-      next if value.blank? || header_metadata_key?(key)
+    header_component = template['components']&.find { |component| component['type'] == 'HEADER' }
+    return build_text_header_params(header_data, template) if header_component&.dig('format') == 'TEXT'
 
-      if media_url_with_type?(key, header_data)
-        build_header_media_parameter(value, header_data)
-      else
-        build_header_text_parameter(key, value, template)
-      end
+    build_media_header_params(header_data)
+  end
+
+  def build_text_header_params(header_data, template)
+    header_data.filter_map do |key, value|
+      build_text_parameter(key, value, template) if value.present?
     end
   end
 
-  def header_metadata_key?(key)
-    %w[media_type media_name].include?(key)
-  end
+  def build_media_header_params(header_data)
+    return [] if header_data['media_url'].blank? || header_data['media_type'].blank?
 
-  def build_header_media_parameter(value, header_data)
-    parameter_builder.build_media_parameter(value, header_data['media_type'], header_data['media_name'])
-  end
-
-  def build_header_text_parameter(key, value, template)
-    return parameter_builder.build_named_parameter(key, value) if template['parameter_format'] == 'NAMED'
-
-    parameter_builder.build_parameter(value)
-  end
-
-  def media_url_with_type?(key, header_data)
-    key == 'media_url' && header_data['media_type'].present?
+    media_param = parameter_builder.build_media_parameter(header_data['media_url'], header_data['media_type'], header_data['media_name'])
+    media_param ? [media_param] : []
   end
 
   def process_body_components(processed_params, template)
     return [] if processed_params['body'].blank?
 
-    body_params = processed_params['body'].filter_map do |key, value|
+    body_parameters = processed_params['body']
+    body_parameters = body_parameters.sort_by { |key, _value| key.to_i } unless template['parameter_format'] == 'NAMED'
+
+    body_params = body_parameters.filter_map do |key, value|
       next if value.blank?
 
-      parameter_format = template['parameter_format']
-      if parameter_format == 'NAMED'
-        parameter_builder.build_named_parameter(key, value)
-      else
-        parameter_builder.build_parameter(value)
-      end
+      build_text_parameter(key, value, template)
     end
 
     body_params.present? ? [{ type: 'body', parameters: body_params }] : []
+  end
+
+  def build_text_parameter(key, value, template)
+    return parameter_builder.build_named_parameter(key, value) if template['parameter_format'] == 'NAMED'
+
+    parameter_builder.build_parameter(value)
   end
 
   def process_footer_components(processed_params)

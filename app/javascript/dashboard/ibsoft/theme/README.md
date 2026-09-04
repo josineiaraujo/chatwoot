@@ -21,6 +21,8 @@ misturar regra de negocio com o core do produto.
 - Ajustes visuais do topo da sidebar.
 - LED lilas pulsante para itens operacionais com nao lidos na sidebar.
 - Ocultacao temporaria do item nativo `Calls` na sidebar via CSS global.
+- Compatibilidade temporaria dos rotulos do heatmap do `@chatwoot/viz 0.1.5`
+  com dias da semana traduzidos, sem alterar o componente nativo.
 - Override de textos para manter `Atencao` na area operacional e exibir
   `Canais de comunicacao` nas telas administrativas de canais.
 
@@ -65,12 +67,17 @@ misturar regra de negocio com o core do produto.
 - Remover o seletor CSS de `Calls` quando o upstream oferecer uma flag de
   visibilidade por instalacao ou conta para esse item. Ate la, validar o
   seletor `href$='/calls'` depois de cada sincronizacao com o upstream.
+- Remover o override `.cw-viz-heatmap` quando o pacote oficial passar a limitar
+  o `line-height` dos rotulos ou dimensionar as linhas pelo conteudo. Ate la,
+  validar dias longos, como `Segunda-feira`, em desktop e mobile.
 - Nao misturar alteracoes deste patch com modulos privados como chat interno ou
   ERP no mesmo commit, salvo quando for apenas uma classe visual compartilhada.
 
 ## Validacao recomendada
 
 - Rodar ESLint nos componentes tocados.
+- Rodar
+  `./node_modules/.bin/vitest run app/javascript/dashboard/ibsoft/theme/specs/UpstreamCompatibility.spec.js`.
 - Verificar tema claro e escuro.
 - Verificar sidebar recolhida/expandida.
 - Verificar que `Calls` permanece oculto na sidebar e que os demais itens nao

@@ -33,6 +33,12 @@ humana. O escopo `Conversation.assigned` inclui tanto agentes humanos quanto
 atribuicao devem usar esses escopos em vez de inferir propriedade somente por
 `assignee_id`.
 
+A remocao de propriedade e centralizada em
+`Ibsoft::ConversationOwnership::Clearer`. O contrato limpa agente humano,
+`AgentBot` legado e, quando disponivel, o proprietario polimorfico
+`ai_assignee`. Retorno para fila, atribuicao manual, fallback e automacoes nao
+devem limpar essas associacoes diretamente.
+
 Quando a entrega de um webhook ao bot falha de forma definitiva, o Chatwoot usa
 `conversation.bot_handoff!`: a conversa e aberta, a propriedade do bot e limpa
 e ela passa a ser uma candidata real da fila humana. Se a configuracao
@@ -54,6 +60,7 @@ Backend isolado:
 - `app/models/ibsoft/conversation_distribution/automation_close_schedule.rb`
 - `app/models/ibsoft/conversation_distribution/event_log.rb`
 - `app/models/ibsoft/conversation_distribution/configuration.rb`
+- `app/services/ibsoft/conversation_ownership/clearer.rb`
 - `app/services/ibsoft/conversation_distribution/configuration_validator.rb`
 - `app/services/ibsoft/conversation_distribution/business_hours_break_validator.rb`
 - `app/services/ibsoft/conversation_distribution/unavailability_config_validator.rb`
@@ -1083,12 +1090,12 @@ Para ativacao gradual em producao:
 
 ## Pontos de acoplamento no Chatwoot original
 
-### Backport temporario de propriedade do AgentBot
+### Propriedade do AgentBot
 
-Esta branch inclui antecipadamente a correcao oficial do Chatwoot
+A correcao oficial do Chatwoot
 `f12529105bff8b16793c836bde5bfe1ba7e2f470` (`fix: align AgentBot ownership
-with conversation counts (#15343)`). Ela corrige um comportamento nativo e nao
-constitui regra de negocio privada Ibsoft.
+with conversation counts (#15343)`) ja faz parte da base v4.17.1. Ela corrige
+um comportamento nativo e nao constitui regra de negocio privada Ibsoft.
 
 O backport toca os escopos de `Conversation`, finder e filtros de conversa,
 atribuicao automatica, automacoes, contadores de nao lidos, permissoes e os
@@ -1107,9 +1114,9 @@ e ativada pela permissao marcadora `ibsoft_access_role`. A
 atribuicao automatica usa o bloqueio concorrente do commit oficial `0ad2780972`
 para nao sobrescrever uma atribuicao concluida por outra execucao.
 
-Ao sincronizar com uma versao upstream que ja contenha esse commit, reconciliar
-ou remover o backport antes de resolver outros conflitos. Nao manter duas
-implementacoes paralelas. Tambem revisar os acompanhamentos upstream conhecidos
+Na integracao v4.17.1, a implementacao oficial e a unica fonte dessa semantica;
+os services privados apenas consomem o contrato por meio de
+`Ibsoft::ConversationOwnership::Clearer`. Tambem revisar os acompanhamentos upstream conhecidos
 para atualizacao de propriedade ao excluir um `AgentBot` (CW-7870) e para
 atualizacao do contador no cabecalho de filtros salvos (CW-7899).
 
@@ -1142,11 +1149,10 @@ Neste incremento inicial, os pontos de acoplamento sao:
 - `app/javascript/dashboard/i18n/locale/en/ibsoftTheme.json` e
   `app/javascript/dashboard/i18n/locale/pt_BR/ibsoftTheme.json`: adicionam
   textos da interface do modulo.
-- `app/views/api/v1/models/_user.json.jbuilder`: adiciona somente a permissao
-  privada `ibsoft_conversation_distribution_supervise` ao payload de contas do
-  usuario quando ele estiver registrado como supervisor Ibsoft. Esse ponto e
-  necessario para o guard de rotas do dashboard reconhecer o acesso sem alterar
-  `AccountUser.role`.
+- `app/models/concerns/ibsoft/access_control/account_user_permissions.rb`:
+  combina permissoes privadas e nativas em `AccountUser#permissions`. O concern
+  e conectado por initializer privado, portanto o partial nativo de usuario
+  permanece igual ao upstream.
 - `app/controllers/api/v1/accounts/conversations/assignments_controller.rb`:
   ponto pequeno que delega ao `TeamTransferPreparer` a marcacao da origem e a
   preparacao da fila quando uma conversa e transferida para um time via API/UI,
@@ -1176,8 +1182,14 @@ Neste incremento inicial, os pontos de acoplamento sao:
   o foco; manter os dialogs como filhos do menu faria os modais serem destruidos
   ao abrir. API, regra e sincronizacao do store continuam nos componentes
   privados.
-- `app/services/action_service.rb`: ponto pequeno para marcar origem Ibsoft
-  quando uma automacao, macro ou acao de sistema atribui a conversa a um time.
+- `app/services/ibsoft/conversation_distribution/action_service_extension.rb`:
+  abre `TeamAssignmentContext` enquanto `ActionService#assign_team` executa.
+  O concern privado `TeamAssignmentSourceMarker` acrescenta a origem em
+  `before_validation` somente para uma mudanca real para uma equipe. O
+  `update!`, o lock e os eventos continuam sendo os oficiais e persistem equipe
+  e marcador juntos. As extensoes sao conectadas por
+  `config/initializers/ibsoft_conversation_distribution.rb`; os arquivos
+  nativos permanecem iguais ao upstream.
 
 Nenhum callback de conversa, status de agente ou Assignment V2 foi alterado
 nesta fase. O unico acoplamento em ActionCable e a chamada frontend ao helper

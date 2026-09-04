@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { picoSearch } from '@scmmishra/pico-search';
+import { picoSearch } from '@chatwoot/pico-search';
 
 import Avatar from 'next/avatar/Avatar.vue';
 import BaseSettingsHeader from 'dashboard/routes/dashboard/settings/components/BaseSettingsHeader.vue';
